@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>オセロ / Reversi</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a href="../index.html" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 14px/1 'Segoe UI',sans-serif;padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);backdrop-filter:blur(4px);">← 一覧に戻る</a>
+  <div class="app">
+    <h1>オセロ</h1>
+
+    <!-- 対戦設定画面（プレイ前） -->
+    <section id="setup" class="setup">
+      <h2>対戦設定</h2>
+      <div class="setup-players">
+        <div class="player-config">
+          <div class="player-head"><span class="disc disc-black"></span> 黒（先手）</div>
+          <div class="type-options">
+            <label><input type="radio" name="black-type" value="human" checked> 人間</label>
+            <label><input type="radio" name="black-type" value="cpu"> CPU</label>
+          </div>
+          <label class="level-row">
+            強さ:
+            <select id="black-level" disabled>
+              <option value="1">Lv1 入門</option>
+              <option value="2">Lv2 やさしい</option>
+              <option value="3" selected>Lv3 ふつう</option>
+              <option value="4">Lv4 強い</option>
+              <option value="5">Lv5 最強</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="player-config">
+          <div class="player-head"><span class="disc disc-white"></span> 白（後手）</div>
+          <div class="type-options">
+            <label><input type="radio" name="white-type" value="human"> 人間</label>
+            <label><input type="radio" name="white-type" value="cpu" checked> CPU</label>
+          </div>
+          <label class="level-row">
+            強さ:
+            <select id="white-level">
+              <option value="1">Lv1 入門</option>
+              <option value="2">Lv2 やさしい</option>
+              <option value="3" selected>Lv3 ふつう</option>
+              <option value="4">Lv4 強い</option>
+              <option value="5">Lv5 最強</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <button id="start" class="btn btn-primary">対戦開始</button>
+    </section>
+
+    <!-- ゲーム画面 -->
+    <section id="game" class="game" hidden>
+      <div class="scoreboard">
+        <div class="score" id="score-black">
+          <span class="disc disc-black"></span>
+          <span class="label" id="label-black">黒</span>
+          <span class="count" id="count-black">2</span>
+        </div>
+        <div class="turn" id="turn-indicator">黒の番</div>
+        <div class="score" id="score-white">
+          <span class="disc disc-white"></span>
+          <span class="label" id="label-white">白</span>
+          <span class="count" id="count-white">2</span>
+        </div>
+      </div>
+
+      <div class="board-wrap">
+        <div id="board" class="board"></div>
+      </div>
+
+      <div class="controls">
+        <button id="undo" class="btn" disabled>一手戻る</button>
+        <button id="pass" class="btn" disabled>パス</button>
+        <button id="reset" class="btn">もう一度</button>
+        <button id="back" class="btn">設定を変える</button>
+      </div>
+
+      <label class="assist-toggle">
+        <input type="checkbox" id="assist"> AIアシスタント（評価値を表示）
+      </label>
+
+      <p id="message" class="message"></p>
+    </section>
+  </div>
+
+  <script src="js/ai.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

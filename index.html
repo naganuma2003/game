@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ゲーム一覧</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      background: linear-gradient(160deg, #1a2233, #0f1622);
+      color: #eef3fb;
+      font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+      padding: 40px 16px 64px;
+    }
+    h1 { text-align: center; letter-spacing: 0.15em; margin: 8px 0 6px; }
+    .sub { text-align: center; opacity: 0.7; margin: 0 0 36px; font-size: 14px; }
+    .grid {
+      display: grid; gap: 18px; max-width: 920px; margin: 0 auto;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    }
+    .card {
+      display: flex; flex-direction: column;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 22px 20px;
+      text-decoration: none; color: inherit;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      background: rgba(255,255,255,0.09);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    }
+    .icon { font-size: 44px; line-height: 1; margin-bottom: 14px; }
+    .name { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .desc { font-size: 13px; opacity: 0.75; line-height: 1.5; }
+    .tag {
+      align-self: flex-start; margin-top: 14px; font-size: 12px; font-weight: 700;
+      padding: 4px 10px; border-radius: 999px;
+      background: rgba(108,208,138,0.18); color: #8fe3a2;
+    }
+    .card.soon { cursor: default; opacity: 0.6; }
+    .card.soon:hover { transform: none; box-shadow: none; background: rgba(255,255,255,0.05); }
+    .card.soon .tag { background: rgba(255,255,255,0.12); color: #cdd6e4; }
+    footer { text-align: center; margin-top: 40px; font-size: 12px; opacity: 0.5; }
+  </style>
+</head>
+<body>
+  <h1>🎲 ゲーム一覧</h1>
+  <p class="sub">遊びたいゲームを選んでください</p>
+
+  <div class="grid">
+    <a class="card" href="カタン/index.html">
+      <div class="icon">🌾</div>
+      <div class="name">カタン</div>
+      <div class="desc">資源を集めて開拓する人気ボードゲーム。</div>
+      <span class="tag">プレイする →</span>
+    </a>
+
+    <a class="card" href="カルカソンヌ/index.html">
+      <div class="icon">🏰</div>
+      <div class="name">カルカソンヌ</div>
+      <div class="desc">タイル配置で街道や都市を作る陣取りゲーム。CPU対戦。</div>
+      <span class="tag">プレイする →</span>
+    </a>
+
+    <a class="card" href="麻雀ゲーム/index.html">
+      <div class="icon">🀄</div>
+      <div class="name">麻雀</div>
+      <div class="desc">和了判定・点数計算つきの四人打ち麻雀。</div>
+      <span class="tag">プレイする →</span>
+    </a>
+
+    <a class="card" href="将棋ゲーム/index.html">
+      <div class="icon">♟️</div>
+      <div class="name">将棋</div>
+      <div class="desc">本将棋。成り・持ち駒・詰み判定。AIアシスタント＆一手戻る。</div>
+      <span class="tag">プレイする →</span>
+    </a>
+
+    <a class="card" href="オセロ/index.html">
+      <div class="icon">⚫️</div>
+      <div class="name">オセロ</div>
+      <div class="desc">CPU 5段階・AIアシスタント付き。人間／CPUを自由に設定。</div>
+      <span class="tag">プレイする →</span>
+    </a>
+
+    <a class="card" href="五目並べ/index.html">
+      <div class="icon">⭕️</div>
+      <div class="name">五目並べ</div>
+      <div class="desc">15路盤で先に五つ並べたら勝ち。CPU4段階・AIアシスタント付き。</div>
+      <span class="tag">プレイする →</span>
+    </a>
+  </div>
+
+  <footer>クリックで各ゲームが開きます</footer>
+</body>
+</html>

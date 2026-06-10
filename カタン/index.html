@@ -1,0 +1,2890 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>🎲 カタン — Settlers of Catan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #e8c477;
+    --gold-deep: #b8902f;
+    --ink: #1a1410;
+    --panel: rgba(28, 26, 38, 0.72);
+    --panel-solid: #20202e;
+    --line: rgba(232, 196, 119, 0.22);
+    --text: #f3ecdf;
+    --muted: #a9a18f;
+    --accent: #5aa9e6;
+    --accent-deep: #2f6fb0;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+    color: var(--text);
+    overflow: hidden;
+    background:
+      radial-gradient(1200px 700px at 30% 18%, #2b4a74 0%, transparent 60%),
+      radial-gradient(900px 600px at 80% 90%, #163152 0%, transparent 55%),
+      linear-gradient(160deg, #0f2438 0%, #13243a 50%, #0a1726 100%);
+  }
+  #app { display: flex; height: 100vh; }
+
+  #board {
+    flex: 1; position: relative; min-width: 0;
+    display: flex; align-items: center; justify-content: center;
+    background:
+      radial-gradient(closest-side at 50% 46%, rgba(86,150,210,0.30), rgba(20,46,74,0.0) 70%),
+      repeating-radial-gradient(circle at 50% 46%, rgba(255,255,255,0.025) 0 2px, transparent 2px 26px),
+      linear-gradient(180deg, #1d4068 0%, #143052 55%, #0e2440 100%);
+    box-shadow: inset 0 0 160px rgba(0,0,0,0.55);
+  }
+  #boardSvg { width: 100%; height: 100%; }
+  #boardHeader {
+    position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: none; z-index: 2; line-height: 1;
+  }
+  #boardHeader .t {
+    font-family: 'Cinzel', serif; font-weight: 900; font-size: 30px; letter-spacing: 4px;
+    color: var(--gold);
+    text-shadow: 0 2px 0 #6b4e16, 0 0 22px rgba(232,196,119,0.35), 0 4px 14px rgba(0,0,0,0.6);
+  }
+  #boardHeader .s {
+    display: block; margin-top: 4px; font-size: 11px; letter-spacing: 5px; text-transform: uppercase;
+    color: rgba(243,236,223,0.62); font-weight: 500;
+  }
+
+  #sidebar {
+    width: 392px; flex-shrink: 0; padding: 14px 12px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 10px;
+    background:
+      linear-gradient(180deg, rgba(20,18,28,0.96), rgba(14,13,20,0.98));
+    border-left: 1px solid var(--line);
+    box-shadow: -10px 0 40px rgba(0,0,0,0.5);
+  }
+  #sidebar::-webkit-scrollbar, #log::-webkit-scrollbar { width: 9px; }
+  #sidebar::-webkit-scrollbar-thumb, #log::-webkit-scrollbar-thumb { background: linear-gradient(var(--gold-deep), #7c5e1d); border-radius: 9px; }
+  #sidebar::-webkit-scrollbar-track, #log::-webkit-scrollbar-track { background: transparent; }
+
+  .panel {
+    background: var(--panel); backdrop-filter: blur(6px);
+    border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+
+  .player-card {
+    position: relative; border-radius: 14px; padding: 9px 11px 9px 14px; font-size: 12px;
+    background: linear-gradient(180deg, rgba(45,42,58,0.9), rgba(30,28,40,0.92));
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    overflow: hidden; transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .player-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px;
+    background: var(--pcolor, #888);
+  }
+  .player-card.current {
+    transform: translateY(-1px);
+    border-color: rgba(232,196,119,0.65);
+    box-shadow: 0 0 0 1px rgba(232,196,119,0.6), 0 6px 22px rgba(232,196,119,0.18), 0 4px 14px rgba(0,0,0,0.4);
+  }
+  .player-name { font-weight: 700; font-size: 13px; letter-spacing: .3px; }
+  .player-stats { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+  .resource-chip {
+    background: linear-gradient(180deg, #3a4458, #2b3344);
+    border: 1px solid rgba(255,255,255,0.07);
+    padding: 2px 6px; border-radius: 7px; font-size: 11px; font-weight: 500;
+  }
+  .badge {
+    background: linear-gradient(180deg, var(--gold), var(--gold-deep));
+    color: #2a1e05; padding: 1px 6px; border-radius: 7px; font-size: 10px; margin-left: 4px; font-weight: 700;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .dev-line { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .actions { padding: 11px; border-radius: 14px;
+    background: var(--panel); backdrop-filter: blur(6px);
+    border: 1px solid var(--line);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .actions button {
+    display: block; width: 100%; margin: 5px 0; padding: 9px 10px;
+    color: #fff; border: none; border-radius: 10px; cursor: pointer;
+    font-family: inherit; font-size: 12.5px; font-weight: 600; letter-spacing: .2px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-deep));
+    box-shadow: 0 3px 0 #1d4f82, 0 5px 12px rgba(0,0,0,0.35);
+    transition: transform .08s ease, box-shadow .08s ease, filter .12s ease;
+  }
+  .actions button:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+  .actions button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #1d4f82, 0 2px 6px rgba(0,0,0,0.35); }
+  .actions button:disabled {
+    background: linear-gradient(180deg, #3a3f4c, #2c3038); color: #8b91a0;
+    box-shadow: none; cursor: not-allowed; opacity: 0.65;
+  }
+  .actions button.end { background: linear-gradient(180deg, #57c98a, #2f9d63); box-shadow: 0 3px 0 #1f7548, 0 5px 12px rgba(0,0,0,0.35); }
+  .actions button.cancel { background: linear-gradient(180deg, #8b93a3, #626a78); box-shadow: 0 3px 0 #474e5a, 0 5px 12px rgba(0,0,0,0.35); }
+  .actions button.danger { background: linear-gradient(180deg, #ef5c5c, #c5302f); box-shadow: 0 3px 0 #8f1f1f, 0 5px 12px rgba(0,0,0,0.35); }
+  .actions button.active { background: linear-gradient(180deg, var(--gold), var(--gold-deep)) !important; color: #2a1e05 !important; box-shadow: 0 0 0 2px rgba(232,196,119,0.5), 0 3px 0 #7c5e1d !important; }
+  .actions h3 {
+    margin: 12px 0 5px 0; font-size: 11px; color: var(--gold);
+    text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;
+    border-bottom: 1px solid var(--line); padding-bottom: 4px;
+  }
+
+  #log {
+    padding: 10px 11px; font-size: 11px; max-height: 200px; overflow-y: auto; flex-shrink: 0; line-height: 1.5;
+    border-radius: 14px; background: rgba(10,12,18,0.7); border: 1px solid var(--line);
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.45);
+  }
+  .log-line { padding: 2px 2px; border-bottom: 1px dashed rgba(255,255,255,0.05); }
+  .log-line:first-child { color: var(--gold); }
+
+  /* ---- Board SVG ---- */
+  .hex { stroke: rgba(15,12,8,0.85); stroke-width: 2.5; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.45)); }
+  .hex.target { stroke: var(--gold); stroke-width: 4.5; cursor: pointer; filter: drop-shadow(0 0 10px rgba(232,196,119,0.9)); }
+  .number-circle { fill: #f6efd9; stroke: #5a4a2a; stroke-width: 1.2; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
+  .number-circle.red { fill: #ffd9d6; stroke: #8c2f2a; }
+  .number-text { font-family: 'Cinzel', serif; font-size: 18px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; fill: #2a2218; pointer-events: none; }
+  .number-text.red { fill: #b3261e; }
+  .number-dots { font-size: 10px; text-anchor: middle; pointer-events: none; fill: #2a2218; }
+  .number-dots.red { fill: #b3261e; }
+  .vertex-placeable { fill: var(--gold); stroke: var(--ink); stroke-width: 2; cursor: pointer; opacity: 0.9; filter: drop-shadow(0 0 6px rgba(232,196,119,0.8)); transition: r .1s; }
+  .vertex-placeable:hover { opacity: 1; r: 13; }
+  .edge-placeable { stroke: var(--gold); stroke-width: 6; cursor: pointer; opacity: 0.7; stroke-linecap: round; filter: drop-shadow(0 0 5px rgba(232,196,119,0.7)); }
+  .edge-placeable:hover { opacity: 1; stroke-width: 9; }
+  .settlement, .city { stroke: rgba(15,12,8,0.9); stroke-width: 1.6; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.55)); }
+  .city-target { fill: rgba(232,196,119,0.18); stroke: var(--gold); stroke-width: 3; cursor: pointer; pointer-events: all; filter: drop-shadow(0 0 8px rgba(232,196,119,0.9)); }
+  .city-target:hover { stroke-width: 5; fill: rgba(232,196,119,0.32); }
+  .road { stroke-width: 8; stroke-linecap: round; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5)); }
+  .road-outline { stroke: rgba(15,12,8,0.9); stroke-width: 11; stroke-linecap: round; }
+  .robber { fill: #14110c; stroke: #e8c477; stroke-width: 2; filter: drop-shadow(0 0 7px rgba(0,0,0,0.8)); }
+  .port-circle { fill: #f3ead2; stroke: #5a4a2a; stroke-width: 2; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.45)); }
+  .port-text { font-size: 10px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; fill: #3a2f18; pointer-events: none; }
+  .port-line { stroke: rgba(243,234,210,0.6); stroke-width: 2; stroke-dasharray: 4,4; }
+
+  #dice {
+    font-size: 24px; text-align: center; padding: 12px; font-weight: 700; letter-spacing: 2px;
+    border-radius: 14px; font-family: 'Cinzel', serif;
+    background: radial-gradient(120% 120% at 50% 0%, rgba(232,196,119,0.14), rgba(20,18,28,0.75));
+    border: 1px solid var(--line);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+    text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .phase-info {
+    padding: 11px 12px; border-radius: 14px; text-align: center; font-size: 12.5px; font-weight: 700; line-height: 1.35;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.35);
+  }
+  .cost-hint { font-size: 10px; opacity: 0.85; font-weight: 400; }
+  .trade-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-top: 6px; }
+  .trade-grid button { font-size: 11px !important; padding: 6px !important; margin: 0 !important; }
+  details { margin: 3px 0; }
+  details summary { cursor: pointer; padding: 6px 8px; font-size: 11.5px; color: var(--gold); border-radius: 8px; background: rgba(255,255,255,0.03); list-style: none; font-weight: 600; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: '▸ '; }
+  details[open] summary::before { content: '▾ '; }
+  .disc-row { display: flex; align-items: center; gap: 7px; margin: 5px 0; font-size: 12px; }
+  .disc-row .label { width: 62px; }
+  .disc-row .count { width: 30px; text-align: center; font-weight: 700; color: var(--gold); font-size: 14px; }
+  .disc-row button { width: 32px !important; padding: 3px !important; margin: 0 !important; font-size: 15px !important; border-radius: 8px !important; }
+  .compose-grid { font-size: 11px; }
+  .compose-grid .row { display: flex; gap: 5px; align-items: center; margin: 3px 0; }
+  .compose-grid .row .lbl { width: 22px; font-size: 15px; }
+  .compose-grid .row .ctrl { display: flex; gap: 3px; align-items: center; }
+  .compose-grid .row button { width: 24px !important; padding: 2px !important; margin: 0 !important; font-size: 13px !important; border-radius: 7px !important; }
+  .compose-grid .row .val { width: 22px; text-align: center; font-weight: 700; color: var(--gold); }
+  select { width: 100%; padding: 7px; background: #15131e; color: var(--text); border: 1px solid var(--line); border-radius: 9px; font-size: 12px; font-family: inherit; }
+  .offer-box { background: rgba(10,12,18,0.7); padding: 10px; border-radius: 10px; margin: 6px 0; font-size: 12px; border: 1px solid var(--line); line-height: 1.5; }
+  .offer-line { padding: 3px 6px; border-radius: 6px; margin: 2px 0; }
+  .offer-line.recv { background: rgba(120,200,140,0.14); }
+  .offer-line.give { background: rgba(232,196,119,0.14); }
+  /* two-row trade composer */
+  .trade2-label { font-size: 12px; font-weight: 700; margin: 8px 0 3px; padding: 2px 6px; border-radius: 6px; }
+  .trade2-label.recv { color: #a8e6bd; background: rgba(120,200,140,0.14); }
+  .trade2-label.give { color: #e8c477; background: rgba(232,196,119,0.14); }
+  .trade2-row { display: flex; gap: 4px; justify-content: space-between; flex-wrap: nowrap; }
+  .trade2-cell { flex: 1 1 0; min-width: 0; text-align: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 4px 1px; }
+  .trade2-cell .emo { font-size: 16px; line-height: 1.2; }
+  .trade2-cell .ctl { display: flex; align-items: center; justify-content: center; gap: 1px; margin-top: 2px; }
+  .trade2-cell .ctl button { width: 20px !important; padding: 1px !important; margin: 0 !important; font-size: 12px !important; border-radius: 5px !important; }
+  .trade2-cell .v { display: inline-block; width: 16px; text-align: center; font-weight: 700; color: var(--gold); font-size: 13px; }
+  .trade2-cell .hold { font-size: 9px; color: var(--muted); margin-top: 1px; }
+
+  /* ---- Game timer ---- */
+  .hud-timer {
+    text-align: center; font-size: 13px; font-weight: 700; color: #cfe3ff; padding: 7px 8px; border-radius: 12px;
+    background: radial-gradient(120% 120% at 50% 0%, rgba(90,169,230,0.16), rgba(10,12,18,0.7));
+    border: 1px solid var(--line); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .hud-timer b { color: #fff; font-family: 'Cinzel', serif; letter-spacing: 1.5px; font-size: 15px; }
+
+  /* ---- Dice distribution ---- */
+  #diceStats { padding: 10px 12px; }
+  .dstat-head { font-size: 11px; color: var(--gold); text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700; margin-bottom: 7px; }
+  .dstat-head.clickable { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; margin-bottom: 0; }
+  .dstat-head.clickable:hover { filter: brightness(1.15); }
+  .dstat-head .dstat-count { color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+  #diceStats .dstat-row:first-of-type { margin-top: 8px; }
+  .dstat-row { display: flex; align-items: center; gap: 7px; margin: 3px 0; font-size: 11px; }
+  .dstat-row .dn { width: 20px; text-align: right; font-weight: 700; color: #cfc7b4; }
+  .dstat-row .dn.seven { color: #ff8a8a; }
+  .dbar-track { flex: 1; height: 13px; background: rgba(255,255,255,0.06); border-radius: 7px; overflow: hidden; }
+  .dbar { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-deep)); border-radius: 7px; transition: width .35s ease; }
+  .dbar.seven { background: linear-gradient(90deg, #ef5c5c, #c5302f); }
+  .dbar.hot { background: linear-gradient(90deg, var(--gold), var(--gold-deep)); }
+  .dstat-row .dc { width: 30px; text-align: right; font-weight: 700; color: var(--text); }
+  .dstat-row .dc small { color: var(--muted); font-weight: 400; }
+
+  /* ---- Player card extras ---- */
+  .who-tag { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 6px; margin-left: 6px; vertical-align: middle; }
+  .who-tag.ai { background: rgba(90,169,230,0.22); color: #9ed0f5; border: 1px solid rgba(90,169,230,0.4); }
+  .who-tag.human { background: rgba(120,200,140,0.2); color: #a8e6bd; border: 1px solid rgba(120,200,140,0.4); }
+  .who-tag.brain { background: rgba(138,109,240,0.25); color: #c9bbff; border: 1px solid rgba(138,109,240,0.5); }
+  .distinct-btn { width: 100%; padding: 11px; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 700;
+    color: var(--text); background: #20202e; border: 1px solid rgba(255,255,255,0.1); }
+  .distinct-btn.on { background: linear-gradient(180deg, #8a6df0, #5b3fd0); color: #fff; border-color: transparent; }
+  .pieces { display: flex; gap: 8px; margin-top: 5px; font-size: 11px; color: #cfc7b4; }
+  .pieces span b { color: var(--text); font-weight: 700; }
+  .stat-row { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; font-size: 11px; color: #cfc7b4; }
+  .stat-row span { white-space: nowrap; }
+  .stat-row b { color: var(--gold); font-weight: 700; font-size: 12px; }
+  .mini-badge { background: linear-gradient(180deg, var(--gold), var(--gold-deep)); color: #2a1e05; padding: 0 5px; border-radius: 6px; font-size: 9px; font-weight: 700; }
+  .cardback {
+    display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 7px; font-weight: 700; font-size: 11px;
+    background: repeating-linear-gradient(45deg, #3a2e5a, #3a2e5a 5px, #443568 5px, #443568 10px);
+    border: 1px solid rgba(255,255,255,0.14); color: #e9e2ff;
+  }
+  .ai-status {
+    text-align: center; padding: 14px 10px; font-size: 13px; font-weight: 700; color: var(--gold);
+  }
+  .ai-status .spin { display: inline-block; animation: spin 1.1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .ai-status .sub { font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 4px; }
+
+  /* ---- Sticky action bar (always-visible roll / end-turn) ---- */
+  #stickyBar { position: sticky; bottom: 0; z-index: 5; display: flex; flex-direction: column; gap: 6px;
+    padding: 8px 0 2px; background: linear-gradient(180deg, rgba(14,13,20,0), rgba(14,13,20,0.97) 35%); }
+  #stickyBar:empty { display: none; }
+  #stickyBar button { width: 100%; padding: 12px; border: none; border-radius: 12px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 800; letter-spacing: .5px;
+    transition: transform .08s, filter .12s; }
+  #stickyBar button:hover:not(:disabled) { filter: brightness(1.08); }
+  #stickyBar button:active:not(:disabled) { transform: translateY(2px); }
+  #stickyBar .roll { background: linear-gradient(180deg,#5aa9e6,#2f6fb0); color: #fff; box-shadow: 0 3px 0 #1d4f82, 0 5px 12px rgba(0,0,0,.35); }
+  #stickyBar .endturn { background: linear-gradient(180deg,#57c98a,#2f9d63); color: #fff; box-shadow: 0 3px 0 #1f7548, 0 5px 12px rgba(0,0,0,.35); }
+  #stickyBar .auto { background: linear-gradient(180deg,#8a6df0,#5b3fd0); color: #fff; font-size: 12px; padding: 8px; }
+
+  /* ---- Board controls overlay ---- */
+  #boardControls {
+    position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 3;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center;
+    padding: 8px 12px; border-radius: 14px;
+    background: rgba(14,13,20,0.78); backdrop-filter: blur(8px);
+    border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  }
+  #boardControls .ctl-group { display: flex; align-items: center; gap: 6px; }
+  #boardControls button {
+    background: linear-gradient(180deg, #33384a, #262a38); color: var(--text);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 9px; padding: 6px 10px;
+    font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    transition: filter .12s, transform .08s;
+  }
+  #boardControls button:hover { filter: brightness(1.18); }
+  #boardControls button:active { transform: translateY(1px); }
+  #boardControls button.on { background: linear-gradient(180deg, var(--gold), var(--gold-deep)); color: #2a1e05; }
+  #boardControls input[type=range] { width: 110px; accent-color: var(--gold); }
+  #boardControls .ctl-label { font-size: 13px; }
+
+  /* ---- Start screen ---- */
+  #startScreen {
+    position: fixed; inset: 0; z-index: 50; display: none;
+    align-items: center; justify-content: center;
+    background:
+      radial-gradient(900px 600px at 50% 30%, rgba(43,74,116,0.55), transparent 60%),
+      rgba(6,12,22,0.86);
+    backdrop-filter: blur(4px);
+  }
+  #startScreen.show { display: flex; }
+  .start-card {
+    width: 480px; max-width: 92vw; max-height: 92vh; overflow-y: auto; padding: 26px 28px;
+    border-radius: 20px; text-align: center;
+    background: linear-gradient(180deg, rgba(30,28,42,0.97), rgba(18,17,26,0.98));
+    border: 1px solid var(--line);
+    box-shadow: 0 20px 70px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .start-card h1 { font-family: 'Cinzel', serif; font-size: 38px; letter-spacing: 5px; margin: 0; color: var(--gold);
+    text-shadow: 0 2px 0 #6b4e16, 0 0 22px rgba(232,196,119,0.35); }
+  .start-card .tag { font-size: 11px; letter-spacing: 5px; text-transform: uppercase; color: var(--muted); margin: 6px 0 22px; }
+  .start-card .section-label { text-align: left; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold); margin: 18px 0 8px; font-weight: 700; }
+  .count-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 6px; }
+  .count-row button, .speed-row button {
+    flex: 1; padding: 10px; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700;
+    background: linear-gradient(180deg, #33384a, #262a38); color: var(--text); border: 1px solid rgba(255,255,255,0.08);
+  }
+  .count-row button.sel, .speed-row button.sel { background: linear-gradient(180deg, var(--gold), var(--gold-deep)); color: #2a1e05; border-color: var(--gold); }
+  .seat-row {
+    display: flex; align-items: center; gap: 12px; padding: 9px 12px; margin: 7px 0; border-radius: 12px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+  }
+  .seat-swatch { width: 22px; height: 22px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.5); flex-shrink: 0; }
+  .seat-name { font-weight: 700; width: 28px; text-align: left; }
+  .seat-toggle { margin-left: auto; display: flex; gap: 4px; }
+  .seat-toggle button {
+    padding: 7px 14px; border-radius: 9px; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700;
+    background: #20202e; color: var(--muted); border: 1px solid rgba(255,255,255,0.08);
+  }
+  .seat-toggle button.sel { background: linear-gradient(180deg, var(--accent), var(--accent-deep)); color: #fff; border-color: transparent; }
+  .seat-toggle button.sel.ai { background: linear-gradient(180deg, #8a6df0, #5b3fd0); }
+  .speed-row { display: flex; gap: 8px; margin-bottom: 4px; }
+  .diff-row button { display: flex; flex-direction: column; gap: 2px; padding: 8px 2px; }
+  .diff-row .diff-num { font-size: 15px; font-weight: 800; }
+  .diff-row .diff-lbl { font-size: 10px; opacity: 0.85; font-weight: 600; }
+  .diff-note { font-size: 10px; color: var(--muted); margin: 5px 0 2px; line-height: 1.5; text-align: left; }
+  .start-btn {
+    width: 100%; margin-top: 24px; padding: 14px; border-radius: 12px; cursor: pointer;
+    font-family: 'Cinzel', serif; font-size: 17px; font-weight: 700; letter-spacing: 2px; color: #2a1e05;
+    background: linear-gradient(180deg, var(--gold), var(--gold-deep)); border: none;
+    box-shadow: 0 6px 0 #7c5e1d, 0 10px 24px rgba(0,0,0,0.4);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .start-btn:hover { filter: brightness(1.06); }
+  .start-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #7c5e1d, 0 4px 12px rgba(0,0,0,0.4); }
+  .start-btn-top { margin-top: 8px; margin-bottom: 18px; }
+  .ai-strength { font-size: 13px; color: var(--text); margin-bottom: 8px; }
+  .ai-strength b { color: var(--gold); }
+  .train-row { display: flex; gap: 8px; }
+  .train-btn {
+    flex: 1; padding: 11px; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700; color: #fff;
+    background: linear-gradient(180deg, #8a6df0, #5b3fd0); border: none; box-shadow: 0 4px 0 #3f2aa0, 0 6px 14px rgba(0,0,0,0.35);
+  }
+  .train-btn:hover { filter: brightness(1.08); }
+  .train-btn:active { transform: translateY(2px); }
+  .reset-btn { padding: 11px 12px; border-radius: 11px; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700; color: var(--muted);
+    background: #20202e; border: 1px solid rgba(255,255,255,0.1); }
+  .train-bar { height: 16px; border-radius: 9px; background: rgba(255,255,255,0.08); overflow: hidden; margin: 22px 0 12px; border: 1px solid var(--line); }
+  .train-fill { height: 100%; width: 0; border-radius: 9px; background: linear-gradient(90deg, #8a6df0, var(--gold)); transition: width .2s ease; }
+  .train-stat { font-size: 13px; color: var(--text); margin-bottom: 10px; }
+  .train-stat b { color: var(--gold); }
+  .train-note { font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .train-result { font-size: 14px; line-height: 2; margin: 16px 0; }
+  .train-result b { color: var(--gold); font-size: 17px; }
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 14px/1 'Segoe UI',sans-serif;padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);">← 一覧に戻る</a>
+<div id="app">
+  <div id="board">
+    <div id="boardHeader"><span class="t">CATAN</span><span class="s">Settlers · 開拓者たち</span></div>
+    <svg id="boardSvg" viewBox="-470 -460 940 920" preserveAspectRatio="xMidYMid meet"></svg>
+    <div id="boardControls">
+      <div class="ctl-group">
+        <span class="ctl-label">🔍</span>
+        <button onclick="zoomBy(-1)">－</button>
+        <input id="zoomSlider" type="range" min="0.6" max="1.8" step="0.05" value="1" oninput="setZoom(parseFloat(this.value))">
+        <button onclick="zoomBy(1)">＋</button>
+      </div>
+      <button id="autoBtn" onclick="toggleAutopilot()">🤖 おまかせ</button>
+      <button id="pauseBtn" onclick="togglePause()">⏸ AI停止</button>
+      <button id="stepBtn" onclick="aiStepManual()">⏭ 1手</button>
+      <button id="revealBtn" onclick="toggleReveal()">👁 手札公開</button>
+      <button onclick="showStartScreen()">⟲ 設定</button>
+    </div>
+  </div>
+  <div id="sidebar">
+    <div class="phase-info" id="phaseInfo">セットアップ中</div>
+    <div id="gameTimer" class="hud-timer">⏱ ゲームタイム <b>00:00</b></div>
+    <div id="dice">🎲 -</div>
+    <div id="players"></div>
+    <div class="actions" id="actions"></div>
+    <div id="diceStats" class="panel"></div>
+    <div id="log"></div>
+    <div id="stickyBar"></div>
+  </div>
+</div>
+<div id="startScreen"><div class="start-card" id="startCard"></div></div>
+<script>
+"use strict";
+
+// ============ Constants ============
+const SIZE = 52;
+const SQRT3 = Math.sqrt(3);
+const HEX_COORDS = [
+  [0,-2],[1,-2],[2,-2],
+  [-1,-1],[0,-1],[1,-1],[2,-1],
+  [-2,0],[-1,0],[0,0],[1,0],[2,0],
+  [-2,1],[-1,1],[0,1],[1,1],
+  [-2,2],[-1,2],[0,2]
+];
+const TILE_TYPES = {
+  forest:    { resource: 'wood',  color: '#2d5016' },
+  hills:     { resource: 'brick', color: '#a0522d' },
+  pasture:   { resource: 'sheep', color: '#7cb342' },
+  fields:    { resource: 'wheat', color: '#fbc02d' },
+  mountains: { resource: 'ore',   color: '#607d8b' },
+  desert:    { resource: null,    color: '#d4a76a' }
+};
+const RESOURCES = ['wood','brick','sheep','wheat','ore'];
+const RESOURCE_EMOJI = { wood:'🌲', brick:'🧱', sheep:'🐑', wheat:'🌾', ore:'⛰️' };
+const RESOURCE_NAMES = { wood:'木材', brick:'レンガ', sheep:'羊', wheat:'麦', ore:'鉱石' };
+const TILE_BAG = ['forest','forest','forest','forest','hills','hills','hills','pasture','pasture','pasture','pasture','fields','fields','fields','fields','mountains','mountains','mountains','desert'];
+const NUMBER_BAG = [5,2,6,3,8,10,9,12,11,4,8,10,9,4,5,6,3,11];
+const PLAYER_COLORS = ['#e53e3e','#3182ce','#edf2f7','#000000'];
+const PLAYER_NAMES  = ['赤','青','白','黒'];
+const COSTS = {
+  road:       { wood: 1, brick: 1 },
+  settlement: { wood: 1, brick: 1, sheep: 1, wheat: 1 },
+  city:       { ore:  3, wheat: 2 },
+  dev:        { sheep: 1, wheat: 1, ore: 1 }
+};
+const HEX_VERTEX_OFFSETS = [
+  [0, -SIZE],
+  [SIZE*SQRT3/2, -SIZE/2],
+  [SIZE*SQRT3/2,  SIZE/2],
+  [0,  SIZE],
+  [-SIZE*SQRT3/2, SIZE/2],
+  [-SIZE*SQRT3/2,-SIZE/2]
+];
+// Ports: edge direction d means edge between vertex d and vertex (d+1)%6
+const PORT_LOCATIONS = [
+  { q: 0, r:-2, dir: 5 },
+  { q: 2, r:-2, dir: 0 },
+  { q: 2, r:-1, dir: 1 },
+  { q: 2, r: 0, dir: 2 },
+  { q: 1, r: 1, dir: 2 },
+  { q: 0, r: 2, dir: 3 },
+  { q:-2, r: 2, dir: 4 },
+  { q:-2, r: 1, dir: 4 },
+  { q:-2, r: 0, dir: 5 },
+];
+const PORT_TYPES_BAG = ['3:1','3:1','3:1','3:1','wood','brick','sheep','wheat','ore'];
+const PORT_LABEL = {
+  '3:1': '3:1', 'wood':'🌲2:1','brick':'🧱2:1','sheep':'🐑2:1','wheat':'🌾2:1','ore':'⛰️2:1'
+};
+// Development cards
+const DEV_CARD_BAG = [
+  ...Array(14).fill('knight'),
+  ...Array(2).fill('road'),
+  ...Array(2).fill('plenty'),
+  ...Array(2).fill('monopoly'),
+  ...Array(5).fill('vp')
+];
+const DEV_NAMES = {
+  knight: '🛡️騎士',
+  road: '🛣️街道建設',
+  plenty: '🌾発見',
+  monopoly: '💰独占',
+  vp: '🏛️勝利点'
+};
+
+// ============ Utils ============
+function shuffle(a) {
+  const arr = [...a];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function hexToPixel(q, r) {
+  return { x: SIZE * SQRT3 * (q + r/2), y: SIZE * 1.5 * r };
+}
+function vKey(x, y) { return `${Math.round(x*10)/10},${Math.round(y*10)/10}`; }
+function svgEl(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k,v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+// ============ Board generation ============
+function buildBoard() {
+  const tiles = HEX_COORDS.map((c, i) => {
+    const p = hexToPixel(c[0], c[1]);
+    return { idx: i, q: c[0], r: c[1], x: p.x, y: p.y };
+  });
+  const shuffledTiles = shuffle(TILE_BAG);
+  const shuffledNums  = shuffle(NUMBER_BAG);
+  let numIdx = 0, robberTile = -1;
+  for (const t of tiles) {
+    t.type = shuffledTiles[t.idx];
+    if (t.type === 'desert') { t.number = null; robberTile = t.idx; }
+    else { t.number = shuffledNums[numIdx++]; }
+  }
+
+  const vMap = new Map();
+  const eMap = new Map();
+  for (const t of tiles) {
+    const tv = [];
+    for (let i = 0; i < 6; i++) {
+      const vx = t.x + HEX_VERTEX_OFFSETS[i][0];
+      const vy = t.y + HEX_VERTEX_OFFSETS[i][1];
+      const k = vKey(vx, vy);
+      if (!vMap.has(k)) vMap.set(k, { id: vMap.size, x: vx, y: vy, tiles: [], adj: new Set() });
+      const v = vMap.get(k);
+      v.tiles.push(t.idx);
+      tv.push(v);
+    }
+    for (let i = 0; i < 6; i++) {
+      const a = tv[i], b = tv[(i+1)%6];
+      const ek = a.id < b.id ? `${a.id}_${b.id}` : `${b.id}_${a.id}`;
+      if (!eMap.has(ek)) eMap.set(ek, { id: eMap.size, v1: a.id, v2: b.id });
+      a.adj.add(b.id); b.adj.add(a.id);
+    }
+  }
+  const vertices = Array.from(vMap.values());
+  vertices.forEach(v => v.adj = Array.from(v.adj));
+  const edges = Array.from(eMap.values());
+
+  const portTypes = shuffle(PORT_TYPES_BAG);
+  const ports = PORT_LOCATIONS.map((loc, i) => {
+    const tile = tiles.find(t => t.q === loc.q && t.r === loc.r);
+    const off1 = HEX_VERTEX_OFFSETS[loc.dir];
+    const off2 = HEX_VERTEX_OFFSETS[(loc.dir+1)%6];
+    const p1 = { x: tile.x + off1[0], y: tile.y + off1[1] };
+    const p2 = { x: tile.x + off2[0], y: tile.y + off2[1] };
+    const v1 = vMap.get(vKey(p1.x, p1.y)).id;
+    const v2 = vMap.get(vKey(p2.x, p2.y)).id;
+    const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+    let dx = mx - tile.x, dy = my - tile.y;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    return { id: i, type: portTypes[i], v1, v2, p1, p2,
+      labelX: mx + dx/len * 30, labelY: my + dy/len * 30 };
+  });
+
+  // Resource scarcity: total production pips per resource on this board
+  const resourcePips = { wood:0, brick:0, sheep:0, wheat:0, ore:0 };
+  for (const t of tiles) {
+    const res = TILE_TYPES[t.type].resource;
+    if (res && t.number != null) resourcePips[res] += 6 - Math.abs(7 - t.number);
+  }
+
+  return { tiles, vertices, edges, ports, robberTile, resourcePips };
+}
+
+// ============ State ============
+let board, state;
+
+function initGame(config) {
+  // Backward compatible: allow initGame(4) or initGame({count, types, speed})
+  if (typeof config === 'number') config = { count: config };
+  config = config || {};
+  const numPlayers = config.count || 4;
+  const types = config.types || ['human', ...Array(numPlayers - 1).fill('ai')];
+  clearAI();
+  hideStartScreen();
+  board = buildBoard();
+  // Random starting player; setup snakes start→last (round 1) then last→start (round 2)
+  const startPlayer = Math.floor(Math.random() * numPlayers);
+  const round1 = [];
+  for (let i = 0; i < numPlayers; i++) round1.push((startPlayer + i) % numPlayers);
+  const setupOrder = round1.concat(round1.slice().reverse());
+  state = {
+    players: [],
+    currentPlayer: startPlayer,
+    firstPlayer: startPlayer,
+    setupOrder,
+    setupIdx: 0,
+    phase: 'setup1',
+    setupStep: 'settlement',
+    pendingVertex: null,
+    buildMode: null,
+    robberTile: board.robberTile,
+    settlements: {},
+    cities: {},
+    roads: {},
+    dice: [null, null],
+    log: [],
+    stealOptions: [],
+    winner: null,
+    numPlayers,
+    discardQueue: [],
+    tradeCompose: null,
+    tradeOffer: null,
+    tradeTimeLimit: (config.tradeLimit != null ? config.tradeLimit : 30),
+    tradeDeadline: null,
+    devDeck: shuffle(DEV_CARD_BAG),
+    largestArmy: { player: null, count: 0 },
+    longestRoad: { player: null, length: 0 },
+    turnCount: 0,
+    startTime: Date.now(),
+    endTime: null,
+    diceCounts: { 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0, 12:0 },
+    diceStatsOpen: false,
+    aiTradesThisTurn: 0,
+    devCardPlayedThisTurn: false,
+    pendingFreeRoads: 0,
+    pendingPlenty: 0,
+    plentySelected: { wood:0, brick:0, sheep:0, wheat:0, ore:0 },
+    pendingMonopoly: false,
+    robberFromKnight: false,
+    // --- new ---
+    zoom: 1,
+    revealAll: false,
+    aiPaused: false,
+    aiDelay: config.speed || 750,
+    aiRoadsThisTurn: 0,
+    aiDevBuysThisTurn: 0,
+    autopilotHumans: false,   // when true, AI plays the human seats too (so the player can rest)
+    difficulty: (config.difficulty != null ? config.difficulty : 5)  // 1(easy)..5(strongest); default = full strength
+  };
+  for (let i = 0; i < numPlayers; i++) {
+    const seatDiff = config.difficulties ? (config.difficulties[i] != null ? config.difficulties[i] : 5)
+                                         : (config.difficulty != null ? config.difficulty : 5);
+    const seatW = config.seatWeights && config.seatWeights[i] ? config.seatWeights[i] : null;
+    state.players.push({
+      id: i, color: PLAYER_COLORS[i], name: PLAYER_NAMES[i],
+      isAI: types[i] === 'ai',
+      difficulty: seatDiff,
+      weights: seatW,           // per-seat brain (null → uses ACTIVE_WEIGHTS)
+      brainName: config.brainNames && config.brainNames[i] ? config.brainNames[i] : null,
+      resources: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 },
+      vp: 0, hiddenVp: 0,
+      settlementsLeft: 5, citiesLeft: 4, roadsLeft: 15,
+      devCards: [],
+      playedKnights: 0,
+      cardsDiscarded: 0,   // cumulative cards lost to rolled 7s (for analysis)
+      ports: new Set()
+    });
+  }
+  const humanCount = state.players.filter(p => !p.isAI).length;
+  log(`ゲーム開始（${numPlayers}人：人間${humanCount}・AI${numPlayers-humanCount}）— 🎲先手は ${state.players[startPlayer].name}！初期配置開始`);
+  if (!SIMULATING) {
+    if (clockTimer) clearInterval(clockTimer);
+    if (typeof setInterval !== 'undefined') clockTimer = setInterval(updateClock, 1000);
+  }
+  render();
+}
+
+let clockTimer = null;
+function formatTime(ms) {
+  const s = Math.floor(Math.max(0, ms) / 1000);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  const pad = n => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+}
+function updateClock() {
+  if (!state) return;
+  // Trade response time limit: count down and auto-decline on timeout
+  if (state.phase === 'trade-respond' && state.tradeDeadline) {
+    const remain = Math.ceil((state.tradeDeadline - Date.now()) / 1000);
+    if (remain <= 0) { log('⏱ 取引時間切れ — 自動的に拒否しました'); tradeDecline(); return; }
+    const cd = document.getElementById('tradeCountdown');
+    if (cd) {
+      cd.textContent = `⏱ 残り ${remain} 秒で自動拒否`;
+      cd.style.color = remain <= 5 ? '#ff8a8a' : '#e8c477';
+    }
+  }
+  const el = document.getElementById('gameTimer');
+  if (!el) return;
+  const end = (state.phase === 'win' && state.endTime) ? state.endTime : Date.now();
+  const won = state.phase === 'win';
+  el.innerHTML = `${won ? '🏁 決着まで' : '⏱ ゲームタイム'} <b>${formatTime(end - state.startTime)}</b>`;
+}
+
+function log(msg) {
+  state.log.unshift(msg);
+  if (state.log.length > 100) state.log.pop();
+}
+function currentP() { return state.players[state.currentPlayer]; }
+function totalRes(p) { return RESOURCES.reduce((s,r) => s + p.resources[r], 0); }
+function totalVp(p) { return p.vp + p.hiddenVp; }
+function canAfford(p, cost) { return Object.entries(cost).every(([r,n]) => p.resources[r] >= n); }
+function pay(p, cost) { Object.entries(cost).forEach(([r,n]) => p.resources[r] -= n); }
+
+function isPlacingSettlement() {
+  if (state.phase === 'setup1' || state.phase === 'setup2') return state.setupStep === 'settlement';
+  return state.phase === 'build' && state.buildMode === 'settlement';
+}
+function isPlacingRoad() {
+  if (state.phase === 'setup1' || state.phase === 'setup2') return state.setupStep === 'road';
+  return state.phase === 'build' && state.buildMode === 'road';
+}
+
+// ============ Ports ============
+function updatePlayerPorts(player) {
+  player.ports = new Set();
+  const addIfOwned = (vid) => {
+    for (const p of board.ports) {
+      if (p.v1 === vid || p.v2 === vid) player.ports.add(p.type);
+    }
+  };
+  for (const vidStr in state.settlements) {
+    if (state.settlements[vidStr].player === player.id) addIfOwned(Number(vidStr));
+  }
+  for (const vidStr in state.cities) {
+    if (state.cities[vidStr].player === player.id) addIfOwned(Number(vidStr));
+  }
+}
+
+function getTradeRatio(player, resource) {
+  if (player.ports.has(resource)) return 2;
+  if (player.ports.has('3:1')) return 3;
+  return 4;
+}
+
+// ============ Validation ============
+function canPlaceSettlement(vid) {
+  if (state.settlements[vid] || state.cities[vid]) return false;
+  const v = board.vertices[vid];
+  for (const av of v.adj) {
+    if (state.settlements[av] || state.cities[av]) return false;
+  }
+  if (state.phase === 'build') {
+    let touches = false;
+    for (const eid in state.roads) {
+      if (state.roads[eid].player !== state.currentPlayer) continue;
+      const e = board.edges[eid];
+      if (e.v1 === vid || e.v2 === vid) { touches = true; break; }
+    }
+    if (!touches) return false;
+  }
+  return true;
+}
+
+function canPlaceRoad(eid) {
+  if (state.roads[eid]) return false;
+  const e = board.edges[eid];
+  if (state.phase === 'setup1' || state.phase === 'setup2') {
+    return e.v1 === state.pendingVertex || e.v2 === state.pendingVertex;
+  }
+  for (const vid of [e.v1, e.v2]) {
+    const owner = state.settlements[vid]?.player ?? state.cities[vid]?.player;
+    if (owner === state.currentPlayer) return true;
+    if (owner !== undefined) continue;
+    for (const eid2 in state.roads) {
+      if (state.roads[eid2].player !== state.currentPlayer) continue;
+      const e2 = board.edges[eid2];
+      if (e2.v1 === vid || e2.v2 === vid) return true;
+    }
+  }
+  return false;
+}
+
+// ============ Build actions ============
+function doBuildSettlement(vid) {
+  const p = currentP();
+  state.settlements[vid] = { player: state.currentPlayer };
+  p.settlementsLeft--;
+  p.vp++;
+
+  if (state.phase === 'setup1' || state.phase === 'setup2') {
+    if (state.phase === 'setup2') {
+      const v = board.vertices[vid];
+      const gained = {};
+      for (const tIdx of v.tiles) {
+        const t = board.tiles[tIdx];
+        const res = TILE_TYPES[t.type].resource;
+        if (res) {
+          p.resources[res]++;
+          gained[res] = (gained[res]||0)+1;
+        }
+      }
+      if (Object.keys(gained).length) {
+        const desc = Object.entries(gained).map(([r,n]) => `${RESOURCE_EMOJI[r]}×${n}`).join(' ');
+        log(`${p.name} 初期獲得 ${desc}`);
+      }
+    }
+    state.pendingVertex = vid;
+    state.setupStep = 'road';
+    log(`${p.name} 開拓地建設 → 道を1つ配置`);
+  } else {
+    pay(p, COSTS.settlement);
+    log(`${p.name} 開拓地を建設`);
+    state.buildMode = null;
+  }
+  updatePlayerPorts(p);
+  recomputeLongestRoad();   // a new settlement can cut an opponent's road
+  checkWin();
+  render();
+}
+
+function doBuildRoad(eid) {
+  const p = currentP();
+  state.roads[eid] = { player: state.currentPlayer };
+  p.roadsLeft--;
+
+  if (state.phase === 'setup1' || state.phase === 'setup2') {
+    state.pendingVertex = null;
+    state.setupStep = 'settlement';
+    advanceSetup();
+  } else if (state.pendingFreeRoads > 0) {
+    state.pendingFreeRoads--;
+    log(`${p.name} 道を建設（無料・残り${state.pendingFreeRoads}）`);
+    if (state.pendingFreeRoads === 0 || p.roadsLeft === 0) {
+      state.buildMode = null;
+      state.pendingFreeRoads = 0;
+    }
+  } else {
+    pay(p, COSTS.road);
+    log(`${p.name} 道を建設`);
+    state.buildMode = null;
+  }
+  recomputeLongestRoad();
+  render();
+}
+
+function doUpgradeCity(vid) {
+  const p = currentP();
+  delete state.settlements[vid];
+  state.cities[vid] = { player: state.currentPlayer };
+  p.settlementsLeft++;
+  p.citiesLeft--;
+  p.vp++;
+  pay(p, COSTS.city);
+  state.buildMode = null;
+  log(`${p.name} 都市に発展`);
+  updatePlayerPorts(p);
+  checkWin();
+  render();
+}
+
+function advanceSetup() {
+  state.setupIdx++;
+  if (state.setupIdx >= state.setupOrder.length) {
+    state.phase = 'roll';
+    state.currentPlayer = state.firstPlayer;
+    log(`初期配置完了！ ${currentP().name} の番からプレイ開始`);
+    return;
+  }
+  state.currentPlayer = state.setupOrder[state.setupIdx];
+  const wasRound2 = state.phase === 'setup2';
+  state.phase = state.setupIdx < state.numPlayers ? 'setup1' : 'setup2';
+  if (state.phase === 'setup2' && !wasRound2) log(`初期配置 2巡目（逆順）— ${currentP().name}から`);
+}
+
+function startBuild(what) {
+  if (state.phase !== 'build') return;
+  const p = currentP();
+  if (state.pendingFreeRoads > 0 || state.pendingPlenty > 0 || state.pendingMonopoly) return;
+  if (!canAfford(p, COSTS[what])) return;
+  if (what === 'settlement' && p.settlementsLeft <= 0) { log('開拓地の在庫なし'); return; }
+  if (what === 'city' && p.citiesLeft <= 0) { log('都市の在庫なし'); return; }
+  if (what === 'road' && p.roadsLeft <= 0) { log('道の在庫なし'); return; }
+  state.buildMode = state.buildMode === what ? null : what;
+  render();
+}
+
+// ============ Dice / Resources ============
+function rollDice() {
+  if (state.phase !== 'roll') return;
+  const d1 = Math.floor(Math.random()*6)+1;
+  const d2 = Math.floor(Math.random()*6)+1;
+  state.dice = [d1, d2];
+  const sum = d1 + d2;
+  state.diceCounts[sum] = (state.diceCounts[sum] || 0) + 1;
+  log(`${currentP().name} 出目 ${d1}+${d2}=${sum}`);
+
+  if (sum === 7) {
+    state.robberReturn = 'build';   // after the 7-robber, go to the build phase
+    const needers = state.players.filter(p => totalRes(p) > 7);
+    if (needers.length > 0) {
+      state.discardQueue = needers.map(p => ({
+        player: p.id,
+        count: Math.floor(totalRes(p)/2),
+        selected: { wood:0, brick:0, sheep:0, wheat:0, ore:0 }
+      }));
+      state.phase = 'discard';
+      log(`🎲7! 手札8枚以上のプレイヤー全員が半分を捨てます`);
+    } else {
+      state.phase = 'robber';
+      state.robberFromKnight = false;
+      log(`${currentP().name} 盗賊を移動するヘックスを選択`);
+    }
+  } else {
+    distributeResources(sum);
+    state.phase = 'build';
+  }
+  render();
+}
+
+function distributeResources(roll) {
+  const gains = {};
+  for (const t of board.tiles) {
+    if (t.number !== roll) continue;
+    if (t.idx === state.robberTile) continue;
+    const res = TILE_TYPES[t.type].resource;
+    if (!res) continue;
+    for (const v of board.vertices) {
+      if (!v.tiles.includes(t.idx)) continue;
+      const s = state.settlements[v.id];
+      const c = state.cities[v.id];
+      let owner = null, amount = 0;
+      if (s) { owner = s.player; amount = 1; }
+      else if (c) { owner = c.player; amount = 2; }
+      if (owner !== null) {
+        state.players[owner].resources[res] += amount;
+        gains[owner] = gains[owner] || {};
+        gains[owner][res] = (gains[owner][res]||0) + amount;
+      }
+    }
+  }
+  const ids = Object.keys(gains);
+  if (ids.length === 0) { log(`誰も資源を得られず`); return; }
+  for (const pid of ids) {
+    const desc = Object.entries(gains[pid]).map(([r,n]) => `${RESOURCE_EMOJI[r]}×${n}`).join(' ');
+    log(`${state.players[pid].name} 獲得 ${desc}`);
+  }
+}
+
+// ============ Discard ============
+function discardAdjust(res, delta) {
+  if (state.phase !== 'discard') return;
+  const item = state.discardQueue[0];
+  const p = state.players[item.player];
+  const sel = item.selected;
+  const newVal = sel[res] + delta;
+  if (newVal < 0) return;
+  if (newVal > p.resources[res]) return;
+  const totalSel = RESOURCES.reduce((s,r) => s + sel[r], 0) + delta;
+  if (totalSel > item.count) return;
+  sel[res] = newVal;
+  render();
+}
+
+function confirmDiscard() {
+  const item = state.discardQueue[0];
+  const totalSel = RESOURCES.reduce((s,r) => s + item.selected[r], 0);
+  if (totalSel !== item.count) return;
+  const p = state.players[item.player];
+  const desc = Object.entries(item.selected).filter(([_,n]) => n>0).map(([r,n]) => `${RESOURCE_EMOJI[r]}×${n}`).join(' ');
+  for (const r of RESOURCES) p.resources[r] -= item.selected[r];
+  p.cardsDiscarded = (p.cardsDiscarded || 0) + item.count;
+  log(`${p.name} 捨札 ${desc || '(なし)'}`);
+  state.discardQueue.shift();
+  if (state.discardQueue.length === 0) {
+    state.phase = 'robber';
+    state.robberFromKnight = false;
+    log(`${currentP().name} 盗賊を移動するヘックスを選択`);
+  }
+  render();
+}
+
+// ============ Robber / Steal ============
+function placeRobber(tileIdx) {
+  if (state.phase !== 'robber') return;
+  if (tileIdx === state.robberTile) return;
+  state.robberTile = tileIdx;
+  log(`${currentP().name} 盗賊を移動`);
+  const victims = new Set();
+  for (const v of board.vertices) {
+    if (!v.tiles.includes(tileIdx)) continue;
+    const o = state.settlements[v.id]?.player ?? state.cities[v.id]?.player;
+    if (o !== undefined && o !== state.currentPlayer && totalRes(state.players[o]) > 0) {
+      victims.add(o);
+    }
+  }
+  const back = state.robberReturn || 'build';
+  if (victims.size === 0) {
+    state.phase = back;
+    log('盗む相手なし');
+  } else if (victims.size === 1) {
+    stealFrom([...victims][0]);
+    state.phase = back;
+  } else {
+    state.stealOptions = [...victims];
+    state.phase = 'steal';
+  }
+  render();
+}
+
+function stealFrom(victim) {
+  const vp = state.players[victim];
+  const pool = [];
+  for (const r of RESOURCES) for (let i = 0; i < vp.resources[r]; i++) pool.push(r);
+  if (pool.length === 0) { log(`${vp.name} は資源なし`); return; }
+  const r = pool[Math.floor(Math.random()*pool.length)];
+  vp.resources[r]--;
+  currentP().resources[r]++;
+  log(`${currentP().name} ← ${vp.name} から ${RESOURCE_EMOJI[r]} を盗んだ`);
+}
+
+function chooseSteal(pid) {
+  if (state.phase !== 'steal') return;
+  stealFrom(pid);
+  state.stealOptions = [];
+  state.phase = state.robberReturn || 'build';
+  render();
+}
+
+// ============ Bank trade ============
+function bankTrade(give, get) {
+  const p = currentP();
+  const ratio = getTradeRatio(p, give);
+  if (p.resources[give] < ratio) return;
+  p.resources[give] -= ratio;
+  p.resources[get]  += 1;
+  log(`${p.name} 銀行取引 ${RESOURCE_EMOJI[give]}×${ratio} → ${RESOURCE_EMOJI[get]}`);
+  render();
+}
+
+// ============ Player trade ============
+// tradeCompose = { composer, target, offering, requesting }
+//   offering   = resources the COMPOSER gives  (出す / 下段)
+//   requesting = resources the COMPOSER receives (もらう / 上段)
+function openTradeCompose() {
+  if (state.phase !== 'build') return;
+  state.tradeCompose = {
+    composer: state.currentPlayer,
+    target: 'all',                 // default: offer to every other player
+    offering: { wood:0, brick:0, sheep:0, wheat:0, ore:0 },
+    requesting: { wood:0, brick:0, sheep:0, wheat:0, ore:0 }
+  };
+  render();
+}
+
+// Recipient of an offer makes a counter-offer back to the original proposer
+function openCounterOffer() {
+  if (state.phase !== 'trade-respond' || !state.tradeOffer) return;
+  const o = state.tradeOffer;
+  // start from the mirror of the incoming offer (recipient receives what was offered, gives what was asked)
+  state.tradeCompose = {
+    composer: o.target,
+    target: o.from,
+    offering: { ...o.requesting },   // I give what they wanted
+    requesting: { ...o.offering }    // I receive what they offered
+  };
+  state.tradeOffer = null;
+  state.tradeDeadline = null;
+  render();
+}
+
+function tradeComposeAdjust(side, res, delta) {
+  if (!state.tradeCompose) return;
+  const composer = state.players[state.tradeCompose.composer];
+  const sel = state.tradeCompose[side];
+  const newVal = sel[res] + delta;
+  if (newVal < 0) return;
+  if (side === 'offering' && newVal > composer.resources[res]) return;  // can't give what you don't have
+  sel[res] = newVal;
+  render();
+}
+
+function tradeComposeTarget(pid) {
+  if (!state.tradeCompose) return;
+  state.tradeCompose.target = (pid === 'all') ? 'all' : parseInt(pid);
+  render();
+}
+
+function tradeComposeCancel() { state.tradeCompose = null; render(); }
+
+function tradeComposeSend() {
+  if (!state.tradeCompose) return;
+  const t = state.tradeCompose;
+  const off = RESOURCES.reduce((s,r) => s + t.offering[r], 0);
+  const req = RESOURCES.reduce((s,r) => s + t.requesting[r], 0);
+  if (off === 0 && req === 0) return;
+  const broadcast = (t.target === 'all');
+  state.tradeOffer = {
+    from: t.composer, target: broadcast ? 'all' : t.target, broadcast,
+    offering: { ...t.offering }, requesting: { ...t.requesting }
+  };
+  state.tradeCompose = null;
+  state.phase = 'trade-respond';
+  // countdown only when a single human must respond (broadcast = proposer picks, no timer)
+  const targetIsHuman = !broadcast && state.players[t.target] && !state.players[t.target].isAI;
+  state.tradeDeadline = (state.tradeTimeLimit > 0 && targetIsHuman) ? Date.now() + state.tradeTimeLimit * 1000 : null;
+  log(broadcast ? `${state.players[t.composer].name} が全員に交渉を提案` : `${state.players[t.composer].name} → ${state.players[t.target].name} に交渉提案`);
+  render();
+}
+
+function tradeAccept() {
+  if (state.phase !== 'trade-respond') return;
+  const o = state.tradeOffer;
+  const from = state.players[o.from];
+  const target = state.players[o.target];
+  for (const r of RESOURCES) {
+    if (target.resources[r] < o.requesting[r]) { log(`${target.name} 資源不足`); return; }
+    if (from.resources[r] < o.offering[r]) { log(`${from.name} 資源不足`); return; }
+  }
+  for (const r of RESOURCES) {
+    from.resources[r] -= o.offering[r];
+    from.resources[r] += o.requesting[r];
+    target.resources[r] += o.offering[r];
+    target.resources[r] -= o.requesting[r];
+  }
+  const offDesc = Object.entries(o.offering).filter(([_,n])=>n>0).map(([r,n])=>`${RESOURCE_EMOJI[r]}×${n}`).join(' ') || '(なし)';
+  const reqDesc = Object.entries(o.requesting).filter(([_,n])=>n>0).map(([r,n])=>`${RESOURCE_EMOJI[r]}×${n}`).join(' ') || '(なし)';
+  log(`交渉成立 ${from.name}[${offDesc}] ⇄ [${reqDesc}]${target.name}`);
+  state.tradeOffer = null;
+  state.tradeDeadline = null;
+  state.phase = 'build';
+  render();
+}
+
+function tradeDecline() {
+  if (state.phase !== 'trade-respond' || !state.tradeOffer) return;
+  const o = state.tradeOffer;
+  log(o.broadcast ? `${state.players[o.from].name} は交渉を取りやめ` : `${state.players[o.target].name} は交渉を拒否`);
+  state.tradeOffer = null;
+  state.tradeDeadline = null;
+  state.phase = 'build';
+  render();
+}
+
+// Broadcast offer: the proposer completes the trade with a chosen player
+function tradeBroadcastComplete(pid) {
+  if (state.phase !== 'trade-respond' || !state.tradeOffer || !state.tradeOffer.broadcast) return;
+  const o = state.tradeOffer;
+  const from = state.players[o.from], target = state.players[pid];
+  for (const r of RESOURCES) {
+    if (target.resources[r] < o.requesting[r] || from.resources[r] < o.offering[r]) { log(`${target.name} は資源不足`); return; }
+  }
+  for (const r of RESOURCES) {
+    from.resources[r] -= o.offering[r]; from.resources[r] += o.requesting[r];
+    target.resources[r] += o.offering[r]; target.resources[r] -= o.requesting[r];
+  }
+  const offDesc = Object.entries(o.offering).filter(([_,n])=>n>0).map(([r,n])=>`${RESOURCE_EMOJI[r]}×${n}`).join(' ') || '(なし)';
+  const reqDesc = Object.entries(o.requesting).filter(([_,n])=>n>0).map(([r,n])=>`${RESOURCE_EMOJI[r]}×${n}`).join(' ') || '(なし)';
+  log(`交渉成立 ${from.name}[${offDesc}] ⇄ [${reqDesc}]${target.name}`);
+  state.tradeOffer = null; state.tradeDeadline = null; state.phase = 'build';
+  render();
+}
+
+// ============ Dev cards ============
+function buyDevCard() {
+  if (state.phase !== 'build') return;
+  const p = currentP();
+  if (!canAfford(p, COSTS.dev)) return;
+  if (state.devDeck.length === 0) { log('発展カードの山札が空'); return; }
+  pay(p, COSTS.dev);
+  const type = state.devDeck.shift();
+  if (type === 'vp') {
+    p.hiddenVp++;
+    p.devCards.push({ type, justBought: false });
+    log(`${p.name} 発展カードを購入: 🏛️勝利点 (+1隠VP)`);
+    checkWin();
+  } else {
+    p.devCards.push({ type, justBought: true });
+    log(`${p.name} 発展カードを購入`);
+  }
+  render();
+}
+
+function playableDevs(p) {
+  return p.devCards.filter(c => !c.justBought && c.type !== 'vp');
+}
+
+function playDevCard(idx) {
+  if (state.phase !== 'build' && state.phase !== 'roll') return;
+  if (state.devCardPlayedThisTurn) return;
+  const p = currentP();
+  let count = -1, realIdx = -1;
+  for (let i = 0; i < p.devCards.length; i++) {
+    const c = p.devCards[i];
+    if (!c.justBought && c.type !== 'vp') {
+      count++;
+      if (count === idx) { realIdx = i; break; }
+    }
+  }
+  if (realIdx === -1) return;
+  const card = p.devCards[realIdx];
+  // Before rolling, only the knight may be played
+  if (state.phase === 'roll' && card.type !== 'knight') return;
+  const returnPhase = state.phase === 'roll' ? 'roll' : 'build';  // come back here after the robber
+  p.devCards.splice(realIdx, 1);
+  state.devCardPlayedThisTurn = true;
+
+  if (card.type === 'knight') {
+    p.playedKnights++;
+    log(`${p.name} 🛡️ 騎士を発動 → 盗賊を移動`);
+    state.robberReturn = returnPhase;
+    state.phase = 'robber';
+    state.robberFromKnight = true;
+    recomputeLargestArmy();
+  } else if (card.type === 'road') {
+    if (p.roadsLeft === 0) {
+      log('道の在庫なし');
+      state.devCardPlayedThisTurn = false;
+      p.devCards.push(card); // refund
+      render();
+      return;
+    }
+    state.pendingFreeRoads = Math.min(2, p.roadsLeft);
+    state.buildMode = 'road';
+    log(`${p.name} 🛣️ 街道建設発動 — 道${state.pendingFreeRoads}本配置`);
+  } else if (card.type === 'plenty') {
+    state.pendingPlenty = 2;
+    state.plentySelected = { wood:0, brick:0, sheep:0, wheat:0, ore:0 };
+    log(`${p.name} 🌾 発見発動 — 資源2つ選択`);
+  } else if (card.type === 'monopoly') {
+    state.pendingMonopoly = true;
+    log(`${p.name} 💰 独占発動 — 資源1種類を宣言`);
+  }
+  render();
+}
+
+function plentyAdjust(res, delta) {
+  if (!state.pendingPlenty) return;
+  const sel = state.plentySelected;
+  const newVal = sel[res] + delta;
+  if (newVal < 0) return;
+  const total = RESOURCES.reduce((s,r)=>s+sel[r],0) + delta;
+  if (total > state.pendingPlenty) return;
+  sel[res] = newVal;
+  render();
+}
+
+function plentyConfirm() {
+  if (!state.pendingPlenty) return;
+  const total = RESOURCES.reduce((s,r)=>s+state.plentySelected[r],0);
+  if (total !== state.pendingPlenty) return;
+  const p = currentP();
+  for (const r of RESOURCES) p.resources[r] += state.plentySelected[r];
+  const desc = Object.entries(state.plentySelected).filter(([_,n])=>n>0).map(([r,n])=>`${RESOURCE_EMOJI[r]}×${n}`).join(' ');
+  log(`${p.name} 発見で獲得 ${desc}`);
+  state.pendingPlenty = 0;
+  state.plentySelected = { wood:0, brick:0, sheep:0, wheat:0, ore:0 };
+  render();
+}
+
+function monopolyChoose(res) {
+  if (!state.pendingMonopoly) return;
+  const p = currentP();
+  let total = 0;
+  for (const other of state.players) {
+    if (other.id === p.id) continue;
+    total += other.resources[res];
+    other.resources[res] = 0;
+  }
+  p.resources[res] += total;
+  log(`${p.name} 💰 独占で ${RESOURCE_EMOJI[res]}×${total} 獲得`);
+  state.pendingMonopoly = false;
+  render();
+}
+
+function recomputeLargestArmy() {
+  let best = null, bestK = 2;
+  for (const p of state.players) {
+    if (p.playedKnights >= 3 && p.playedKnights > bestK) { best = p.id; bestK = p.playedKnights; }
+  }
+  if (state.largestArmy.player !== null) {
+    const cur = state.players[state.largestArmy.player];
+    if (cur.playedKnights === bestK) best = state.largestArmy.player;
+  }
+  if (best !== state.largestArmy.player) {
+    if (state.largestArmy.player !== null) {
+      state.players[state.largestArmy.player].vp -= 2;
+      log(`${state.players[state.largestArmy.player].name} 最大騎士力喪失 (-2VP)`);
+    }
+    if (best !== null) {
+      state.players[best].vp += 2;
+      log(`${state.players[best].name} 🛡️最大騎士力獲得 (+2VP)`);
+    }
+    state.largestArmy = { player: best, count: best === null ? 0 : state.players[best].playedKnights };
+  } else if (best !== null) {
+    state.largestArmy.count = state.players[best].playedKnights;
+  }
+  checkWin();
+}
+
+// ============ Longest road ============
+function longestRoadFor(pid) {
+  const adj = {};
+  for (const eid in state.roads) {
+    if (state.roads[eid].player !== pid) continue;
+    const e = board.edges[eid];
+    (adj[e.v1] = adj[e.v1] || []).push({ e: Number(eid), to: e.v2 });
+    (adj[e.v2] = adj[e.v2] || []).push({ e: Number(eid), to: e.v1 });
+  }
+  const blocked = (vid) => {
+    const o = state.settlements[vid] ? state.settlements[vid].player
+            : (state.cities[vid] ? state.cities[vid].player : undefined);
+    return o !== undefined && o !== pid;   // enemy building breaks the chain here
+  };
+  let best = 0;
+  const used = new Set();
+  function dfs(v, len) {
+    if (len > best) best = len;
+    if (blocked(v)) return;                // cannot pass through an enemy building
+    for (const nb of adj[v] || []) {
+      if (used.has(nb.e)) continue;
+      used.add(nb.e);
+      dfs(nb.to, len + 1);
+      used.delete(nb.e);
+    }
+  }
+  for (const vStr in adj) dfs(Number(vStr), 0);
+  return best;
+}
+
+function recomputeLongestRoad() {
+  const lengths = state.players.map(p => longestRoadFor(p.id));
+  let best = null, bestLen = 4;            // must be >= 5 to qualify
+  for (const p of state.players) {
+    if (lengths[p.id] >= 5 && lengths[p.id] > bestLen) { best = p.id; bestLen = lengths[p.id]; }
+  }
+  // keep the current holder on ties
+  if (state.longestRoad.player !== null) {
+    const curL = lengths[state.longestRoad.player];
+    if (curL >= 5 && curL === bestLen) best = state.longestRoad.player;
+  }
+  if (best !== state.longestRoad.player) {
+    if (state.longestRoad.player !== null) {
+      state.players[state.longestRoad.player].vp -= 2;
+      log(`${state.players[state.longestRoad.player].name} 最長交易路を失う (-2VP)`);
+    }
+    if (best !== null) {
+      state.players[best].vp += 2;
+      log(`${state.players[best].name} 🛣️最長交易路を獲得 (+2VP)`);
+    }
+    state.longestRoad = { player: best, length: best === null ? 0 : lengths[best] };
+  } else if (best !== null) {
+    state.longestRoad.length = lengths[best];
+  }
+  checkWin();
+}
+
+// ============ End turn / Win ============
+function endTurn() {
+  for (const p of state.players) for (const c of p.devCards) c.justBought = false;
+  state.currentPlayer = (state.currentPlayer + 1) % state.numPlayers;
+  state.phase = 'roll';
+  state.buildMode = null;
+  state.dice = [null, null];
+  state.devCardPlayedThisTurn = false;
+  state.pendingFreeRoads = 0;
+  state.pendingPlenty = 0;
+  state.pendingMonopoly = false;
+  state.plentySelected = { wood:0, brick:0, sheep:0, wheat:0, ore:0 };
+  state.tradeCompose = null;
+  state.tradeDeadline = null;
+  state.robberReturn = 'build';
+  state.aiRoadsThisTurn = 0;
+  state.aiDevBuysThisTurn = 0;
+  state.aiActionsThisTurn = 0;
+  state.aiTradesThisTurn = 0;
+  state.turnCount = (state.turnCount || 0) + 1;
+  // Safety net: a stalemate (rare bad board) is ended by awarding the leader. ~60 rounds; normal games finish by ~30.
+  const maxTurns = state.numPlayers * 60;
+  if (state.turnCount > maxTurns && state.phase !== 'win') {
+    let best = state.players[0];
+    for (const p of state.players) if (totalVp(p) > totalVp(best)) best = p;
+    state.phase = 'win';
+    state.winner = best.id;
+    if (!state.endTime) state.endTime = Date.now();
+    log(`⏳ 長期戦（${Math.floor(state.turnCount / state.numPlayers)}週）のため終了 — 最高点 ${best.name}（VP ${totalVp(best)}）の勝利`);
+    render();
+    return;
+  }
+  log(`──── ${currentP().name} の番 ────`);
+  render();
+}
+
+function cancelBuild() {
+  if (state.pendingFreeRoads > 0) return;
+  state.buildMode = null;
+  render();
+}
+
+function checkWin() {
+  for (const p of state.players) {
+    if (totalVp(p) >= 10) {
+      state.phase = 'win';
+      state.winner = p.id;
+      if (!state.endTime) state.endTime = Date.now();
+      log(`🏆 ${p.name} の勝利！（VP ${totalVp(p)}）`);
+    }
+  }
+}
+
+// ============ Actor helpers ============
+function actorOf() {
+  if (!state) return null;
+  if (state.tradeCompose) return state.tradeCompose.composer;     // composing (self or counter-offer)
+  if (state.phase === 'discard') return state.discardQueue[0] ? state.discardQueue[0].player : null;
+  if (state.phase === 'trade-respond') {
+    if (!state.tradeOffer) return null;
+    return state.tradeOffer.broadcast ? state.tradeOffer.from : state.tradeOffer.target;  // broadcast: proposer picks
+  }
+  if (state.phase === 'win') return null;
+  return state.currentPlayer;
+}
+function isAIControlled(pid) { const p = state.players[pid]; return !!p && (p.isAI || state.autopilotHumans); }
+function actorIsAI() { const a = actorOf(); return a != null && isAIControlled(a); }
+function humanActing() { const a = actorOf(); return a != null && state.players[a] && !isAIControlled(a); }
+
+// ============ AI weights (self-play tunable) ============
+// STRONGEST AI: from 4 diverse starting archetypes → 12-generation co-evolution → refinement vs a strong panel (~5,500 games).
+// Validation: 66% vs hand-tuned baseline, 54.8% vs the previous learned AI (head-to-head). Style: dev-card + knight + diversity, 7-risk averse.
+const DEFAULT_WEIGHTS = {
+  pip: 0.595,          // value of a tile's production probability
+  diversity: 1.118,    // bonus for a new resource type at a spot
+  port: 0.0,           // bonus for sitting on a port
+  scarcity: 0.728,     // bonus for producing board-scarce resources
+  robberAggro: 0.403,  // how strongly to target the VP leader with the robber
+  knightChance: 0.823, // willingness to play a knight opportunistically
+  devBuyChance: 0.987, // willingness to buy a dev card when idle
+  roadThreshold: 1.076,// min spot-quality to justify an expansion road
+  cityPriority: 0.611, // >1 favours upgrading to cities over new settlements
+  hoardAversion: 0.882 // 7-risk: spend down before ending a turn with 8+ cards
+};
+// Hand-tuned baseline kept for reference / the in-app "reset learning" comparison
+const BASELINE_WEIGHTS = {
+  pip: 1.0, diversity: 0.6, port: 1.0, scarcity: 0.5, robberAggro: 0.35,
+  knightChance: 0.4, devBuyChance: 0.6, roadThreshold: 1.5, cityPriority: 1.0, hoardAversion: 0
+};
+// Four brains grown from 4 DIFFERENT starting archetypes, then co-evolved (12 generations).
+// Round-robin win share (25% = parity): 発展・騎士型 32% / 港・都市型 26.7% / 産出・都市型 24.3% / 高産出・騎士型 17%.
+const CATAN_BRAINS = [
+  { label: '発展・騎士型', w: {pip:0.681,diversity:0.958,port:0.073,scarcity:0.605,robberAggro:0.202,knightChance:0.7,devBuyChance:0.868,roadThreshold:0.919,cityPriority:0.611,hoardAversion:0.97} },
+  { label: '港・都市型',   w: {pip:1.067,diversity:0.244,port:2.535,scarcity:0.77,robberAggro:0.379,knightChance:0.631,devBuyChance:0.416,roadThreshold:1.2,cityPriority:1.76,hoardAversion:1} },
+  { label: '産出・都市型', w: {pip:1.858,diversity:0.449,port:0.31,scarcity:0.085,robberAggro:0.262,knightChance:0.371,devBuyChance:0.362,roadThreshold:1.315,cityPriority:1.765,hoardAversion:1} },
+  { label: '高産出・騎士型', w: {pip:1.74,diversity:1.902,port:1.457,scarcity:0,robberAggro:0.399,knightChance:0.993,devBuyChance:0.121,roadThreshold:1.1,cityPriority:1.647,hoardAversion:0.707} }
+];
+const WEIGHT_KEYS = Object.keys(DEFAULT_WEIGHTS);
+const WEIGHT_BOUNDS = {
+  pip:[0.3,2], diversity:[0,2], port:[0,3], scarcity:[0,2],
+  robberAggro:[0,1.2], knightChance:[0,1], devBuyChance:[0,1], roadThreshold:[0.2,4], cityPriority:[0.4,2.5], hoardAversion:[0,1]
+};
+let ACTIVE_WEIGHTS = loadWeights() || { ...DEFAULT_WEIGHTS };
+
+function loadWeights() {
+  try {
+    const raw = (typeof localStorage !== 'undefined') && localStorage.getItem('catanAIWeights');
+    if (!raw) return null;
+    const w = JSON.parse(raw);
+    const out = { ...DEFAULT_WEIGHTS };
+    for (const k of WEIGHT_KEYS) if (typeof w[k] === 'number') out[k] = w[k];
+    return out;
+  } catch (e) { return null; }
+}
+function saveWeights(w) {
+  try { if (typeof localStorage !== 'undefined') localStorage.setItem('catanAIWeights', JSON.stringify(w)); } catch (e) {}
+}
+function aiTrained() {
+  try { return (typeof localStorage !== 'undefined') && !!localStorage.getItem('catanAIWeights'); } catch (e) { return false; }
+}
+
+// Simulation context: when SIMULATING, rendering is disabled and per-seat weights apply
+let SIMULATING = false;
+let trainingWeights = null;
+function currentWeights() {
+  if (SIMULATING && trainingWeights) {
+    const a = actorOf();
+    if (a != null && trainingWeights[a]) return trainingWeights[a];
+  }
+  // real play: each seat may have its own brain (4-separate-AI mode)
+  if (state && state.players) {
+    const a = actorOf();
+    if (a != null && state.players[a] && state.players[a].weights) return state.players[a].weights;
+  }
+  return ACTIVE_WEIGHTS;
+}
+
+// ============ AI engine ============
+let aiTimer = null, aiPending = false;
+function clearAI() { if (aiTimer) clearTimeout(aiTimer); aiTimer = null; aiPending = false; }
+
+function maybeScheduleAI() {
+  if (!state || state.phase === 'win') return;
+  if (state.aiPaused) return;
+  if (!actorIsAI()) return;
+  if (aiPending) return;
+  aiPending = true;
+  aiTimer = setTimeout(() => { aiTimer = null; aiPending = false; aiStep(); }, state.aiDelay || 750);
+}
+
+function aiStepManual() {
+  if (!state || !actorIsAI()) return;
+  clearAI();
+  aiStep();
+}
+
+function aiStep() {
+  if (!state || !actorIsAI()) { render(); return; }
+  const ph = state.phase;
+  try {
+    if (ph === 'setup1' || ph === 'setup2') {
+      if (state.setupStep === 'settlement') aiPlaceSetupSettlement();
+      else aiPlaceSetupRoad();
+    } else if (ph === 'roll') {
+      rollDice();
+    } else if (ph === 'discard') {
+      aiDiscard();
+    } else if (ph === 'robber') {
+      aiMoveRobber();
+    } else if (ph === 'steal') {
+      aiSteal();
+    } else if (ph === 'trade-respond') {
+      if (state.tradeOffer && state.tradeOffer.broadcast) aiBroadcastPick();
+      else aiRespondTrade();
+    } else if (ph === 'build') {
+      aiBuildStep();
+    }
+  } catch (err) {
+    console.error('AI error', err);
+    if (state.phase === 'build') endTurn();
+  }
+}
+
+function pip(num) { return num == null ? 0 : 6 - Math.abs(7 - num); }
+
+// ---- Difficulty handicap (1=easy .. 5=strongest). Applies to the acting AI only. ----
+function actingDifficulty() {
+  const a = (state.phase === 'discard') ? (state.discardQueue[0] && state.discardQueue[0].player)
+          : (state.phase === 'trade-respond') ? (state.tradeOffer && state.tradeOffer.target)
+          : state.currentPlayer;
+  const p = (a != null) ? state.players[a] : null;
+  return (p && p.difficulty != null) ? p.difficulty : 5;
+}
+// Random noise added to placement scores — weaker AIs pick worse spots
+function aiNoise() { return (5 - actingDifficulty()) * 2.0 + 0.3; }
+// Probability a weaker AI makes an outright random choice (robber/steal)
+function aiMistakeRate() { return (5 - actingDifficulty()) * 0.16; }
+// Scale 0..1 for how much a weaker AI engages with dev cards / trades
+function aiSkillScale() { return 0.4 + 0.15 * actingDifficulty(); } // L1=0.55 .. L5=1.15→clamp
+
+function vertexScore(vid, w) {
+  w = w || currentWeights();
+  const v = board.vertices[vid];
+  // board-average pips per resource for scarcity comparison
+  const rp = board.resourcePips || { wood:0, brick:0, sheep:0, wheat:0, ore:0 };
+  const avgPip = (rp.wood + rp.brick + rp.sheep + rp.wheat + rp.ore) / 5 || 1;
+  let score = 0; const seen = {};
+  for (const ti of v.tiles) {
+    const t = board.tiles[ti];
+    const res = TILE_TYPES[t.type].resource;
+    const pv = pip(t.number);
+    score += pv * w.pip;
+    if (res) {
+      if (!seen[res]) { score += w.diversity; seen[res] = 1; }
+      // reward producing under-represented resources
+      const scarce = Math.max(0, (avgPip - rp[res]) / avgPip);
+      score += pv * scarce * w.scarcity * 0.4;
+    }
+  }
+  for (const port of board.ports) if (port.v1 === vid || port.v2 === vid) score += w.port;
+  return score;
+}
+
+function aiPlaceSetupSettlement() {
+  let best = -1, bestS = -Infinity;
+  const noise = aiNoise();
+  for (const v of board.vertices) {
+    if (!canPlaceSettlement(v.id)) continue;
+    const s = vertexScore(v.id) + Math.random() * noise;
+    if (s > bestS) { bestS = s; best = v.id; }
+  }
+  if (best >= 0) doBuildSettlement(best);
+  else render();
+}
+
+function aiPlaceSetupRoad() {
+  const cands = board.edges.filter(e => canPlaceRoad(e.id));
+  if (!cands.length) { render(); return; }
+  let best = cands[0], bestS = -Infinity;
+  const noise = aiNoise();
+  for (const e of cands) {
+    const far = e.v1 === state.pendingVertex ? e.v2 : e.v1;
+    const s = vertexScore(far) + Math.random() * noise;
+    if (s > bestS) { bestS = s; best = e; }
+  }
+  doBuildRoad(best.id);
+}
+
+function aiDiscard() {
+  const item = state.discardQueue[0];
+  const p = state.players[item.player];
+  while (RESOURCES.reduce((s, r) => s + item.selected[r], 0) < item.count) {
+    let bestR = null, bestN = -1;
+    for (const r of RESOURCES) {
+      const avail = p.resources[r] - item.selected[r];
+      if (avail > bestN) { bestN = avail; bestR = r; }
+    }
+    if (bestR == null || bestN <= 0) break;
+    item.selected[bestR]++;
+  }
+  confirmDiscard();
+}
+
+function aiMoveRobber() {
+  const me = state.currentPlayer;
+  // weaker AIs sometimes move the robber to a random hex
+  if (Math.random() < aiMistakeRate()) {
+    const opts = board.tiles.filter(t => t.idx !== state.robberTile);
+    placeRobber(opts[Math.floor(Math.random() * opts.length)].idx);
+    return;
+  }
+  const w = currentWeights();
+  let best = -1, bestS = -Infinity;
+  for (const t of board.tiles) {
+    if (t.idx === state.robberTile) continue;
+    let s = 0, touchesSelf = false;
+    for (const v of board.vertices) {
+      if (!v.tiles.includes(t.idx)) continue;
+      const o = state.settlements[v.id] ? state.settlements[v.id].player
+              : (state.cities[v.id] ? state.cities[v.id].player : undefined);
+      if (o === undefined) continue;
+      const amt = state.cities[v.id] ? 2 : 1;
+      if (o === me) touchesSelf = true;
+      else {
+        const opp = state.players[o];
+        // hurt high-VP, resource-rich opponents the most
+        s += amt * pip(t.number) * (1 + totalVp(opp) * w.robberAggro + Math.min(totalRes(opp), 8) * 0.08);
+      }
+    }
+    if (touchesSelf) s -= 100;
+    s += Math.random() * 0.4;
+    if (s > bestS) { bestS = s; best = t.idx; }
+  }
+  if (best >= 0) placeRobber(best);
+  else render();
+}
+
+function aiSteal() {
+  // weaker AIs sometimes steal from a random victim instead of the richest
+  if (Math.random() < aiMistakeRate()) {
+    chooseSteal(state.stealOptions[Math.floor(Math.random() * state.stealOptions.length)]);
+    return;
+  }
+  let best = state.stealOptions[0], bestN = -1;
+  for (const pid of state.stealOptions) {
+    const n = totalRes(state.players[pid]);
+    if (n > bestN) { bestN = n; best = pid; }
+  }
+  chooseSteal(best);
+}
+
+// Would player `rid` accept receiving `offering` and giving `requesting`?
+function wouldAcceptTrade(offering, requesting, rid) {
+  const t = state.players[rid];
+  if (!RESOURCES.every(r => t.resources[r] >= requesting[r])) return false;   // can't afford
+  const goal = t.citiesLeft > 0 ? COSTS.city : COSTS.settlement;
+  const valOf = (r) => 1 + Math.max(0, (goal[r] || 0) - t.resources[r]) * 1.5;
+  let recvVal = 0, giveVal = 0, recvCount = 0;
+  for (const r of RESOURCES) { recvVal += offering[r] * valOf(r); giveVal += requesting[r] * valOf(r); recvCount += offering[r]; }
+  return recvVal >= giveVal && recvCount > 0;
+}
+
+function aiRespondTrade() {
+  const o = state.tradeOffer;
+  if (wouldAcceptTrade(o.offering, o.requesting, o.target)) tradeAccept(); else tradeDecline();
+}
+
+// AI-controlled proposer resolving a broadcast offer: complete with the first willing partner, else cancel
+function aiBroadcastPick() {
+  const o = state.tradeOffer;
+  for (const other of state.players) {
+    if (other.id === o.from) continue;
+    const canAfford = RESOURCES.every(r => other.resources[r] >= o.requesting[r]);
+    if (!canAfford) continue;
+    if (other.isAI && !wouldAcceptTrade(o.offering, o.requesting, other.id)) continue;
+    tradeBroadcastComplete(other.id);
+    return;
+  }
+  tradeDecline();
+}
+
+// One discrete build-phase action per call, then render (which reschedules)
+function aiBuildStep() {
+  const p = currentP();
+  const w = currentWeights();
+  const skill = Math.min(1, aiSkillScale());  // weaker AIs engage less with dev cards / trades
+
+  // Hard safety against logic loops
+  state.aiActionsThisTurn = (state.aiActionsThisTurn || 0) + 1;
+  if (state.aiActionsThisTurn > 50) { endTurn(); return; }
+
+  // Resolve pending dev-card sub-states first
+  if (state.pendingFreeRoads > 0) {
+    const cands = board.edges.filter(e => canPlaceRoad(e.id));
+    if (!cands.length) { state.pendingFreeRoads = 0; state.buildMode = null; render(); return; }
+    let best = cands[0], bestS = -Infinity;
+    for (const e of cands) {
+      const far = (state.settlements[e.v1] || state.cities[e.v1]) ? e.v2 : e.v1;
+      const s = vertexScore(far) + Math.random() * 0.5;
+      if (s > bestS) { bestS = s; best = e; }
+    }
+    doBuildRoad(best.id);
+    return;
+  }
+  if (state.pendingPlenty > 0) {
+    // take what best completes a city, else a settlement, else scarcest
+    let need = state.pendingPlenty;
+    const goal = (p.citiesLeft > 0) ? COSTS.city : COSTS.settlement;
+    const order = RESOURCES.slice().sort((a, b) => {
+      const da = Math.max(0, (goal[a] || 0) - p.resources[a]);
+      const db = Math.max(0, (goal[b] || 0) - p.resources[b]);
+      return db - da;
+    });
+    for (const r of order) { if (need <= 0) break; state.plentySelected[r]++; need--; }
+    while (need > 0) { state.plentySelected['ore']++; need--; }
+    plentyConfirm();
+    return;
+  }
+  if (state.pendingMonopoly) {
+    let bestR = 'wood', bestN = -1;
+    for (const r of RESOURCES) {
+      let tot = 0;
+      for (const o of state.players) if (o.id !== p.id) tot += o.resources[r];
+      if (tot > bestN) { bestN = tot; bestR = r; }
+    }
+    monopolyChoose(bestR);
+    return;
+  }
+
+  // Maybe play a dev card (once per turn)
+  if (!state.devCardPlayedThisTurn) {
+    const playable = playableDevs(p);
+    if (playable.length) {
+      // play a usable non-knight card (road/plenty/monopoly = free value)
+      let chosen = -1;
+      for (let i = 0; i < playable.length; i++) {
+        const c = playable[i];
+        if (c.type === 'knight') continue;
+        if (c.type === 'road' && p.roadsLeft === 0) continue;
+        chosen = i; break;
+      }
+      if (chosen >= 0) { playDevCard(chosen); return; }
+      // knight: play to chase largest army or hurt a leader
+      const ki = playable.findIndex(c => c.type === 'knight');
+      if (ki >= 0) {
+        const leaderVp = Math.max(...state.players.filter(x => x.id !== p.id).map(x => totalVp(x)), 0);
+        const chase = (p.playedKnights + 1) >= 3 && (state.largestArmy.player !== p.id);
+        if (chase || leaderVp >= totalVp(p) || Math.random() < w.knightChance * skill) { playDevCard(ki); return; }
+      }
+    }
+  }
+
+  // City vs settlement — cityPriority biases the choice
+  const bestCity = aiBestCityUpgrade(p);
+  const settleSpot = (canAfford(p, COSTS.settlement) && p.settlementsLeft > 0) ? aiBestSettlementSpot() : -1;
+  if (bestCity >= 0 && (settleSpot < 0 || w.cityPriority >= 1)) { doUpgradeCity(bestCity); return; }
+  if (settleSpot >= 0) { doBuildSettlement(settleSpot); return; }
+  if (bestCity >= 0) { doUpgradeCity(bestCity); return; }
+
+  // Build a road that opens a new good settlement spot (limited per turn)
+  if (canAfford(p, COSTS.road) && p.roadsLeft > 0 && state.aiRoadsThisTurn < 3) {
+    const eid = aiBestExpansionRoad();
+    if (eid >= 0) { state.aiRoadsThisTurn++; doBuildRoad(eid); return; }
+  }
+
+  // Bank/port trade to enable a city or settlement
+  if (aiTryTradeForBuild(p)) return;
+
+  // Propose a player-to-player trade toward a needed resource (weaker AIs negotiate less)
+  if (Math.random() < skill && aiTryPlayerTrade(p)) return;
+
+  // Buy a dev card — more eagerly when flush with resources
+  const flush = totalRes(p) >= 7 ? 0.3 : 0;
+  if (canAfford(p, COSTS.dev) && state.devDeck.length > 0 && state.aiDevBuysThisTurn < 3 && Math.random() < (w.devBuyChance + flush) * skill) {
+    state.aiDevBuysThisTurn++;
+    buyDevCard();
+    return;
+  }
+
+  // 7-risk awareness: holding 8+ cards means a rolled 7 discards half — spend down before ending the turn.
+  const hoard = (w.hoardAversion || 0) * skill;
+  if (totalRes(p) >= 8 && Math.random() < hoard) {
+    // prefer buying a dev card (keeps value as a card); else dump surplus via bank/port trade
+    if (canAfford(p, COSTS.dev) && state.devDeck.length > 0 && state.aiDevBuysThisTurn < 6) {
+      state.aiDevBuysThisTurn++; buyDevCard(); return;
+    }
+    let give = null, giveN = -1;
+    for (const r of RESOURCES) { const ratio = getTradeRatio(p, r); if (p.resources[r] >= ratio && p.resources[r] > giveN) { giveN = p.resources[r]; give = r; } }
+    if (give) {
+      const get = RESOURCES.filter(r => r !== give).sort((a, b) => p.resources[a] - p.resources[b])[0];
+      bankTrade(give, get); return;
+    }
+  }
+
+  endTurn();
+}
+
+function aiBestCityUpgrade(p) {
+  if (!canAfford(p, COSTS.city) || p.citiesLeft <= 0) return -1;
+  let best = -1, bestS = -Infinity;
+  const noise = aiNoise();
+  for (const vidStr in state.settlements) {
+    if (state.settlements[vidStr].player !== p.id) continue;
+    const vid = Number(vidStr);
+    const s = vertexScore(vid) + Math.random() * noise;
+    if (s > bestS) { bestS = s; best = vid; }
+  }
+  return best;
+}
+
+function aiBestSettlementSpot() {
+  let best = -1, bestS = -Infinity;
+  const noise = aiNoise();
+  for (const v of board.vertices) {
+    if (!canPlaceSettlement(v.id)) continue; // build-phase: requires own road + distance
+    const s = vertexScore(v.id) + Math.random() * noise;
+    if (s > bestS) { bestS = s; best = v.id; }
+  }
+  return best;
+}
+
+function aiBestExpansionRoad() {
+  let best = -1, bestS = currentWeights().roadThreshold; // require a good enough target
+  for (const e of board.edges) {
+    if (!canPlaceRoad(e.id)) continue;
+    for (const far of [e.v1, e.v2]) {
+      if (state.settlements[far] || state.cities[far]) continue;
+      // would `far` become buildable (distance rule satisfied)?
+      const v = board.vertices[far];
+      let blocked = false;
+      for (const av of v.adj) if (state.settlements[av] || state.cities[av]) { blocked = true; break; }
+      if (blocked) continue;
+      const s = vertexScore(far) + Math.random() * 0.4;
+      if (s > bestS) { bestS = s; best = e.id; }
+    }
+  }
+  return best;
+}
+
+function resBag(r, n) { const b = { wood:0, brick:0, sheep:0, wheat:0, ore:0 }; b[r] = n; return b; }
+
+// AI proposes a 1:1 trade to another player to obtain a needed resource
+function aiTryPlayerTrade(p) {
+  if ((state.aiTradesThisTurn || 0) >= 2) return false;
+  const hasOwnSettlement = Object.values(state.settlements).some(s => s.player === p.id);
+  const goal = (p.citiesLeft > 0 && hasOwnSettlement) ? COSTS.city : COSTS.settlement;
+  // resource we most need toward the goal
+  let needRes = null, needAmt = 0;
+  for (const r of RESOURCES) { const d = (goal[r] || 0) - p.resources[r]; if (d > needAmt) { needAmt = d; needRes = r; } }
+  if (!needRes) return false;
+  // a resource we can spare (most surplus beyond the goal, must hold >= 1)
+  let giveRes = null, giveScore = -Infinity;
+  for (const r of RESOURCES) {
+    if (r === needRes || p.resources[r] < 1) continue;
+    const spare = p.resources[r] - (goal[r] || 0);
+    if (spare > giveScore) { giveScore = spare; giveRes = r; }
+  }
+  if (!giveRes) return false;
+  // a partner who holds the needed resource
+  let target = -1, bestHold = 0;
+  for (const o of state.players) {
+    if (o.id === p.id) continue;
+    if (o.resources[needRes] >= 1 && o.resources[needRes] > bestHold) { bestHold = o.resources[needRes]; target = o.id; }
+  }
+  if (target < 0) return false;
+
+  state.tradeOffer = { from: p.id, target, offering: resBag(giveRes, 1), requesting: resBag(needRes, 1) };
+  state.aiTradesThisTurn = (state.aiTradesThisTurn || 0) + 1;
+  state.phase = 'trade-respond';
+  const targetIsHuman = !state.players[target].isAI;
+  state.tradeDeadline = (state.tradeTimeLimit > 0 && targetIsHuman) ? Date.now() + state.tradeTimeLimit * 1000 : null;
+  log(`${p.name} → ${state.players[target].name} に交渉提案（${RESOURCE_EMOJI[giveRes]}→${RESOURCE_EMOJI[needRes]}）`);
+  render();
+  return true;
+}
+
+function aiTryTradeForBuild(p) {
+  // Determine a target build the AI is one resource short of (and can actually make)
+  const ownSettlement = Object.values(state.settlements).some(s => s.player === p.id);
+  const cityOk = p.citiesLeft > 0 && ownSettlement;
+  const settleOk = p.settlementsLeft > 0 && aiBestSettlementSpot() >= 0;
+  const targets = [];
+  if (cityOk) targets.push(COSTS.city);
+  if (settleOk) targets.push(COSTS.settlement);
+  for (const cost of targets) {
+    let totalDef = 0, defRes = null;
+    for (const r of RESOURCES) {
+      const need = (cost[r] || 0) - p.resources[r];
+      if (need > 0) { totalDef += need; defRes = r; }
+    }
+    if (totalDef !== 1) continue; // only handle single-resource deficits
+    // find a resource we can spare at trade ratio
+    for (const give of RESOURCES) {
+      if (give === defRes) continue;
+      const ratio = getTradeRatio(p, give);
+      const surplus = p.resources[give] - (cost[give] || 0);
+      if (surplus >= ratio) { bankTrade(give, defRes); return true; }
+    }
+  }
+  return false;
+}
+
+// ============ Board controls ============
+function setZoom(z) {
+  if (!state) return;
+  state.zoom = Math.max(0.6, Math.min(1.8, z));
+  const slider = document.getElementById('zoomSlider');
+  if (slider) slider.value = state.zoom;
+  renderBoard();
+}
+function zoomBy(dir) { if (state) setZoom((state.zoom || 1) + dir * 0.1); }
+function togglePause() {
+  if (!state) return;
+  state.aiPaused = !state.aiPaused;
+  if (state.aiPaused) clearAI();
+  render();
+}
+function toggleReveal() { if (!state) return; state.revealAll = !state.revealAll; render(); }
+function toggleAutopilot() {
+  if (!state) return;
+  state.autopilotHumans = !state.autopilotHumans;
+  if (!state.autopilotHumans) clearAI();   // hand control back to the human
+  render();
+}
+
+function renderControls() {
+  if (!state) return;
+  const pauseBtn = document.getElementById('pauseBtn');
+  const stepBtn = document.getElementById('stepBtn');
+  const revealBtn = document.getElementById('revealBtn');
+  const autoBtn = document.getElementById('autoBtn');
+  const hasAI = state.players.some(p => p.isAI) || state.autopilotHumans;
+  const hasHuman = state.players.some(p => !p.isAI);
+  if (pauseBtn) {
+    pauseBtn.textContent = state.aiPaused ? '▶ AI再開' : '⏸ AI停止';
+    pauseBtn.classList.toggle('on', state.aiPaused);
+    pauseBtn.style.display = hasAI ? '' : 'none';
+  }
+  if (stepBtn) stepBtn.style.display = (hasAI && state.aiPaused) ? '' : 'none';
+  if (revealBtn) revealBtn.classList.toggle('on', state.revealAll);
+  if (autoBtn) {
+    autoBtn.style.display = hasHuman ? '' : 'none';   // only relevant when a human is playing
+    autoBtn.textContent = state.autopilotHumans ? '🧑 操作に戻る' : '🤖 おまかせ';
+    autoBtn.classList.toggle('on', state.autopilotHumans);
+  }
+}
+
+// ============ Start screen ============
+let menuConfig = { count: 4, types: ['ai', 'ai', 'ai', 'ai'], speed: 80, tradeLimit: 15, difficulty: 5, distinctAI: false };
+
+function showStartScreen() {
+  clearAI();
+  renderStartScreen();
+  document.getElementById('startScreen').classList.add('show');
+}
+function hideStartScreen() {
+  const ss = document.getElementById('startScreen');
+  if (ss) ss.classList.remove('show');
+}
+
+function menuSetCount(n) {
+  menuConfig.count = n;
+  while (menuConfig.types.length < n) menuConfig.types.push('ai');
+  menuConfig.types = menuConfig.types.slice(0, n);
+  renderStartScreen();
+}
+function menuSetType(i, t) { menuConfig.types[i] = t; renderStartScreen(); }
+function menuSetSpeed(ms) { menuConfig.speed = ms; renderStartScreen(); }
+function menuSetTradeLimit(s) { menuConfig.tradeLimit = s; renderStartScreen(); }
+function menuSetDifficulty(d) { menuConfig.difficulty = d; renderStartScreen(); }
+function menuToggleDistinct() { menuConfig.distinctAI = !menuConfig.distinctAI; renderStartScreen(); }
+function menuStart() {
+  const cfg = { count: menuConfig.count, types: menuConfig.types.slice(), speed: menuConfig.speed,
+    tradeLimit: menuConfig.tradeLimit, difficulty: menuConfig.difficulty };
+  if (menuConfig.distinctAI) {
+    // assign each AI seat a different co-evolved brain
+    cfg.seatWeights = []; cfg.brainNames = [];
+    for (let i = 0; i < menuConfig.count; i++) {
+      if (menuConfig.types[i] === 'ai') {
+        const b = CATAN_BRAINS[i % CATAN_BRAINS.length];
+        cfg.seatWeights[i] = b.w; cfg.brainNames[i] = b.label;
+      } else { cfg.seatWeights[i] = null; cfg.brainNames[i] = null; }
+    }
+  }
+  initGame(cfg);
+}
+
+function renderStartScreen() {
+  const card = document.getElementById('startCard');
+  const speeds = [['ゆっくり', 1300], ['普通', 750], ['速い', 350], ['瞬時', 80]];
+  let html = `
+    <h1>CATAN</h1>
+    <div class="tag">Settlers · 開拓者たち</div>
+    <button class="start-btn start-btn-top" onclick="menuStart()">▶ ゲーム開始</button>
+    <div class="section-label">プレイ人数</div>
+    <div class="count-row">
+      ${[3,4].map(n => `<button class="${menuConfig.count===n?'sel':''}" onclick="menuSetCount(${n})">${n}人</button>`).join('')}
+    </div>
+    <div class="section-label">各プレイヤー（人間 / AI）</div>
+  `;
+  for (let i = 0; i < menuConfig.count; i++) {
+    const sw = PLAYER_COLORS[i] === '#000000' ? '#3a3a3a' : PLAYER_COLORS[i];
+    const t = menuConfig.types[i];
+    html += `
+      <div class="seat-row">
+        <div class="seat-swatch" style="background:${sw}"></div>
+        <div class="seat-name">${PLAYER_NAMES[i]}</div>
+        <div class="seat-toggle">
+          <button class="${t==='human'?'sel':''}" onclick="menuSetType(${i},'human')">🧑 人間</button>
+          <button class="${t==='ai'?'sel ai':''}" onclick="menuSetType(${i},'ai')">🤖 AI</button>
+        </div>
+      </div>`;
+  }
+  const tradeLimits = [['なし', 0], ['15秒', 15], ['30秒', 30], ['60秒', 60]];
+  const diffs = [[1, 'やさしい'], [2, 'かんたん'], [3, 'ふつう'], [4, 'つよい'], [5, '最強']];
+  html += `
+    <div class="section-label">CPU の強さ（1〜5）</div>
+    <div class="speed-row diff-row">
+      ${diffs.map(([d,lbl]) => `<button class="${menuConfig.difficulty===d?'sel':''}" onclick="menuSetDifficulty(${d})"><span class="diff-num">${d}</span><span class="diff-lbl">${lbl}</span></button>`).join('')}
+    </div>
+    <div class="diff-note">Lv5＝自己対戦で学習した最強AI。下げるほど配置・盗賊・取引でわざと隙が出ます。</div>
+    <div class="section-label">AI の頭脳</div>
+    <button class="distinct-btn ${menuConfig.distinctAI ? 'on' : ''}" onclick="menuToggleDistinct()">
+      ${menuConfig.distinctAI ? '✅ 4体それぞれ別のAIで対戦' : '🤖 全AIが同じ頭脳（タップで4体別々に）'}
+    </button>
+    <div class="diff-note">${menuConfig.distinctAI
+      ? '4つの異なる初期型から共進化させた4種を配置: 発展・騎士型 / 港・都市型 / 産出・都市型 / 高産出・騎士型'
+      : 'OFF: 全AIが標準（学習済み）AIを使用します。'}</div>
+    <div class="section-label">AI の速度</div>
+    <div class="speed-row">
+      ${speeds.map(([lbl,ms]) => `<button class="${menuConfig.speed===ms?'sel':''}" onclick="menuSetSpeed(${ms})">${lbl}</button>`).join('')}
+    </div>
+    <div class="section-label">取引の制限時間（相手の返答）</div>
+    <div class="speed-row">
+      ${tradeLimits.map(([lbl,s]) => `<button class="${menuConfig.tradeLimit===s?'sel':''}" onclick="menuSetTradeLimit(${s})">${lbl}</button>`).join('')}
+    </div>
+    <div class="section-label">AI の強さ（自己対戦学習）</div>
+    <div class="ai-strength">現在: <b>${aiTrained() ? '🧠 学習済みAI' : '標準AI'}</b></div>
+    <div class="train-row">
+      <button class="train-btn" onclick="startTraining()">🧠 100局以上 自己対戦で強化する</button>
+      ${aiTrained() ? `<button class="reset-btn" onclick="resetTraining()">学習をリセット</button>` : ''}
+    </div>
+  `;
+  card.innerHTML = html;
+}
+
+// ============ Self-play training (evolutionary) ============
+let trainingActive = false;
+const TRAIN = { gen: 0, totalGames: 0, targetGames: 170, evalGames: 16, champ: null, champScore: 0, baseScore: 0, accepted: 0 };
+
+function simulateOneGame(weightsArr) {
+  const savedState = state, savedBoard = board, wasSim = SIMULATING, savedTW = trainingWeights;
+  SIMULATING = true;
+  trainingWeights = weightsArr;
+  initGame({ count: weightsArr.length, types: weightsArr.map(() => 'ai') });
+  let guard = 0;
+  while (state.phase !== 'win' && guard < 40000) { aiStep(); guard++; }
+  const winner = state.winner;
+  SIMULATING = wasSim; trainingWeights = savedTW;
+  state = savedState; board = savedBoard;
+  return winner;
+}
+
+function mutateWeights(base) {
+  const w = { ...base };
+  for (const k of WEIGHT_KEYS) {
+    if (Math.random() < 0.6) {
+      const b = WEIGHT_BOUNDS[k], span = b[1] - b[0];
+      w[k] = Math.max(b[0], Math.min(b[1], w[k] + (Math.random() * 2 - 1) * span * 0.25));
+    }
+  }
+  return w;
+}
+
+// Head-to-head: 2 seats champion, 2 seats challenger (seating alternated). Returns wins.
+function duel(champion, challenger, games) {
+  let champWins = 0, chalWins = 0;
+  for (let g = 0; g < games; g++) {
+    const seats = (g % 2 === 0)
+      ? [champion, challenger, champion, challenger]
+      : [challenger, champion, challenger, champion];
+    const winner = simulateOneGame(seats);
+    if (winner == null) continue;
+    if (seats[winner] === champion) champWins++; else chalWins++;
+  }
+  return { champWins, chalWins };
+}
+
+// Win rate of a weight set against the fixed baseline (default) AI
+function winrateVsDefault(weights, games) {
+  const r = duel({ ...DEFAULT_WEIGHTS }, weights, games);  // chalWins = weights' wins
+  TRAIN.totalGames += games;
+  return r.chalWins / ((r.champWins + r.chalWins) || 1);
+}
+
+function startTraining() {
+  if (trainingActive) return;
+  trainingActive = true;
+  TRAIN.gen = 0; TRAIN.totalGames = 0; TRAIN.accepted = 0;
+  TRAIN.champ = { ...ACTIVE_WEIGHTS };
+  document.getElementById('startScreen').classList.add('show');
+  renderTrainingUI(0);
+  setTimeout(() => {
+    // baseline score of the starting champion vs the default AI
+    TRAIN.champScore = winrateVsDefault(TRAIN.champ, TRAIN.evalGames);
+    TRAIN.baseScore = TRAIN.champScore;
+    setTimeout(trainStep, 0);
+  }, 30);
+}
+
+function trainStep() {
+  if (TRAIN.totalGames >= TRAIN.targetGames) { finishTraining(); return; }
+  TRAIN.gen++;
+  const challenger = mutateWeights(TRAIN.champ);
+  const s = winrateVsDefault(challenger, TRAIN.evalGames);
+  // accept only a clear improvement (margin guards against self-play noise)
+  if (s > TRAIN.champScore + 0.02) { TRAIN.champ = challenger; TRAIN.champScore = s; TRAIN.accepted++; }
+  renderTrainingUI(Math.min(99, Math.round(TRAIN.totalGames / TRAIN.targetGames * 100)));
+  setTimeout(trainStep, 0);
+}
+
+function finishTraining() {
+  // Honest final validation over a larger sample; never save a weaker AI.
+  const finalWR = winrateVsDefault(TRAIN.champ, 80);
+  const pct = Math.round(finalWR * 100);
+  const improved = finalWR >= 0.52;
+  if (improved) { ACTIVE_WEIGHTS = { ...TRAIN.champ }; saveWeights(ACTIVE_WEIGHTS); }
+  trainingActive = false;
+  renderTrainingDone(pct, improved);
+}
+
+function resetTraining() {
+  try { if (typeof localStorage !== 'undefined') localStorage.removeItem('catanAIWeights'); } catch (e) {}
+  ACTIVE_WEIGHTS = { ...DEFAULT_WEIGHTS };
+  renderStartScreen();
+}
+
+function renderTrainingUI(pct) {
+  const card = document.getElementById('startCard');
+  card.innerHTML = `
+    <h1>学習中…</h1>
+    <div class="tag">AI 自己対戦による強化</div>
+    <div class="train-bar"><div class="train-fill" style="width:${pct}%"></div></div>
+    <div class="train-stat">対戦数 <b>${TRAIN.totalGames}</b> / ${TRAIN.targetGames}　世代 <b>${TRAIN.gen}</b>　改善採用 <b>${TRAIN.accepted}</b> 回</div>
+    <div class="train-note">数百局を自己対戦し、勝率の高いパラメータを選抜しています…</div>`;
+}
+
+function renderTrainingDone(winRate, improved) {
+  const card = document.getElementById('startCard');
+  card.innerHTML = `
+    <h1>学習完了</h1>
+    <div class="tag">${improved ? '強化AIを保存しました' : '今回は据え置き'}</div>
+    <div class="train-result">
+      <div>総自己対戦数　<b>${TRAIN.totalGames}</b> 局</div>
+      <div>改善の採用　<b>${TRAIN.accepted}</b> 回</div>
+      <div>標準AIに対する勝率　<b style="color:${improved ? '#7ee0a1' : '#ff8a8a'}">${winRate}%</b></div>
+    </div>
+    <div class="train-note">${improved
+      ? '標準AIに明確に勝ち越したため、この強化結果を保存し以降のAIへ自動適用します（4人対戦のうち2席が強化AIで勝率を測定）。'
+      : '今回は明確な改善（勝率52%以上）に届かなかったため、AIは強くしませんでした。もう一度「強化する」で再試行できます。'}</div>
+    <button class="start-btn" onclick="renderStartScreen()">設定に戻る</button>`;
+}
+
+// ============ Rendering ============
+function render() {
+  if (SIMULATING) return;          // headless self-play: skip all DOM work
+  renderBoard(); renderSidebar(); renderControls(); renderStickyBar(); maybeScheduleAI();
+}
+
+// Always-visible primary action (roll / end-turn) pinned at the bottom of the sidebar
+function renderStickyBar() {
+  const bar = document.getElementById('stickyBar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  if (!state || state.phase === 'win') return;
+  if (!humanActing() || state.tradeCompose) return;   // AI/autopilot turn or composing → no pinned buttons
+  if (state.phase === 'roll') {
+    const b = document.createElement('button'); b.className = 'roll';
+    b.textContent = '🎲 サイコロを振る'; b.onclick = rollDice; bar.appendChild(b);
+  } else if (state.phase === 'build' && !state.pendingFreeRoads && !state.pendingPlenty && !state.pendingMonopoly) {
+    const b = document.createElement('button'); b.className = 'endturn';
+    b.textContent = 'ターンを終了'; b.onclick = endTurn; bar.appendChild(b);
+  }
+  if (state.phase === 'roll' || state.phase === 'build') {
+    const a = document.createElement('button'); a.className = 'auto';
+    a.textContent = '🤖 AIに任せて休憩'; a.onclick = toggleAutopilot; bar.appendChild(a);
+  }
+}
+
+function renderBoard() {
+  const svg = document.getElementById('boardSvg');
+  svg.innerHTML = '';
+
+  // Zoom via viewBox
+  const z = state.zoom || 1;
+  svg.setAttribute('viewBox', `${-470/z} ${-460/z} ${940/z} ${920/z}`);
+
+  // Decorative defs (gloss overlay + sea ring)
+  const defs = svgEl('defs', {});
+  defs.innerHTML = `
+    <linearGradient id="hexShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="0.45" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.28"/>
+    </linearGradient>
+    <radialGradient id="seaRing" cx="0.5" cy="0.46" r="0.6">
+      <stop offset="0.62" stop-color="#1c456f" stop-opacity="0"/>
+      <stop offset="0.78" stop-color="#0c2742" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#081a2e" stop-opacity="0"/>
+    </radialGradient>`;
+  svg.appendChild(defs);
+  // Soft island halo behind tiles
+  svg.appendChild(svgEl('circle', { cx: 0, cy: 0, r: 330, fill: 'url(#seaRing)', 'pointer-events': 'none' }));
+
+  for (const t of board.tiles) {
+    const points = HEX_VERTEX_OFFSETS.map(([dx,dy]) => `${t.x+dx},${t.y+dy}`).join(' ');
+    const targetable = state.phase === 'robber' && t.idx !== state.robberTile && humanActing();
+    const poly = svgEl('polygon', { points, fill: TILE_TYPES[t.type].color, class: 'hex' + (targetable ? ' target' : '') });
+    if (targetable) poly.addEventListener('click', () => placeRobber(t.idx));
+    svg.appendChild(poly);
+    // Gloss overlay for 3D depth
+    svg.appendChild(svgEl('polygon', { points, fill: 'url(#hexShade)', stroke: 'none', 'pointer-events': 'none' }));
+    // Terrain emblem
+    const emblem = svgEl('text', { x: t.x, y: t.y - 28, 'text-anchor': 'middle', 'font-size': '22', opacity: '0.5', 'pointer-events': 'none' });
+    emblem.textContent = TILE_TYPES[t.type].resource ? RESOURCE_EMOJI[TILE_TYPES[t.type].resource] : '🏜️';
+    svg.appendChild(emblem);
+
+    if (t.number !== null) {
+      const isRed = (t.number === 6 || t.number === 8);
+      svg.appendChild(svgEl('circle', { cx: t.x, cy: t.y, r: 18, class: 'number-circle' + (isRed?' red':'') }));
+      const txt = svgEl('text', { x: t.x, y: t.y - 2, class: 'number-text' + (isRed?' red':'') });
+      txt.textContent = t.number;
+      svg.appendChild(txt);
+      const dotCount = 6 - Math.abs(7 - t.number);
+      const dotTxt = svgEl('text', { x: t.x, y: t.y + 13, class: 'number-dots' + (isRed?' red':'') });
+      dotTxt.textContent = '•'.repeat(dotCount);
+      svg.appendChild(dotTxt);
+    }
+
+    if (t.idx === state.robberTile) {
+      svg.appendChild(svgEl('circle', { cx: t.x - 22, cy: t.y - 22, r: 11, class: 'robber' }));
+      const rt = svgEl('text', { x: t.x - 22, y: t.y - 18, 'text-anchor':'middle', 'font-size':'14', fill:'#fff', 'pointer-events':'none' });
+      rt.textContent = '盗';
+      svg.appendChild(rt);
+    }
+  }
+
+  // Ports
+  for (const port of board.ports) {
+    const v1 = board.vertices[port.v1], v2 = board.vertices[port.v2];
+    svg.appendChild(svgEl('line', { x1: v1.x, y1: v1.y, x2: port.labelX, y2: port.labelY, class: 'port-line' }));
+    svg.appendChild(svgEl('line', { x1: v2.x, y1: v2.y, x2: port.labelX, y2: port.labelY, class: 'port-line' }));
+    svg.appendChild(svgEl('circle', { cx: port.labelX, cy: port.labelY, r: 17, class: 'port-circle' }));
+    const txt = svgEl('text', { x: port.labelX, y: port.labelY + 1, class: 'port-text' });
+    txt.textContent = PORT_LABEL[port.type];
+    svg.appendChild(txt);
+  }
+
+  // Roads + placeable edges
+  for (const e of board.edges) {
+    const v1 = board.vertices[e.v1], v2 = board.vertices[e.v2];
+    if (state.roads[e.id]) {
+      const r = state.roads[e.id];
+      svg.appendChild(svgEl('line', { x1: v1.x, y1: v1.y, x2: v2.x, y2: v2.y, class: 'road-outline' }));
+      const stroke = state.players[r.player].color;
+      svg.appendChild(svgEl('line', { x1: v1.x, y1: v1.y, x2: v2.x, y2: v2.y, class: 'road', stroke }));
+    } else if (isPlacingRoad() && canPlaceRoad(e.id) && humanActing()) {
+      const line = svgEl('line', { x1: v1.x, y1: v1.y, x2: v2.x, y2: v2.y, class: 'edge-placeable' });
+      line.addEventListener('click', () => doBuildRoad(e.id));
+      svg.appendChild(line);
+    }
+  }
+
+  // Vertices
+  for (const v of board.vertices) {
+    const s = state.settlements[v.id];
+    const c = state.cities[v.id];
+    if (c) {
+      const color = state.players[c.player].color;
+      svg.appendChild(svgEl('rect', { x: v.x-11, y: v.y-11, width: 22, height: 22, fill: color, class: 'city' }));
+    } else if (s) {
+      const color = state.players[s.player].color;
+      const pts = `${v.x},${v.y-11} ${v.x+10},${v.y-3} ${v.x+10},${v.y+9} ${v.x-10},${v.y+9} ${v.x-10},${v.y-3}`;
+      svg.appendChild(svgEl('polygon', { points: pts, fill: color, class: 'settlement' }));
+    }
+    if (s && state.phase === 'build' && state.buildMode === 'city' && s.player === state.currentPlayer && humanActing()) {
+      const circ = svgEl('circle', { cx: v.x, cy: v.y, r: 16, class: 'city-target' });
+      circ.addEventListener('click', () => doUpgradeCity(v.id));
+      svg.appendChild(circ);
+    }
+    if (!s && !c && isPlacingSettlement() && canPlaceSettlement(v.id) && humanActing()) {
+      const circ = svgEl('circle', { cx: v.x, cy: v.y, r: 10, class: 'vertex-placeable' });
+      circ.addEventListener('click', () => doBuildSettlement(v.id));
+      svg.appendChild(circ);
+    }
+  }
+
+  drawBoardOverlays(svg);
+}
+
+// Per-player remaining-building panels (placed in the four corners, outside the ports) + round badge
+function drawBoardOverlays(svg) {
+  const corners = [[-388, -352], [388, -352], [-388, 352], [388, 352]];
+  for (let i = 0; i < state.numPlayers; i++) {
+    const pl = state.players[i];
+    const cx = corners[i][0], cy = corners[i][1];
+    const col = pl.color === '#000000' ? '#2a2a2a' : pl.color;
+    const isCur = pl.id === state.currentPlayer && state.phase !== 'win';
+    svg.appendChild(svgEl('rect', {
+      x: cx - 80, y: cy - 42, width: 160, height: 84, rx: 13,
+      fill: 'rgba(10,12,18,0.84)', stroke: isCur ? '#e8c477' : 'rgba(232,196,119,0.45)',
+      'stroke-width': isCur ? 2.5 : 1.5
+    }));
+    svg.appendChild(svgEl('rect', { x: cx - 72, y: cy - 34, width: 16, height: 16, rx: 3, fill: col, stroke: '#000', 'stroke-width': 1 }));
+    const nm = svgEl('text', { x: cx - 50, y: cy - 21, 'font-size': 14, 'font-weight': '700', fill: '#fff', 'pointer-events': 'none' });
+    nm.textContent = pl.name + (pl.isAI ? '（AI）' : '');
+    svg.appendChild(nm);
+    const label = svgEl('text', { x: cx + 72, y: cy - 21, 'font-size': 10, 'text-anchor': 'end', fill: '#a9a18f', 'pointer-events': 'none' });
+    label.textContent = '残り建物';
+    svg.appendChild(label);
+    const l1 = svgEl('text', { x: cx - 72, y: cy + 6, 'font-size': 15, fill: '#f3ecdf', 'pointer-events': 'none' });
+    l1.textContent = `🏠 ${pl.settlementsLeft}/5   🏙️ ${pl.citiesLeft}/4`;
+    svg.appendChild(l1);
+    const l2 = svgEl('text', { x: cx - 72, y: cy + 28, 'font-size': 15, fill: '#f3ecdf', 'pointer-events': 'none' });
+    l2.textContent = `🛣️ ${pl.roadsLeft}/15`;
+    svg.appendChild(l2);
+  }
+
+  // Round badge (top-left, clear of the centered title)
+  const rlabel = (state.phase === 'setup1' || state.phase === 'setup2')
+    ? 'セットアップ中' : `第 ${Math.floor((state.turnCount || 0) / state.numPlayers) + 1} 週目`;
+  svg.appendChild(svgEl('rect', { x: -455, y: -452, width: 158, height: 34, rx: 11, fill: 'rgba(10,12,18,0.84)', stroke: 'rgba(232,196,119,0.5)', 'stroke-width': 1.5 }));
+  const rt = svgEl('text', { x: -376, y: -430, 'font-size': 16, 'font-weight': '700', 'text-anchor': 'middle', fill: '#e8c477', 'pointer-events': 'none' });
+  rt.textContent = '🔄 ' + rlabel;
+  svg.appendChild(rt);
+}
+
+function renderSidebar() {
+  const pi = document.getElementById('phaseInfo');
+  const p = currentP();
+  let phaseText = '', bg = p.color;
+  if (state.phase === 'win') { phaseText = `🏆 ${state.players[state.winner].name} の勝利！`; bg = '#48bb78'; }
+  else if (state.tradeCompose) {
+    const c = state.players[state.tradeCompose.composer];
+    phaseText = (state.tradeCompose.composer !== state.currentPlayer)
+      ? `🔁 ${c.name}：逆オファーを作成中` : `🤝 ${c.name}：交渉を作成中`;
+    bg = c.color;
+  }
+  else if (state.phase === 'setup1') phaseText = `初期配置1巡目 — ${p.name}（${state.setupStep === 'settlement' ? '開拓地' : '道'}）`;
+  else if (state.phase === 'setup2') phaseText = `初期配置2巡目 — ${p.name}（${state.setupStep === 'settlement' ? '開拓地' : '道'}）`;
+  else if (state.phase === 'roll')   phaseText = `${p.name} の番：サイコロを振る`;
+  else if (state.phase === 'discard') {
+    const dq = state.discardQueue[0];
+    phaseText = `🎲7! ${state.players[dq.player].name} 捨札選択（${dq.count}枚）`;
+    bg = state.players[dq.player].color;
+  }
+  else if (state.phase === 'robber') phaseText = `${p.name}：盗賊を移動するヘックスを選択`;
+  else if (state.phase === 'steal')  phaseText = `${p.name}：誰から盗む？`;
+  else if (state.phase === 'trade-respond' && state.tradeOffer) {
+    if (state.tradeOffer.broadcast) {
+      phaseText = `📢 ${state.players[state.tradeOffer.from].name}：全員へ交渉（相手を選択）`;
+      bg = state.players[state.tradeOffer.from].color;
+    } else {
+      phaseText = `📨 ${state.players[state.tradeOffer.target].name}：交渉への返答`;
+      bg = state.players[state.tradeOffer.target].color;
+    }
+  }
+  else if (state.phase === 'build') {
+    if (state.pendingFreeRoads > 0) phaseText = `${p.name}：街道建設（残り${state.pendingFreeRoads}本）`;
+    else if (state.pendingPlenty > 0) phaseText = `${p.name}：発見で資源を2つ選択`;
+    else if (state.pendingMonopoly) phaseText = `${p.name}：独占する資源を選択`;
+    else phaseText = `${p.name} の番：建設・取引・終了`;
+  }
+  pi.textContent = phaseText;
+  pi.style.background = bg;
+  pi.style.color = (bg === '#edf2f7' && state.phase !== 'win') ? '#000' : '#fff';
+
+  const d = state.dice;
+  const roundTxt = (state.phase === 'setup1' || state.phase === 'setup2')
+    ? 'セットアップ' : `第 ${Math.floor((state.turnCount || 0) / state.numPlayers) + 1} 週目`;
+  const hasAI = state.players.some(pp => pp.isAI);
+  const cpuTxt = hasAI ? ` ・ CPU Lv${state.difficulty}` : '';
+  const diceTxt = d[0] ? `🎲 ${d[0]} + ${d[1]} = ${d[0] + d[1]}` : '🎲 -';
+  document.getElementById('dice').innerHTML =
+    `<div style="font-size:13px;color:#e8c477;letter-spacing:1px;font-family:'Noto Sans JP',sans-serif;margin-bottom:5px">🔄 ${roundTxt}${cpuTxt}</div>${diceTxt}`;
+
+  const actor = actorOf();
+  const pdiv = document.getElementById('players');
+  pdiv.innerHTML = '';
+  for (const pl of state.players) {
+    const card = document.createElement('div');
+    card.className = 'player-card' + (pl.id === state.currentPlayer ? ' current' : '');
+    card.style.setProperty('--pcolor', pl.color === '#000000' ? '#3a3a3a' : pl.color);
+    const total = totalRes(pl);
+    const nameColor = (pl.color === '#edf2f7' || pl.color === '#000000') ? '#fff' : pl.color;
+    // Reveal own hand only to the human actor; everything on win; or via 全公開 toggle
+    const reveal = state.revealAll || state.phase === 'win' || (actor != null && pl.id === actor && !pl.isAI);
+
+    const showVp = reveal ? totalVp(pl) : pl.vp;           // hide secret VP cards from opponents
+    const hidden = (reveal && pl.hiddenVp > 0) ? ` <span class="badge">+${pl.hiddenVp}隠VP</span>` : '';
+    const brainTag = (pl.isAI && pl.brainName) ? `<span class="who-tag brain">🧠 ${pl.brainName}</span>` : '';
+    const whoTag = (pl.isAI ? `<span class="who-tag ai">🤖 AI</span>` : `<span class="who-tag human">🧑 人間</span>`) + brainTag;
+
+    // Resources
+    let resHtml;
+    if (reveal) {
+      resHtml = RESOURCES.map(r => `<span class="resource-chip">${RESOURCE_EMOJI[r]}${pl.resources[r]}</span>`).join('')
+        + `<span class="resource-chip">計${total}</span>`;
+    } else {
+      resHtml = `<span class="cardback">🎴 手札 ${total} 枚</span>`;
+    }
+
+    // Three default stats: dev-card count / army (played knights) / longest road
+    const devCount = pl.devCards.length;
+    const lrLen = longestRoadFor(pl.id);
+    const armyBadge = state.largestArmy.player === pl.id ? ' <span class="mini-badge">👑最大騎士</span>' : '';
+    const roadBadge = state.longestRoad.player === pl.id ? ' <span class="mini-badge">👑最長交易路</span>' : '';
+    const statRow = `<div class="stat-row">
+      <span>🎴 発展カード <b>${devCount}</b></span>
+      <span>⚔️ 騎士力 <b>${pl.playedKnights}</b>${armyBadge}</span>
+      <span>🛣️ 最長交易路 <b>${lrLen}</b>${roadBadge}</span>
+    </div>`;
+
+    // Revealed dev-card breakdown (types) only when revealed
+    let devStr = '';
+    if (reveal && pl.devCards.length) {
+      devStr = '内訳: ' + pl.devCards.map(c => c.justBought ? `<span style="opacity:0.5">${DEV_NAMES[c.type]}(新)</span>` : DEV_NAMES[c.type]).join(' / ');
+    }
+    const devLine = devStr ? `<div class="dev-line">${devStr}</div>` : '';
+
+    const portsArr = Array.from(pl.ports);
+    const portStr = portsArr.length ? `<div class="dev-line">港: ${portsArr.map(p => PORT_LABEL[p]).join(' ')}</div>` : '';
+
+    card.innerHTML = `
+      <div class="player-name" style="color:${nameColor}">${pl.name} ${whoTag} — VP ${showVp}/10${hidden}</div>
+      <div class="player-stats">${resHtml}</div>
+      ${statRow}
+      ${portStr}
+      ${devLine}
+    `;
+    pdiv.appendChild(card);
+  }
+
+  const adiv = document.getElementById('actions');
+  adiv.innerHTML = '';
+
+  if (state.phase !== 'win' && actorIsAI()) {
+    renderAIStatus(adiv);
+  } else if (state.tradeCompose) {
+    renderTradeComposeUI(adiv);                 // compose / counter-offer (any phase)
+  } else if (state.phase === 'roll') {
+    const btn = document.createElement('button');
+    btn.textContent = '🎲 サイコロを振る';
+    btn.onclick = rollDice;
+    adiv.appendChild(btn);
+    // a Knight may be played BEFORE rolling
+    const playable = playableDevs(p);
+    const knightIdx = playable.findIndex(c => c.type === 'knight');
+    if (!state.devCardPlayedThisTurn && knightIdx >= 0) {
+      const kb = document.createElement('button');
+      kb.innerHTML = '🛡️ 騎士カードを使う <span class="cost-hint">（サイコロを振る前）</span>';
+      kb.onclick = () => playDevCard(knightIdx);
+      adiv.appendChild(kb);
+    } else if (state.devCardPlayedThisTurn) {
+      const note = document.createElement('div');
+      note.style.cssText = 'font-size:10px;color:#a0aec0;padding:2px';
+      note.textContent = '※ このターンは発展カードを使用済み';
+      adiv.appendChild(note);
+    }
+  } else if (state.phase === 'discard') {
+    renderDiscardUI(adiv);
+  } else if (state.phase === 'steal') {
+    const h = document.createElement('h3'); h.textContent = '盗む相手を選択'; adiv.appendChild(h);
+    for (const pid of state.stealOptions) {
+      const b = document.createElement('button');
+      b.textContent = `${state.players[pid].name} から盗む（手札${totalRes(state.players[pid])}）`;
+      b.onclick = () => chooseSteal(pid);
+      adiv.appendChild(b);
+    }
+  } else if (state.phase === 'trade-respond') {
+    renderTradeRespondUI(adiv);
+  } else if (state.phase === 'build') {
+    if (state.pendingPlenty > 0) renderPlentyUI(adiv);
+    else if (state.pendingMonopoly) renderMonopolyUI(adiv);
+    else renderBuildUI(adiv);
+  } else if (state.phase === 'win') {
+    const div = document.createElement('div');
+    div.style.fontSize = '14px'; div.style.padding = '8px'; div.style.textAlign = 'center';
+    div.textContent = `${state.players[state.winner].name} が${totalVp(state.players[state.winner])}点で勝利`;
+    adiv.appendChild(div);
+    const nb = document.createElement('button');
+    nb.textContent = '⟲ 新しいゲーム（設定へ）';
+    nb.className = 'end';
+    nb.onclick = showStartScreen;
+    adiv.appendChild(nb);
+  }
+
+  const ldiv = document.getElementById('log');
+  ldiv.innerHTML = state.log.map(l => `<div class="log-line">${l}</div>`).join('');
+
+  renderDiceStats();
+  updateClock();
+}
+
+function toggleDiceStats() {
+  if (!state) return;
+  state.diceStatsOpen = !state.diceStatsOpen;
+  renderDiceStats();
+}
+
+function renderDiceStats() {
+  const el = document.getElementById('diceStats');
+  if (!el) return;
+  const counts = state.diceCounts;
+  const total = Object.keys(counts).reduce((s, k) => s + counts[k], 0);
+  const open = !!state.diceStatsOpen;
+  let html = `<div class="dstat-head clickable" onclick="toggleDiceStats()">
+    <span>${open ? '▾' : '▸'} 🎲 出目の分布</span>
+    <span class="dstat-count">計 ${total} 回</span>
+  </div>`;
+  if (open) {
+    let maxC = 1;
+    for (let n = 2; n <= 12; n++) maxC = Math.max(maxC, counts[n] || 0);
+    for (let n = 2; n <= 12; n++) {
+      const c = counts[n] || 0;
+      const w = Math.round((c / maxC) * 100);
+      const pct = total ? Math.round((c / total) * 100) : 0;
+      const cls = n === 7 ? 'seven' : (c === maxC && c > 0 ? 'hot' : '');
+      html += `<div class="dstat-row">
+        <span class="dn ${n === 7 ? 'seven' : ''}">${n}</span>
+        <div class="dbar-track"><div class="dbar ${cls}" style="width:${w}%"></div></div>
+        <span class="dc">${c}<small> ${pct}%</small></span>
+      </div>`;
+    }
+  }
+  el.innerHTML = html;
+}
+
+function renderAIStatus(adiv) {
+  const a = actorOf();
+  const pl = state.players[a];
+  const phaseDesc = {
+    setup1: '初期配置（1巡目）', setup2: '初期配置（2巡目）',
+    roll: 'サイコロを振る', discard: '手札を捨てる', robber: '盗賊を移動',
+    steal: '資源を盗む', 'trade-respond': '交渉に返答', build: '建設・取引を検討'
+  }[state.phase] || '思考';
+  const div = document.createElement('div');
+  div.className = 'ai-status';
+  div.innerHTML = `<span class="spin">⚙️</span> ${pl.name}（AI）<br>${phaseDesc}…
+    <div class="sub">${state.aiPaused ? '⏸ 一時停止中 — 「1手」または「AI再開」' : '自動進行中'}</div>`;
+  adiv.appendChild(div);
+  if (state.aiPaused) {
+    const sb = document.createElement('button');
+    sb.textContent = '⏭ 1手だけ進める';
+    sb.onclick = aiStepManual;
+    adiv.appendChild(sb);
+    const rb = document.createElement('button');
+    rb.textContent = '▶ AI再開';
+    rb.className = 'end';
+    rb.onclick = togglePause;
+    adiv.appendChild(rb);
+  } else {
+    const pb = document.createElement('button');
+    pb.textContent = '⏸ AIを止める';
+    pb.className = 'cancel';
+    pb.onclick = togglePause;
+    adiv.appendChild(pb);
+  }
+}
+
+function renderDiscardUI(adiv) {
+  const dq = state.discardQueue[0];
+  const dp = state.players[dq.player];
+  const totalSel = RESOURCES.reduce((s,r)=>s+dq.selected[r],0);
+  const h = document.createElement('h3');
+  h.textContent = `${dp.name}：捨札を選択（${totalSel}/${dq.count}）`;
+  adiv.appendChild(h);
+  for (const r of RESOURCES) {
+    const row = document.createElement('div');
+    row.className = 'disc-row';
+    row.innerHTML = `
+      <span class="label">${RESOURCE_EMOJI[r]} ${RESOURCE_NAMES[r]}</span>
+      <button data-act="minus">−</button>
+      <span class="count">${dq.selected[r]}</span>
+      <button data-act="plus">＋</button>
+      <span style="font-size:11px;color:#a0aec0">手札${dp.resources[r]}</span>
+    `;
+    row.querySelector('[data-act="minus"]').onclick = () => discardAdjust(r, -1);
+    row.querySelector('[data-act="plus"]').onclick = () => discardAdjust(r, 1);
+    adiv.appendChild(row);
+  }
+  const cb = document.createElement('button');
+  cb.textContent = `確定（${totalSel}/${dq.count}）`;
+  cb.disabled = totalSel !== dq.count;
+  cb.className = 'end';
+  cb.onclick = confirmDiscard;
+  adiv.appendChild(cb);
+}
+
+function renderTradeComposeUI(adiv) {
+  const t = state.tradeCompose;
+  const composer = state.players[t.composer];
+  const isCounter = t.composer !== state.currentPlayer;
+  const h = document.createElement('h3');
+  h.textContent = isCounter ? `🔁 ${composer.name} の逆オファー（再交渉）` : '🤝 プレイヤー交渉';
+  adiv.appendChild(h);
+
+  const tgtLabel = document.createElement('div');
+  tgtLabel.style.cssText = 'font-size:12px;margin:4px 0 2px';
+  tgtLabel.textContent = '相手:';
+  adiv.appendChild(tgtLabel);
+  if (isCounter) {
+    // a counter-offer can only go back to the player who sent the original offer
+    const fixed = document.createElement('div');
+    fixed.style.cssText = 'padding:7px 10px;background:#15131e;border:1px solid var(--line);border-radius:9px;font-size:12px;font-weight:700';
+    fixed.textContent = `${state.players[t.target].name}（提案してきた相手）`;
+    adiv.appendChild(fixed);
+  } else {
+    const sel = document.createElement('select');
+    const allOpt = document.createElement('option');   // broadcast option for a fresh offer
+    allOpt.value = 'all'; allOpt.textContent = '📢 全員に提案';
+    if (t.target === 'all') allOpt.selected = true;
+    sel.appendChild(allOpt);
+    for (const other of state.players) {
+      if (other.id === composer.id) continue;
+      const opt = document.createElement('option');
+      opt.value = other.id; opt.textContent = `${other.name}（手札${totalRes(other)}）`;
+      if (other.id === t.target) opt.selected = true;
+      sel.appendChild(opt);
+    }
+    sel.onchange = (e) => tradeComposeTarget(e.target.value);
+    adiv.appendChild(sel);
+  }
+
+  // build a horizontal 5-resource control row
+  function buildRow(side, labelText, cls, showHold) {
+    const lab = document.createElement('div');
+    lab.className = 'trade2-label ' + cls;
+    lab.textContent = labelText;
+    adiv.appendChild(lab);
+    const row = document.createElement('div');
+    row.className = 'trade2-row';
+    for (const r of RESOURCES) {
+      const cell = document.createElement('div');
+      cell.className = 'trade2-cell';
+      const hold = showHold ? `<div class="hold">手${composer.resources[r]}</div>` : `<div class="hold">&nbsp;</div>`;
+      cell.innerHTML = `<div class="emo">${RESOURCE_EMOJI[r]}</div>
+        <div class="ctl"><button data-a="m">−</button><span class="v">${t[side][r]}</span><button data-a="p">＋</button></div>
+        ${hold}`;
+      cell.querySelector('[data-a="m"]').onclick = () => tradeComposeAdjust(side, r, -1);
+      cell.querySelector('[data-a="p"]').onclick = () => tradeComposeAdjust(side, r, 1);
+      row.appendChild(cell);
+    }
+    adiv.appendChild(row);
+  }
+
+  // top row = もらう（受け取る）= requesting ／ bottom row = 出す（わたす）= offering
+  buildRow('requesting', '⬆ もらう（受け取る）', 'recv', false);
+  buildRow('offering', '⬇ 出す（わたす）', 'give', true);
+
+  const sendBtn = document.createElement('button');
+  sendBtn.textContent = isCounter ? '🔁 逆オファーを送る' : '送信';
+  sendBtn.className = 'end';
+  sendBtn.onclick = tradeComposeSend;
+  adiv.appendChild(sendBtn);
+
+  const cb = document.createElement('button');
+  cb.textContent = 'キャンセル'; cb.className = 'cancel';
+  cb.onclick = tradeComposeCancel;
+  adiv.appendChild(cb);
+}
+
+function renderTradeRespondUI(adiv) {
+  const o = state.tradeOffer;
+  const from = state.players[o.from];
+
+  // ---- Broadcast: the proposer chooses a willing partner ----
+  if (o.broadcast) {
+    const h = document.createElement('h3'); h.textContent = `📢 ${from.name} の全員交渉`; adiv.appendChild(h);
+    const recvDesc = Object.entries(o.requesting).filter(([_,n])=>n>0).map(([r,n])=>`${RESOURCE_EMOJI[r]}×${n}`).join(' ') || '(なし)';
+    const giveDesc = Object.entries(o.offering).filter(([_,n])=>n>0).map(([r,n])=>`${RESOURCE_EMOJI[r]}×${n}`).join(' ') || '(なし)';
+    const box = document.createElement('div'); box.className = 'offer-box';
+    box.innerHTML = `<div class="offer-line recv">⬆ もらう（${from.name}受取）: <b>${recvDesc}</b></div>
+                     <div class="offer-line give">⬇ 出す（${from.name}渡す）: <b>${giveDesc}</b></div>`;
+    adiv.appendChild(box);
+    const sub = document.createElement('div'); sub.style.cssText = 'font-size:11px;color:#a0aec0;margin:4px 0';
+    sub.textContent = '成立させる相手を選んでください:'; adiv.appendChild(sub);
+    for (const other of state.players) {
+      if (other.id === o.from) continue;
+      const canAfford = RESOURCES.every(r => other.resources[r] >= o.requesting[r]);
+      const aiWilling = other.isAI ? wouldAcceptTrade(o.offering, o.requesting, other.id) : null;
+      const b = document.createElement('button');
+      let suffix = !canAfford ? '（資源不足）' : (other.isAI ? (aiWilling ? '（🤖承諾OK）' : '（🤖拒否）') : '');
+      b.textContent = `${other.name} と成立${suffix}`;
+      b.disabled = !canAfford || (other.isAI && !aiWilling);
+      if (!b.disabled) b.className = 'end';
+      b.onclick = () => tradeBroadcastComplete(other.id);
+      adiv.appendChild(b);
+    }
+    const cancel = document.createElement('button'); cancel.textContent = '取りやめ'; cancel.className = 'danger';
+    cancel.onclick = tradeDecline; adiv.appendChild(cancel);
+    return;
+  }
+
+  // ---- Single target ----
+  const target = state.players[o.target];
+  const h = document.createElement('h3'); h.textContent = `📨 ${from.name} → ${target.name} の交渉`; adiv.appendChild(h);
+  // shown from the RESPONDER (target)'s perspective: 上=もらう / 下=出す
+  const recvDesc = Object.entries(o.offering).filter(([_,n])=>n>0).map(([r,n])=>`${RESOURCE_EMOJI[r]}×${n}`).join(' ') || '(なし)';
+  const giveDesc = Object.entries(o.requesting).filter(([_,n])=>n>0).map(([r,n])=>`${RESOURCE_EMOJI[r]}×${n}`).join(' ') || '(なし)';
+  const box = document.createElement('div');
+  box.className = 'offer-box';
+  box.innerHTML = `<div class="offer-line recv">⬆ もらう（${target.name}受取）: <b>${recvDesc}</b></div>
+                   <div class="offer-line give">⬇ 出す（${target.name}渡す）: <b>${giveDesc}</b></div>`;
+  adiv.appendChild(box);
+  if (state.tradeDeadline) {
+    const cd = document.createElement('div');
+    cd.id = 'tradeCountdown';
+    cd.style.cssText = 'text-align:center;font-weight:700;font-size:12px;color:#e8c477;margin:2px 0 4px';
+    const remain = Math.max(0, Math.ceil((state.tradeDeadline - Date.now()) / 1000));
+    cd.textContent = `⏱ 残り ${remain} 秒で自動拒否`;
+    adiv.appendChild(cd);
+  }
+  const canAccept = RESOURCES.every(r => target.resources[r] >= o.requesting[r]);
+  const note = document.createElement('div');
+  note.style.fontSize = '11px'; note.style.color = canAccept ? '#48bb78' : '#e53e3e';
+  note.textContent = canAccept ? `${target.name} は承諾可能` : `${target.name} は資源不足で承諾できません`;
+  adiv.appendChild(note);
+  const ac = document.createElement('button');
+  ac.textContent = `✅ ${target.name} 承諾`;
+  ac.className = 'end'; ac.disabled = !canAccept;
+  ac.onclick = tradeAccept;
+  adiv.appendChild(ac);
+  const co = document.createElement('button');
+  co.textContent = '🔁 逆オファーで再交渉';
+  co.onclick = openCounterOffer;
+  adiv.appendChild(co);
+  const dc = document.createElement('button');
+  dc.textContent = `❌ ${target.name} 拒否`;
+  dc.className = 'danger';
+  dc.onclick = tradeDecline;
+  adiv.appendChild(dc);
+}
+
+function renderPlentyUI(adiv) {
+  const sel = state.plentySelected;
+  const total = RESOURCES.reduce((s,r)=>s+sel[r],0);
+  const h = document.createElement('h3'); h.textContent = `🌾 発見 — 資源を${state.pendingPlenty}つ (${total}/${state.pendingPlenty})`; adiv.appendChild(h);
+  for (const r of RESOURCES) {
+    const row = document.createElement('div');
+    row.className = 'disc-row';
+    row.innerHTML = `<span class="label">${RESOURCE_EMOJI[r]} ${RESOURCE_NAMES[r]}</span>
+      <button data-act="minus">−</button>
+      <span class="count">${sel[r]}</span>
+      <button data-act="plus">＋</button>`;
+    row.querySelector('[data-act="minus"]').onclick = () => plentyAdjust(r, -1);
+    row.querySelector('[data-act="plus"]').onclick = () => plentyAdjust(r, 1);
+    adiv.appendChild(row);
+  }
+  const cb = document.createElement('button');
+  cb.textContent = '確定';
+  cb.disabled = total !== state.pendingPlenty;
+  cb.className = 'end';
+  cb.onclick = plentyConfirm;
+  adiv.appendChild(cb);
+}
+
+function renderMonopolyUI(adiv) {
+  const h = document.createElement('h3'); h.textContent = `💰 独占 — 資源種類を選択`; adiv.appendChild(h);
+  for (const r of RESOURCES) {
+    const b = document.createElement('button');
+    b.textContent = `${RESOURCE_EMOJI[r]} ${RESOURCE_NAMES[r]}`;
+    b.onclick = () => monopolyChoose(r);
+    adiv.appendChild(b);
+  }
+}
+
+function renderBuildUI(adiv) {
+  const p = currentP();
+  const blocked = state.pendingFreeRoads > 0;
+  const roadOk   = (state.pendingFreeRoads > 0) || (!blocked && canAfford(p, COSTS.road) && p.roadsLeft > 0);
+  const settleOk = !blocked && canAfford(p, COSTS.settlement) && p.settlementsLeft > 0;
+  const cityOk   = !blocked && canAfford(p, COSTS.city)       && p.citiesLeft > 0;
+  const devOk    = !blocked && canAfford(p, COSTS.dev)        && state.devDeck.length > 0;
+
+  const mkBtn = (label, kind, ok) => {
+    const b = document.createElement('button');
+    b.innerHTML = label;
+    b.disabled = !ok;
+    if (state.buildMode === kind) b.classList.add('active');
+    b.onclick = () => startBuild(kind);
+    adiv.appendChild(b);
+  };
+
+  if (state.pendingFreeRoads > 0) {
+    const note = document.createElement('div');
+    note.style.padding = '4px'; note.style.fontSize = '12px'; note.style.color = '#fbc02d';
+    note.textContent = `🛣️ 街道建設発動中：残り${state.pendingFreeRoads}本（無料）`;
+    adiv.appendChild(note);
+  } else {
+    mkBtn('道を建設 <span class="cost-hint">🌲🧱</span>', 'road', roadOk);
+    mkBtn('開拓地を建設 <span class="cost-hint">🌲🧱🐑🌾</span>', 'settlement', settleOk);
+    mkBtn('都市に発展 <span class="cost-hint">⛰️×3 🌾×2</span>', 'city', cityOk);
+
+    const devBtn = document.createElement('button');
+    devBtn.innerHTML = `🎴 発展カードを購入 <span class="cost-hint">🐑🌾⛰️ (残${state.devDeck.length})</span>`;
+    devBtn.disabled = !devOk;
+    devBtn.onclick = buyDevCard;
+    adiv.appendChild(devBtn);
+
+    const playable = playableDevs(p);
+    if (playable.length > 0) {
+      const h = document.createElement('h3'); h.textContent = '発展カードを使う';
+      adiv.appendChild(h);
+      playable.forEach((c, idx) => {
+        const b = document.createElement('button');
+        b.textContent = `▶ ${DEV_NAMES[c.type]}を発動`;
+        b.disabled = state.devCardPlayedThisTurn;
+        b.onclick = () => playDevCard(idx);
+        adiv.appendChild(b);
+      });
+      if (state.devCardPlayedThisTurn) {
+        const note = document.createElement('div');
+        note.style.fontSize = '10px'; note.style.color = '#a0aec0'; note.style.padding = '2px';
+        note.textContent = '※ 発展カードは1ターン1枚まで';
+        adiv.appendChild(note);
+      }
+    }
+
+    const det = document.createElement('details');
+    det.innerHTML = '<summary>銀行と取引（港対応）</summary>';
+    const grid = document.createElement('div');
+    grid.className = 'trade-grid';
+    let any = false;
+    for (const give of RESOURCES) {
+      const ratio = getTradeRatio(p, give);
+      if (p.resources[give] < ratio) continue;
+      for (const get of RESOURCES) {
+        if (give === get) continue;
+        any = true;
+        const b = document.createElement('button');
+        b.textContent = `${RESOURCE_EMOJI[give]}×${ratio} → ${RESOURCE_EMOJI[get]}`;
+        b.onclick = () => bankTrade(give, get);
+        grid.appendChild(b);
+      }
+    }
+    if (!any) {
+      const span = document.createElement('div');
+      span.style.fontSize = '11px'; span.style.color = '#a0aec0'; span.style.padding = '4px';
+      span.textContent = '取引可能な資源がありません';
+      det.appendChild(span);
+    } else {
+      det.appendChild(grid);
+    }
+    adiv.appendChild(det);
+
+    const trBtn = document.createElement('button');
+    trBtn.textContent = '🤝 プレイヤーに交渉';
+    trBtn.onclick = openTradeCompose;
+    adiv.appendChild(trBtn);
+  }
+
+  if (state.buildMode && !state.pendingFreeRoads) {
+    const cb = document.createElement('button');
+    cb.textContent = '選択キャンセル'; cb.className = 'cancel';
+    cb.onclick = cancelBuild;
+    adiv.appendChild(cb);
+  }
+  if (!state.pendingFreeRoads && !state.pendingPlenty && !state.pendingMonopoly) {
+    const eb = document.createElement('button');
+    eb.textContent = 'ターン終了';
+    eb.className = 'end';
+    eb.onclick = endTurn;
+    adiv.appendChild(eb);
+  }
+}
+
+// ============ Start ============
+// Mouse-wheel zoom over the board (in addition to the slider / ± buttons)
+(function(){
+  const boardEl = document.getElementById('board');
+  if (boardEl) boardEl.addEventListener('wheel', function(e){
+    if (!state) return;
+    e.preventDefault();
+    const dir = e.deltaY < 0 ? 1 : -1;
+    setZoom((state.zoom || 1) + dir * 0.12);
+  }, { passive: false });
+})();
+showStartScreen();
+</script>
+</body>
+</html>

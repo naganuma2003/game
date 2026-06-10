@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>五目並べ / Gomoku</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="back-link" href="../index.html">← 一覧に戻る</a>
+  <div class="app">
+    <h1>五目並べ</h1>
+
+    <!-- 対戦設定 -->
+    <section id="setup" class="setup">
+      <h2>対戦設定</h2>
+      <div class="setup-players">
+        <div class="player-config">
+          <div class="player-head"><span class="stone stone-black"></span> 黒（先手）</div>
+          <div class="type-options">
+            <label><input type="radio" name="black-type" value="human" checked> 人間</label>
+            <label><input type="radio" name="black-type" value="cpu"> CPU</label>
+          </div>
+          <label class="level-row">強さ:
+            <select id="black-level" disabled>
+              <option value="1">Lv1 入門</option>
+              <option value="2">Lv2 やさしい</option>
+              <option value="3" selected>Lv3 ふつう</option>
+              <option value="4">Lv4 強い</option>
+            </select>
+          </label>
+        </div>
+        <div class="player-config">
+          <div class="player-head"><span class="stone stone-white"></span> 白（後手）</div>
+          <div class="type-options">
+            <label><input type="radio" name="white-type" value="human"> 人間</label>
+            <label><input type="radio" name="white-type" value="cpu" checked> CPU</label>
+          </div>
+          <label class="level-row">強さ:
+            <select id="white-level">
+              <option value="1">Lv1 入門</option>
+              <option value="2">Lv2 やさしい</option>
+              <option value="3" selected>Lv3 ふつう</option>
+              <option value="4">Lv4 強い</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <button id="start" class="btn btn-primary">対戦開始</button>
+    </section>
+
+    <!-- ゲーム -->
+    <section id="game" class="game" hidden>
+      <div class="scoreboard">
+        <div class="score" id="score-black">
+          <span class="stone stone-black"></span>
+          <span class="label" id="label-black">黒</span>
+        </div>
+        <div class="turn" id="turn-indicator">黒の番</div>
+        <div class="score" id="score-white">
+          <span class="stone stone-white"></span>
+          <span class="label" id="label-white">白</span>
+        </div>
+      </div>
+
+      <div class="board-wrap">
+        <div id="board" class="board"></div>
+      </div>
+
+      <div class="controls">
+        <button id="undo" class="btn" disabled>一手戻る</button>
+        <button id="reset" class="btn">最初から</button>
+        <button id="back" class="btn">設定を変える</button>
+      </div>
+
+      <label class="assist-toggle">
+        <input type="checkbox" id="assist"> AIアシスタント（評価値を表示）
+      </label>
+
+      <p id="message" class="message"></p>
+    </section>
+  </div>
+
+  <script src="js/ai.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

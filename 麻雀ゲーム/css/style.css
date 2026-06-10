@@ -1,0 +1,254 @@
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0; height: 100%;
+  background: #0b3d2e;
+  color: #f0f0f0;
+  font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+  overflow: hidden;
+}
+#app { position: relative; width: 100vw; height: 100vh; }
+
+#table {
+  position: absolute; inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 2.4fr 1fr;
+  grid-template-rows: 1fr 2.6fr 1fr;
+  grid-template-areas:
+    ".    top   ."
+    "left center right"
+    ".    bottom .";
+  padding: 8px;
+  gap: 4px;
+}
+.seat-top { grid-area: top; }
+.seat-left { grid-area: left; }
+.seat-right { grid-area: right; }
+.seat-bottom { grid-area: bottom; }
+#board { grid-area: center; }
+
+.seat { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; }
+.seat-bottom { justify-content: flex-end; }
+.seat-top { justify-content: flex-start; }
+
+/* 中央卓：四つの河で中央情報を囲む */
+#board {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-template-rows: auto auto auto;
+  grid-template-areas:
+    ".     ptop   ."
+    "pleft cinfo  pright"
+    ".     pbot   .";
+  place-items: center;
+  place-content: center;
+  gap: 2px;
+}
+.pond-top    { grid-area: ptop; }
+.pond-bottom { grid-area: pbot; }
+.pond-left   { grid-area: pleft; }
+.pond-right  { grid-area: pright; }
+#center      { grid-area: cinfo; }
+
+/* 河：卓を囲み、捨てた人に牌が正面を向く。各自の左→右で6牌ごと、中央側から外へ伸びる */
+.pond { display: flex; gap: 2px; }
+/* 1行=6牌ぶんの固定サイズを確保し、1枚目から左端スロットに置く（牌が増えても既存牌は動かない） */
+.prow { display: flex; gap: 1px; justify-content: flex-start; }
+.pond-bottom .prow, .pond-top .prow { min-width: 149px; }   /* 24px×6 + 1px×5 */
+.pond-left .prow,  .pond-right .prow { min-height: 185px; }  /* 30px×6 + 1px×5 */
+/* 中央側の辺に寄せて、外側へ伸ばす */
+.pond-bottom { align-self: start; }
+.pond-top    { align-self: end; }
+.pond-right  { justify-self: start; }
+.pond-left   { justify-self: end; }
+/* 自分(下) */
+.pond-bottom { flex-direction: column; }
+.pond-bottom .prow { flex-direction: row; }
+/* 対面(上)：180°回転 */
+.pond-top { flex-direction: column-reverse; }
+.pond-top .prow { flex-direction: row-reverse; }
+.pond-top .disc { transform: rotate(180deg); }
+/* 右(下家)：その人の左→右は画面の下→上。牌頭は左を向く(反時計90°)。列は外(右)へ伸びる */
+.pond-right { flex-direction: row; }
+.pond-right .prow { flex-direction: column-reverse; }
+.pond-right .disc { transform: rotate(-90deg); }
+/* 左(上家)：その人の左→右は画面の上→下。牌頭は右を向く(時計90°)。列は外(左)へ伸びる */
+.pond-left { flex-direction: row-reverse; }
+.pond-left .prow { flex-direction: column; }
+.pond-left .disc { transform: rotate(90deg); }
+
+.pinfo {
+  display: flex; gap: 10px; align-items: baseline;
+  background: rgba(0,0,0,0.35); padding: 4px 12px; border-radius: 6px;
+  font-size: 14px; margin: 4px;
+}
+.pname { font-weight: bold; }
+.pscore { color: #ffd86b; font-variant-numeric: tabular-nums; }
+.pwind { color: #9fe8c0; }
+
+/* 牌グリフ（Unicode麻雀牌＝実際の牌に近い絵柄） */
+.tile-glyph {
+  font-size: 30px; line-height: 1;
+  font-family: "Segoe UI Symbol", "Segoe UI Emoji", "Apple Color Emoji", sans-serif;
+}
+.tile-glyph.back { color: #1b6b4f; }
+.tile-glyph.disc {
+  font-size: 22px; width: 24px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.tile-glyph.aka { color: #e23b2e; }
+.disc.riichi { background: #ffd86b; border-radius: 3px; }
+.meld-t { font-size: 21px; }
+#center-dora .tile-glyph { font-size: 24px; }
+.result-tiles .tile-glyph { font-size: 30px; }
+.dora-line .tile-glyph { font-size: 18px; vertical-align: middle; }
+
+/* 副露（鳴き面子） */
+.melds { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin: 2px; }
+.meld { display: inline-flex; }
+.seat-left .melds, .seat-right .melds { max-width: 90px; }
+
+/* 手牌(裏) */
+.hand-back { display: flex; gap: 0; flex-wrap: nowrap; justify-content: center; }
+/* 上家・下家の手牌も横一列で表示（牌は少し小さく） */
+.seat-left .hand-back, .seat-right .hand-back { max-width: none; }
+.seat-left .hand-back .tile-glyph, .seat-right .hand-back .tile-glyph { font-size: 18px; }
+
+/* プレイヤー手牌（横一列） */
+.hand { display: flex; gap: 3px; flex-wrap: nowrap; justify-content: center; padding: 6px; }
+#seat-0.conceal #player-hand { visibility: hidden; }
+.tile-btn {
+  font-size: 34px; line-height: 1; flex: 0 0 auto;
+  font-family: "Segoe UI Symbol", "Segoe UI Emoji", "Apple Color Emoji", sans-serif;
+  background: #fbf7ec; color: #111; border: 1px solid #b8b29c;
+  border-radius: 6px; padding: 2px 4px 6px; cursor: pointer; transition: transform .08s;
+}
+.tile-btn.aka { color: #e23b2e; background: #fff0ee; border-color: #e23b2e; }
+.tile-btn:hover:not(.disabled) { transform: translateY(-8px); background: #fffdf6; }
+.tile-btn.drawn { margin-left: 18px; }
+.tile-btn.disabled { opacity: .5; cursor: default; }
+.tile-btn.riichi-cand { outline: 3px solid #ff5d5d; }
+
+/* 中央情報（卓の中心） */
+#center {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; background: rgba(0,0,0,0.28); border-radius: 10px;
+  padding: 10px 16px; min-width: 150px;
+}
+#center-round { font-size: 19px; font-weight: bold; }
+#center-wall { font-size: 12px; color: #cfe9dc; }
+#center-dora {
+  display: flex; align-items: center; gap: 8px;
+}
+#center-dora .label { font-size: 12px; color: #cfe9dc; }
+
+/* アクションバー */
+#action-bar {
+  position: absolute; bottom: 8px; right: 16px;
+  display: flex; gap: 10px; z-index: 20;
+}
+.action {
+  font-size: 18px; font-weight: bold; padding: 12px 22px;
+  border: none; border-radius: 8px; cursor: pointer;
+  background: #2c6e54; color: #fff;
+}
+.action:hover { background: #357f62; }
+.action.btn-win { background: #d14b3c; }
+.action.btn-win:hover { background: #e2584a; }
+.action.btn-riichi { background: #c79a2b; }
+.action.btn-riichi:hover { background: #d8aa39; }
+
+/* 対局ログ（左上・折りたたみ） */
+#log-panel { position: absolute; top: 8px; left: 8px; z-index: 25; }
+#log-toggle {
+  font-size: 13px; padding: 6px 12px; border: 1px solid #2c6e54;
+  background: rgba(0,0,0,0.45); color: #cfe9dc; border-radius: 6px; cursor: pointer;
+}
+#log-toggle:hover { background: rgba(0,0,0,0.65); }
+#log-content {
+  margin-top: 4px; width: 260px; max-height: 60vh; overflow-y: auto;
+  background: rgba(0,0,0,0.8); border: 1px solid #2c6e54; border-radius: 8px;
+  padding: 8px 10px; font-size: 12px; line-height: 1.5;
+}
+.log-hand { margin-bottom: 8px; }
+.log-hand-title { font-weight: bold; color: #ffd86b; border-bottom: 1px solid #2c6e54; margin-bottom: 2px; }
+.log-line { color: #e0eee6; }
+.log-line.win { color: #ffce6b; }
+
+/* メッセージ */
+#message {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  background: rgba(0,0,0,0.8); padding: 16px 30px; border-radius: 10px;
+  font-size: 22px; z-index: 30; pointer-events: none;
+}
+.hidden { display: none !important; }
+
+/* 結果 */
+#result, #start-screen {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center; z-index: 40;
+}
+.result-box, .start-box {
+  background: #14241d; border: 1px solid #2c6e54; border-radius: 12px;
+  padding: 26px 34px; min-width: 360px; max-width: 90vw; text-align: center;
+}
+.result-box h2 { margin: 0 0 14px; }
+.result-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; margin-bottom: 8px; }
+.dora-line { font-size: 13px; color: #cfe9dc; margin: 6px 0 12px; }
+.yaku-row, .rank-row, .ten-row {
+  display: flex; justify-content: space-between; gap: 30px;
+  padding: 3px 0; border-bottom: 1px dotted #2c6e54;
+}
+.ten-row { justify-content: center; }
+#result-yaku { max-width: 380px; margin: 0 auto 14px; }
+#result-score { font-size: 22px; font-weight: bold; color: #ffd86b; margin-bottom: 18px; }
+#result-next {
+  font-size: 18px; padding: 10px 30px; border: none; border-radius: 8px;
+  background: #2c6e54; color: #fff; cursor: pointer;
+}
+#result-next:hover { background: #357f62; }
+
+/* 手渡しオーバーレイ（人間の対面操作） */
+#handover {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.92);
+  display: flex; align-items: center; justify-content: center; z-index: 45;
+}
+.handover-box { text-align: center; max-width: 96vw; }
+#handover-banner { font-size: 24px; font-weight: bold; margin-bottom: 18px; }
+#handover-reveal {
+  font-size: 20px; padding: 14px 36px; border: none; border-radius: 10px;
+  background: #2c6e54; color: #fff; cursor: pointer;
+}
+#handover-reveal:hover { background: #357f62; }
+#handover-hand {
+  display: flex; gap: 4px; flex-wrap: nowrap; justify-content: center; margin: 10px 0;
+}
+#handover-actions { display: flex; gap: 12px; justify-content: center; margin-top: 14px; }
+
+/* 開始画面の設定 */
+.config {
+  background: rgba(0,0,0,0.25); border-radius: 10px; padding: 12px 16px;
+  margin: 14px 0; display: flex; flex-direction: column; gap: 10px;
+}
+.cfg-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.cfg-label { font-size: 15px; }
+.seg { display: inline-flex; gap: 4px; }
+.seg button {
+  font-size: 14px; padding: 7px 14px; border: 1px solid #2c6e54;
+  background: #14241d; color: #cfe9dc; border-radius: 6px; cursor: pointer;
+}
+.seg-lv button { padding: 7px 12px; min-width: 34px; font-weight: bold; }
+.seg button.active { background: #2c6e54; color: #fff; border-color: #57a07f; }
+.seg button:hover { background: #1d3a2e; }
+.seg button.active:hover { background: #2c6e54; }
+
+.start-box h1 { margin: 0 0 2px; color: #ffd86b; }
+.start-box .subtitle {
+  margin: 0 0 14px; color: #9fe8c0; font-size: 16px; font-weight: bold; letter-spacing: 2px;
+}
+#btn-start {
+  font-size: 22px; padding: 14px 40px; margin: 16px 0;
+  border: none; border-radius: 10px; background: #d14b3c; color: #fff; cursor: pointer;
+}
+#btn-start:hover { background: #e2584a; }
+.rules-note { font-size: 13px; color: #cfe9dc; text-align: left; margin-top: 8px; }
+.rules-note p { margin: 4px 0; }

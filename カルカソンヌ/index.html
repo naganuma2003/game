@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-store" />
+  <title>カルカソンヌ（Web版）</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <a href="../index.html" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 14px/1 'Segoe UI',sans-serif;padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);">← 一覧に戻る</a>
+  <header>
+    <h1>カルカソンヌ <small>Web版 v1</small></h1>
+  </header>
+
+  <!-- セットアップ -->
+  <section id="setup" class="panel">
+    <h2>ゲーム設定</h2>
+    <div class="form-row">
+      <label>人数</label>
+      <select id="player-count">
+        <option value="2">2人</option>
+        <option value="3" selected>3人</option>
+        <option value="4">4人</option>
+        <option value="5">5人</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>各プレイヤー</label>
+      <div id="seat-list" class="seat-list"></div>
+    </div>
+    <div class="form-row">
+      <label>CPUの強さ</label>
+      <select id="difficulty">
+        <option value="easy">やさしい</option>
+        <option value="normal" selected>ふつう</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>CPUの速度</label>
+      <select id="speed">
+        <option value="300">速い</option>
+        <option value="700" selected>ふつう</option>
+        <option value="1300">ゆっくり</option>
+      </select>
+    </div>
+    <button id="start-btn" class="primary">対局開始</button>
+
+    <div class="rules">
+      <h3>地形の色</h3>
+      <ul>
+        <li><b style="color:#b8923f">オレンジ＝都市（城）</b> ／ <b style="color:#5a9a2a">緑＝草原</b> ／ 灰色の線＝道 ／ 中央の家＝修道院</li>
+      </ul>
+      <h3>遊び方</h3>
+      <ul>
+        <li>引いたタイルを既存のタイルに辺が合うように置きます（<b>回転</b>ボタン / R キーで回転）。</li>
+        <li>盤上で青く光るマスが「今の向きで置けるマス」。クリックで配置。</li>
+        <li>配置後、そのタイルの<b>道・都市・修道院・草原</b>にミープルを置けます（各自7個）。</li>
+        <li>道・都市・修道院は<b>完成するとミープルが戻り</b>、最多保有者が得点します。</li>
+        <li>都市=2点/タイル(紋章+2)、道=1点/タイル、修道院=完成で9点。</li>
+        <li><b>農夫</b>＝草原に寝そべって置く駒。<b>ゲーム終了まで戻らず</b>、終了時にその草原に接する<b>完成した都市1つにつき3点</b>。</li>
+        <li>山が尽きると終了。未完成の道・都市・修道院も縮小得点で計算します。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ゲーム画面 -->
+  <section id="game" class="hidden">
+    <div id="board-wrap">
+      <canvas id="board"></canvas>
+    </div>
+    <aside class="sidebar">
+      <div id="turn-info" class="turn-info"></div>
+
+      <div class="current-tile">
+        <canvas id="preview" width="120" height="120"></canvas>
+        <div class="ct-controls">
+          <button id="rotate-btn">⟳ 回転 (R)</button>
+          <div id="deck-count" class="deck-count"></div>
+        </div>
+      </div>
+
+      <div id="meeple-controls" class="meeple-controls hidden"></div>
+
+      <div class="board-buttons">
+        <button id="recenter-btn">中央に戻す</button>
+        <span class="hint">ドラッグで移動 / ホイールで拡大縮小</span>
+      </div>
+
+      <h3>得点</h3>
+      <div id="scoreboard" class="scoreboard"></div>
+
+      <h3>コマの置き方（同じ駒・場所で役割が変わる）</h3>
+      <div class="legend">
+        <div class="lg-row"><span class="lg-ico">🛡️</span><b>騎士</b>＝都市に立てる。<u>完成で2点/タイル</u>。完成後コマは戻る。</div>
+        <div class="lg-row"><span class="lg-ico">🥾</span><b>盗賊</b>＝道に置く。完成で1点/タイル。完成後戻る。</div>
+        <div class="lg-row"><span class="lg-ico">⛪</span><b>修道士</b>＝修道院に置く。周囲8マスで9点。</div>
+        <div class="lg-row farmer"><span class="lg-ico">🌾</span><b>農夫</b>＝草原に<b>寝そべって</b>置く。<u>ゲーム終了まで戻らない</u>。終了時、その草原に接する<b>完成した都市1つにつき3点</b>。</div>
+      </div>
+
+      <h3>ログ</h3>
+      <div id="log" class="log"></div>
+    </aside>
+  </section>
+
+  <!-- 結果 -->
+  <div id="result" class="overlay hidden">
+    <div class="result-card">
+      <h2>結果</h2>
+      <div id="result-body"></div>
+      <button id="again-btn" class="primary">もう一度</button>
+    </div>
+  </div>
+
+  <script src="js/tiles.js?v=6"></script>
+  <script src="js/board.js?v=6"></script>
+  <script src="js/render.js?v=6"></script>
+  <script src="js/ai.js?v=6"></script>
+  <script src="js/game.js?v=6"></script>
+</body>
+
+</html>

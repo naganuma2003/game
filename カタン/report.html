@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>自由研究レポート — カタンAIの自己対戦学習（ルール改定版）</title>
+<style>
+  :root { --ink:#1a2230; --sub:#5a6678; --accent:#2f6fb0; --gold:#b8902f; --line:#d9dee6; --bg:#f4f6fa; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Hiragino Sans','Yu Gothic','Meiryo',-apple-system,sans-serif; line-height:1.75; }
+  .sheet { max-width:820px; margin:24px auto; background:#fff; padding:48px 56px;
+    box-shadow:0 4px 24px rgba(0,0,0,.12); border-radius:6px; }
+  h1 { font-size:26px; margin:0 0 4px; letter-spacing:1px; }
+  .subtitle { color:var(--sub); font-size:14px; margin-bottom:18px; }
+  .namebar { display:flex; gap:24px; flex-wrap:wrap; border:1px solid var(--line); border-radius:8px;
+    padding:10px 16px; font-size:13px; color:var(--sub); margin-bottom:28px; background:#fafbfd; }
+  .namebar b { color:var(--ink); }
+  h2 { font-size:18px; margin:30px 0 10px; padding:6px 0 6px 12px; border-left:5px solid var(--accent);
+    background:linear-gradient(90deg,rgba(47,111,176,.08),transparent); }
+  h3 { font-size:15px; margin:18px 0 6px; color:var(--accent); }
+  p { margin:8px 0; font-size:14.5px; }
+  ul,ol { font-size:14.5px; margin:8px 0; padding-left:22px; }
+  li { margin:4px 0; }
+  table { border-collapse:collapse; width:100%; font-size:13.5px; margin:12px 0; }
+  th,td { border:1px solid var(--line); padding:7px 10px; text-align:center; }
+  th { background:#eef2f8; font-weight:700; }
+  td.l, th.l { text-align:left; }
+  .up { color:#1d7a46; font-weight:700; } .down { color:#b3261e; font-weight:700; } .same { color:#5a6678; }
+  .fig { border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin:12px 0; background:#fafbfd; }
+  .fig .cap { font-size:12px; color:var(--sub); margin-bottom:10px; font-weight:700; }
+  .bar-row { display:flex; align-items:center; gap:8px; margin:5px 0; font-size:12.5px; }
+  .bar-row .lab { width:150px; text-align:right; color:var(--ink); }
+  .bar-track { flex:1; background:#e8edf4; border-radius:5px; height:18px; position:relative; overflow:hidden; }
+  .bar { height:100%; border-radius:5px; }
+  .bar-row .val { width:70px; text-align:left; font-weight:700; }
+  .b-blue{background:linear-gradient(90deg,#5aa9e6,#2f6fb0);} .b-gold{background:linear-gradient(90deg,#e8c477,#b8902f);}
+  .b-green{background:linear-gradient(90deg,#57c98a,#2f9d63);} .b-purple{background:linear-gradient(90deg,#9d86f0,#5b3fd0);}
+  .par { position:absolute; top:0; bottom:0; width:2px; background:#b3261e; }
+  table.mtx { width:auto; margin:6px auto 4px; }
+  table.mtx th, table.mtx td { padding:8px 12px; min-width:54px; }
+  table.mtx th.corner { background:#2f6fb0; color:#fff; font-size:11px; }
+  table.mtx th.opp { background:#dbe6f3; } table.mtx th.me { background:#fbe8c8; }
+  table.mtx td.w-hi  { background:#c9ebd5; color:#145a32; font-weight:700; }
+  table.mtx td.w-mid { background:#e3f5e9; color:#1d7a46; font-weight:700; }
+  table.mtx td.w-neu { background:#eef2f8; color:#41506a; }
+  table.mtx td.w-lo  { background:#fbe3e3; color:#9a2a2a; }
+  table.mtx td.w-vlo { background:#f6cccc; color:#8a1f1f; font-weight:700; }
+  table.mtx td.w-diag{ background:#dde3ec; color:#8a93a3; }
+  .mtx-axis { font-size:11.5px; color:var(--sub); text-align:center; margin:2px 0 8px; }
+  .note { background:#fff8e8; border:1px solid #e8d9a8; border-radius:8px; padding:10px 14px; font-size:13px; margin:12px 0; }
+  .kw { background:#eef2f8; border-radius:4px; padding:1px 6px; font-size:13px; font-weight:700; color:var(--accent); }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .card { border:1px solid var(--line); border-radius:8px; padding:12px 14px; background:#fafbfd; }
+  .card h4 { margin:0 0 4px; font-size:14px; }
+  .card .tag { font-size:11px; color:#fff; padding:1px 8px; border-radius:10px; background:var(--gold); }
+  footer { margin-top:32px; padding-top:14px; border-top:1px solid var(--line); font-size:12px; color:var(--sub); }
+  @media print {
+    body { background:#fff; } .sheet { box-shadow:none; margin:0; max-width:none; padding:24px 28px; border-radius:0; }
+    h2 { break-after:avoid; } table,.fig,.card { break-inside:avoid; }
+  }
+  @page { margin:14mm; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <h1>🎲 カタンAIの自己対戦学習（ルール改定版）</h1>
+  <div class="subtitle">ルールを変えてもう一度ゼロから学習させたら、AIはどんな強い戦略を見つけるのか？</div>
+  <div class="namebar">
+    <span>氏名：<b>＿＿＿＿＿＿＿＿</b></span>
+    <span>学年・組：<b>＿＿＿＿</b></span>
+    <span>提出日：<b>＿＿＿＿年＿＿月＿＿日</b></span>
+  </div>
+
+  <h2>1. 研究の動機・問い</h2>
+  <p>自作のカタンアプリにいくつかルールを足しました（<b>先手をランダム化</b>・<b>サイコロを振る前に騎士カードを使える</b>・<b>交渉を全員に提案できる／逆オファーで再交渉できる</b>）。ルールが変わると最適な作戦も変わるはず——そこで<b>もう一度ゼロからAIを自己対戦で学習</b >させ、前回と同じ作戦になるのか確かめました。</p>
+  <ul>
+    <li><b>問い①</b>：ルール改定後にゼロから学習しても、手で調整したAIより強くなるか？</li>
+    <li><b>問い②</b>：新ルールで強いAIは、どんな立ち回りを選ぶか？（前回と同じ？違う？）</li>
+    <li><b>問い③</b>：性格の違うAIを4体育てると、どんな個性に分かれるか？</li>
+  </ul>
+
+  <h2>2. 仮説</h2>
+  <p>たくさん対戦して勝った作戦を残せば、手調整AIより強くなるはず。ただしルールが変わったので、前回見つかった「発展カードに全振り」とは違う作戦になるかもしれない。</p>
+
+  <h2>3. 方法</h2>
+  <h3>(1) AIの戦略を「9つの数字（重み）」で表す</h3>
+  <p>AIの判断は次の<span class="kw">重み</span>で決まります。数字を変えると性格（戦略）が変わります。</p>
+  <table>
+    <tr><th class="l">重み</th><th class="l">意味（大きいほど重視）</th></tr>
+    <tr><td class="l">pip</td><td class="l">数字の出やすさ（産出量）</td></tr>
+    <tr><td class="l">diversity</td><td class="l">資源の種類がそろう場所</td></tr>
+    <tr><td class="l">port</td><td class="l">港（有利な交換）</td></tr>
+    <tr><td class="l">scarcity</td><td class="l">盤面で少ない資源を作れる場所</td></tr>
+    <tr><td class="l">robberAggro</td><td class="l">盗賊で勝者を狙う強さ</td></tr>
+    <tr><td class="l">knightChance</td><td class="l">騎士カードを使う積極性</td></tr>
+    <tr><td class="l">devBuyChance</td><td class="l">発展カードを買う積極性</td></tr>
+    <tr><td class="l">roadThreshold</td><td class="l">道を伸ばす慎重さ（大きい＝慎重）</td></tr>
+    <tr><td class="l">cityPriority</td><td class="l">開拓地より都市を優先する度合い</td></tr>
+  </table>
+
+  <h3>(2) 学習のやり方 — ゼロからの自己対戦＋進化的アルゴリズム</h3>
+  <ol>
+    <li>手調整AIを少しずつ変えた候補を25個つくる。</li>
+    <li>各候補を手調整AIと多数対戦させ（席順はランダムで公平化）、勝率を測る。</li>
+    <li>上位の候補だけ<b>大量の対戦で再検証</b>し、<b>明確に勝ち越したものだけ採用</b>する。</li>
+    <li>合計<b>約4,200回</b>の自己対戦を行った。</li>
+  </ol>
+  <div class="note">⚠️ 前回の学習で「対戦数が少ないと“まぐれ”を強い作戦と勘違いして失敗する」と分かったので、今回は最初から大量対戦＋再検証にした。弱くなる方向には更新しない安全策つき。</div>
+
+  <h2>4. 結果</h2>
+
+  <h3>結果① ゼロからでも手調整AIに勝ち越した（問い①）</h3>
+  <p>学習後のAIは、手で調整したAIに対して勝ち越しました。</p>
+  <div class="fig">
+    <div class="cap">図1：学習AI vs 手調整AI（席順ランダムで公平に測定）</div>
+    <div class="bar-row"><span class="lab">2対2・600局</span><div class="bar-track"><div class="par" style="left:50%"></div><div class="bar b-green" style="width:55%"></div></div><span class="val">55.0%</span></div>
+    <div class="bar-row"><span class="lab">1体 vs 3体・400局</span><div class="bar-track"><div class="par" style="left:25%"></div><div class="bar b-green" style="width:26.8%"></div></div><span class="val">26.8%</span></div>
+    <div style="font-size:11.5px;color:#5a6678;margin-top:6px">赤線＝互角ライン（上段50%・下段25%）。どちらも上回った。前回(60.7%)よりは差が小さく、新ルールでは“勝ちやすい一手”が見つけにくいことを示す。</div>
+  </div>
+
+  <h3>結果② 強い立ち回りは前回と「別物」になった（問い②）</h3>
+  <p>学習の前後で1ゲーム中の行動を各200局集計しました。</p>
+  <table>
+    <tr><th class="l">調べたこと（1局あたり）</th><th>学習前</th><th>学習後</th><th>変化</th></tr>
+    <tr><td class="l">開拓地の数</td><td>4.8</td><td>5.3</td><td class="up">▲ 増えた</td></tr>
+    <tr><td class="l">騎士カードの使用数</td><td>9.54</td><td>10.07</td><td class="up">▲ 増えた</td></tr>
+    <tr><td class="l">勝者の騎士の数</td><td>2.58</td><td>2.86</td><td class="up">▲ 増えた</td></tr>
+    <tr><td class="l">「最大騎士力(+2点)」が出た割合</td><td>91%</td><td>93%</td><td class="up">▲ 増えた</td></tr>
+    <tr><td class="l">発展カードの購入数</td><td>18.1</td><td>19.1</td><td class="up">▲ やや増</td></tr>
+    <tr><td class="l">道の総建設</td><td>22.8</td><td>23.2</td><td class="up">▲ やや増</td></tr>
+    <tr><td class="l">最長交易路が出た割合</td><td>76%</td><td>79%</td><td class="up">▲ やや増</td></tr>
+    <tr><td class="l">都市の数</td><td>7.6</td><td>7.2</td><td class="down">▼ 減った</td></tr>
+    <tr><td class="l">平均ターン数（手番）</td><td>114.8</td><td>122.6</td><td class="down">▼ 長くなった</td></tr>
+  </table>
+  <p>今回の強いAIは <b>「開拓地を広げ・騎士で攻めて最大騎士力を取り、産出量／資源の種類／港をバランス良く重視する“拡張＆軍備”型」</b> でした。前回（ルール改定前）の「<b>発展カードに全振り</b>」とは<b>まったく違う作戦</b>です。決着までのターンも長くなり、より地道に競り合う展開になりました。</p>
+  <table>
+    <tr><th class="l">学習で決まった重み</th><th>pip</th><th>diversity</th><th>port</th><th>scarcity</th><th>knight</th><th>devBuy</th><th>road</th><th>city</th></tr>
+    <tr><td class="l">手調整AI（学習前）</td><td>1.0</td><td>0.6</td><td>1.0</td><td>0.5</td><td>0.4</td><td>0.6</td><td>1.5</td><td>1.0</td></tr>
+    <tr><td class="l">学習後AI</td><td>1.02</td><td>0.87</td><td>0.93</td><td>0.82</td><td>0.31</td><td>0.78</td><td>1.05</td><td><b>1.31</b></td></tr>
+  </table>
+
+  <h3>結果③ 4体は別々の「個性」に育った（問い③）</h3>
+  <p>4体に別々の頭脳を持たせ、お互いを相手に育てる（共進化）と、はっきり性格が分かれました。</p>
+  <div class="two">
+    <div class="card"><h4>発展・多角型 <span class="tag">最強 28.3%</span></h4><p style="font-size:12.5px;margin:4px 0">発展カードを買いまくり、資源の種類と産出量も重視する万能型。</p></div>
+    <div class="card"><h4>妨害・騎士型 <span class="tag">25.8%</span></h4><p style="font-size:12.5px;margin:4px 0">盗賊で相手を強く妨害し、騎士を多用する攻撃型。</p></div>
+    <div class="card"><h4>産出特化型 <span class="tag">23.9%</span></h4><p style="font-size:12.5px;margin:4px 0">出やすい数字と資源の多様さを最重視する高生産型。</p></div>
+    <div class="card"><h4>拡張・道型 <span class="tag">21.9%</span></h4><p style="font-size:12.5px;margin:4px 0">道をどんどん伸ばし都市を狙う領地拡大型。</p></div>
+  </div>
+  <div class="fig">
+    <div class="cap">図2：4体の総当たり勝率（360局・席順ランダム／4体なので25%が互角）</div>
+    <div class="bar-row"><span class="lab">発展・多角型</span><div class="bar-track"><div class="par" style="left:25%"></div><div class="bar b-purple" style="width:56.6%"></div></div><span class="val">28.3%</span></div>
+    <div class="bar-row"><span class="lab">妨害・騎士型</span><div class="bar-track"><div class="par" style="left:25%"></div><div class="bar b-purple" style="width:51.6%"></div></div><span class="val">25.8%</span></div>
+    <div class="bar-row"><span class="lab">産出特化型</span><div class="bar-track"><div class="par" style="left:25%"></div><div class="bar b-purple" style="width:47.8%"></div></div><span class="val">23.9%</span></div>
+    <div class="bar-row"><span class="lab">拡張・道型</span><div class="bar-track"><div class="par" style="left:25%"></div><div class="bar b-purple" style="width:43.8%"></div></div><span class="val">21.9%</span></div>
+    <div style="font-size:11.5px;color:#5a6678;margin-top:6px">バーは「互角25%」を基準に伸ばした見やすさ用。発展・多角型がやや抜けたが、4体とも大きくは離れず拮抗。</div>
+  </div>
+
+  <h3>結果④ 強さを5段階に調整 — 総当たり対戦表（おまけ）</h3>
+  <p>わざと「隙」を作る量を変え、CPUの強さを1〜5段階にしました。総当たりで測定（各ペア140局）。</p>
+  <div class="fig">
+    <div class="cap">図3：難易度の総当たり対戦表（数字＝「自分Lv」の勝率%・50%=互角）</div>
+    <table class="mtx">
+      <tr><th class="corner">自＼相手</th><th class="opp">Lv1</th><th class="opp">Lv2</th><th class="opp">Lv3</th><th class="opp">Lv4</th><th class="opp">Lv5</th></tr>
+      <tr><th class="me">Lv1</th><td class="w-diag">50</td><td class="w-lo">40</td><td class="w-vlo">31.4</td><td class="w-vlo">35</td><td class="w-vlo">28.6</td></tr>
+      <tr><th class="me">Lv2</th><td class="w-hi">60</td><td class="w-diag">50</td><td class="w-vlo">37.9</td><td class="w-vlo">34.3</td><td class="w-vlo">33.6</td></tr>
+      <tr><th class="me">Lv3</th><td class="w-hi">68.6</td><td class="w-hi">62.1</td><td class="w-diag">50</td><td class="w-lo">40.7</td><td class="w-lo">42.9</td></tr>
+      <tr><th class="me">Lv4</th><td class="w-hi">65</td><td class="w-hi">65.7</td><td class="w-mid">59.3</td><td class="w-diag">50</td><td class="w-neu">50</td></tr>
+      <tr><th class="me">Lv5</th><td class="w-hi">71.4</td><td class="w-hi">66.4</td><td class="w-mid">57.1</td><td class="w-neu">50</td><td class="w-diag">50</td></tr>
+    </table>
+    <div class="mtx-axis">縦＝自分のCPUレベル　／　横＝相手のCPUレベル　｜　🟩 勝ち越し・🟥 負け越し・⬜ ほぼ互角</div>
+    <div style="font-size:11.5px;color:#5a6678;margin-top:4px">左下ほど数字が大きい＝レベルが高いほど低レベル相手に強い。Lv4とLv5は実力が近く約50%（互角）。各セル140局のため数%のゆらぎはある。</div>
+  </div>
+
+  <h3>結果⑤ 「7のリスク」を避けるAIは明確に強い（追加実験）</h3>
+  <p>サイコロで7が出ると、手札<b>8枚以上</b>の人は半分を捨てさせられます。そこで「ターンを終える前に手札が8枚以上なら、発展カード購入や銀行交換で<b>手札を減らしてから終わる</b>」リスク回避AI（重み <span class="kw">hoardAversion</span>）を追加し、回避しないAIと対戦させました。</p>
+  <div class="fig">
+    <div class="cap">図4：7リスク回避AI vs 回避しないAI（2対2・各500局／50%=互角）</div>
+    <div class="bar-row"><span class="lab">回避AIの勝率</span><div class="bar-track"><div class="par" style="left:50%"></div><div class="bar b-green" style="width:61.2%"></div></div><span class="val">61.2%</span></div>
+    <div class="bar-row"><span class="lab">7で失う札（回避）</span><div class="bar-track"><div class="bar b-blue" style="width:34%"></div></div><span class="val">25.5枚</span></div>
+    <div class="bar-row"><span class="lab">7で失う札（非回避）</span><div class="bar-track"><div class="bar b-gold" style="width:65%"></div></div><span class="val">48.7枚</span></div>
+    <div style="font-size:11.5px;color:#5a6678;margin-top:6px">1人あたり1ゲームで7に取られた札の累計。回避AIは失う札を<b>約半分</b>に減らし、勝率も<b>61%</b>と勝ち越した。</div>
+  </div>
+  <p>つまり <b>「手札を貯めすぎず、7が出る前に使い切る」</b> のは、運に左右されにくい賢い打ち方だと実験で確かめられました。この打ち方を標準AIに採用しました。</p>
+
+  <h2>5. 考察</h2>
+  <ul>
+    <li><b>同じゲームでも“強い作戦”は一つではない。</b> ルール改定前は「発展カード全振り」が、改定後は「拡張＆軍備（騎士）」が選ばれた。自己対戦は、その時のルールに合った別々の強い作戦を見つけられる。</li>
+    <li><b>都市より開拓地・騎士が増えた理由（推測）：</b> 先手がランダムになり序盤の有利が読みにくくなったぶん、開拓地を広げて産出を増やし、騎士で最大騎士力(+2点)を取りに行く“手堅い得点源”が安定して強かったと考えられる。</li>
+    <li><b>勝ち越し幅は前回(60.7%)より小さい(55%)。</b> 新ルールでは運（先手・カード）の影響が増え、“必勝の一手”が見つけにくくなったのかもしれない。</li>
+    <li><b>4体はそれぞれ別個性に育った。</b> 共進化では相手に合わせて作戦が分かれ、万能型がやや有利だった。</li>
+  </ul>
+
+  <h2>6. 結論</h2>
+  <ol>
+    <li>ルール改定後に<b>ゼロから約4,200局</b>自己対戦して、手調整AIに<b>勝率55%</b>で勝ち越すAIを作れた。</li>
+    <li>強い立ち回りは前回と変わり、<b>「拡張＆軍備（騎士）」型</b>になった——ルールが変われば最適戦略も変わる。</li>
+    <li>4体を別々に育てると<b>4つの個性</b>（発展・多角／妨害・騎士／産出特化／拡張・道）に分かれた。</li>
+    <li>「手札を8枚未満に保ち<b>7のリスクを避ける</b>」打ち方は勝率61%・失う札も半減と明確に有効で、標準AIに採用した。</li>
+  </ol>
+
+  <h2>7. これからやってみたいこと</h2>
+  <ul>
+    <li>「サイコロ前の騎士」をAIにも使わせて、強さがどう変わるか調べる。</li>
+    <li>学習回数をさらに増やし、勝ち越し幅がどこまで伸びるか見る。</li>
+    <li>人間（自分）とAIで対戦して、学習した作戦に勝てるか挑戦する。</li>
+  </ul>
+
+  <h2>用語メモ</h2>
+  <p style="font-size:13px;color:#5a6678">
+  <b>自己対戦学習</b>＝AI同士を戦わせて強い作戦を残す方法。
+  <b>進化的アルゴリズム</b>＝少しずつ変えて良いものを選ぶ最適化。
+  <b>共進化</b>＝複数のAIが互いを相手に同時に進化すること。
+  <b>勝率</b>＝勝った割合。4人なら25%、2対2なら50%が互角。</p>
+
+  <footer>
+    実験データは自作のカタンアプリで各条件あたり数百〜数千回の自動対戦を行い集計したもの（今回の総自己対戦数は学習・分析あわせて約1万局）。図の数値はその測定結果です。<br>
+    印刷／PDF保存：ブラウザのメニュー → 印刷 → PDFに保存。
+  </footer>
+
+</div>
+</body>
+</html>

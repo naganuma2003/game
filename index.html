@@ -40,6 +40,12 @@
       padding: 4px 10px; border-radius: 999px;
       background: rgba(108,208,138,0.18); color: #8fe3a2;
     }
+    .card-online {
+      border-color: rgba(80, 150, 255, 0.45);
+      background: rgba(60, 110, 220, 0.12);
+    }
+    .card-online:hover { background: rgba(60, 110, 220, 0.22); }
+    .card-online .tag { background: rgba(80, 150, 255, 0.2); color: #9cc4ff; }
     .card.soon { cursor: default; opacity: 0.6; }
     .card.soon:hover { transform: none; box-shadow: none; background: rgba(255,255,255,0.05); }
     .card.soon .tag { background: rgba(255,255,255,0.12); color: #cdd6e4; }
@@ -91,6 +97,13 @@
       <div class="name">五目並べ</div>
       <div class="desc">15路盤で先に五つ並べたら勝ち。CPU4段階・AIアシスタント付き。</div>
       <span class="tag">プレイする →</span>
+    </a>
+
+    <a class="card card-online" href="オセロ/index.html?online=1">
+      <div class="icon">🌐</div>
+      <div class="name">オンライン対戦</div>
+      <div class="desc">5桁の部屋番号を共有して、離れた相手とオセロで対戦。</div>
+      <span class="tag">部屋を作る／参加する →</span>
     </a>
   </div>
 

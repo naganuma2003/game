@@ -10,8 +10,8 @@
 (function () {
   const Game = window.OthelloGame;
 
-  // Room codes use unambiguous characters (no 0/O, 1/I/L).
-  const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  // Room codes are 5 digits — easy to read out loud and type on phones.
+  const ALPHABET = "0123456789";
   const PREFIX = "othello-9x9-"; // namespace so codes don't collide with other apps
   const HOST = 1, GUEST = 2; // colors: host=black, guest=white
 
@@ -98,8 +98,8 @@
 
   function join() {
     if (typeof Peer === "undefined") { fail("通信ライブラリの読み込みに失敗しました。再読み込みしてください。"); return; }
-    const code = (codeInput.value || "").trim().toUpperCase();
-    if (code.length !== 5) { setStatus("5文字の部屋番号を入力してください。"); return; }
+    const code = (codeInput.value || "").trim();
+    if (!/^\d{5}$/.test(code)) { setStatus("5桁の数字の部屋番号を入力してください。"); return; }
     createBtn.disabled = true;
     joinBtn.disabled = true;
     setStatus("接続中…");
@@ -128,4 +128,7 @@
     try { await navigator.clipboard.writeText(codeText.textContent); copyBtn.textContent = "コピー済み"; setTimeout(() => copyBtn.textContent = "コピー", 1500); }
     catch (e) { /* clipboard may be blocked; user can copy manually */ }
   });
+
+  // Opened from the hub's "online" shortcut (?online=1): show the lobby right away.
+  if (new URLSearchParams(location.search).has("online")) openLobby();
 })();

@@ -76,6 +76,27 @@
     .online-link .od { font-size: 11px; opacity: 0.7; }
     .online-note { font-size: 11px; opacity: 0.6; margin: 8px 2px 0; line-height: 1.5; }
 
+    .join-block { margin-bottom: 14px; }
+    .jb-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+    .jb-row { display: flex; gap: 8px; }
+    .jb-input {
+      flex: 1; min-width: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.18em;
+      text-align: center; padding: 8px; border-radius: 8px; border: none;
+      background: #eef3fb; color: #14201a;
+    }
+    .jb-btn {
+      border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer;
+      font-weight: 700; font-size: 14px; background: #2563c9; color: #fff;
+    }
+    .jb-btn:hover { background: #2f74e0; }
+    .jb-btn:disabled { opacity: 0.5; cursor: default; }
+    .jb-msg { min-height: 16px; font-size: 12px; color: #9cc4ff; margin: 8px 2px 0; }
+    .jb-or {
+      font-size: 12px; opacity: 0.7; margin: 14px 0 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .jb-or::before, .jb-or::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.18); }
+
     footer { text-align: center; margin-top: 40px; font-size: 12px; opacity: 0.5; }
 
     @media (max-width: 760px) {
@@ -141,26 +162,59 @@
     <div class="col-online">
       <div class="online-panel">
         <h2>🌐 オンライン対戦</h2>
-        <p class="pdesc">5桁の部屋番号を共有して、離れた相手と対戦できます。下から対戦したいゲームを選んでください。</p>
+        <p class="pdesc">5桁の部屋番号を共有して、離れた相手と対戦できます。番号は<b>ゲーム共通</b>です。</p>
+
+        <!-- 参加：番号だけ入れればホストのゲームに入る -->
+        <div class="join-block">
+          <div class="jb-title">番号で参加する</div>
+          <div class="jb-row">
+            <input id="hub-join-code" class="jb-input" maxlength="5" placeholder="5桁の番号" inputmode="numeric" pattern="\d*" autocomplete="off">
+            <button id="hub-join-btn" class="jb-btn">参加</button>
+          </div>
+          <p id="hub-join-msg" class="jb-msg"></p>
+        </div>
+
+        <div class="jb-or">部屋を作る場合はゲームを選択</div>
 
         <a class="online-link" href="オセロ/index.html?online=1">
           <span class="oi">⚫️</span>
-          <span><span class="on">オセロ</span><br><span class="od">部屋を作る／参加する</span></span>
+          <span><span class="on">オセロ</span><br><span class="od">部屋を作る</span></span>
         </a>
         <a class="online-link" href="五目並べ/index.html?online=1">
           <span class="oi">⭕️</span>
-          <span><span class="on">五目並べ</span><br><span class="od">部屋を作る／参加する</span></span>
+          <span><span class="on">五目並べ</span><br><span class="od">部屋を作る</span></span>
         </a>
         <a class="online-link" href="将棋ゲーム/index.html?online=1">
           <span class="oi">♟️</span>
-          <span><span class="on">将棋</span><br><span class="od">部屋を作る／参加する</span></span>
+          <span><span class="on">将棋</span><br><span class="od">部屋を作る</span></span>
         </a>
 
-        <p class="online-note">※ 2人で同じ部屋番号を使います。部屋を作る側が先手、参加する側が後手です。</p>
+        <p class="online-note">※ 部屋を作る側が先手、参加する側が後手です。参加は番号だけでOK（ホストが選んだゲームに自動で入ります）。</p>
       </div>
     </div>
   </div>
 
   <footer>クリックで各ゲームが開きます</footer>
+
+  <script>
+    // Game-agnostic join: the guest types only a number. We route to a game
+    // page carrying ?autojoin=<code>; the shared lobby there connects, learns
+    // the host's actual game, and redirects again if it differs. (Othello is
+    // just the entry probe — any game page would work.)
+    (function () {
+      var input = document.getElementById("hub-join-code");
+      var btn = document.getElementById("hub-join-btn");
+      var msg = document.getElementById("hub-join-msg");
+      function go() {
+        var code = (input.value || "").trim();
+        if (!/^\d{5}$/.test(code)) { msg.textContent = "5桁の数字を入力してください。"; return; }
+        btn.disabled = true;
+        msg.textContent = "部屋に接続しています…";
+        location.href = "オセロ/index.html?autojoin=" + code;
+      }
+      btn.addEventListener("click", go);
+      input.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
+    })();
+  </script>
 </body>
 </html>

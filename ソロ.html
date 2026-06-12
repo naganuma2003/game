@@ -339,11 +339,11 @@ function render(){
   const wEl=document.getElementById('waste');wEl.innerHTML='';wEl.className='slot pile'+(waste.length?'':' empty');
   if(waste.length){const c=waste[waste.length-1];const e=cardEl(c);e.style.position='relative';if(sel&&sel.from==='waste')e.classList.add('sel');wEl.appendChild(e);}
   for(let f=0;f<4;f++){const fe=document.getElementById('f'+f);fe.innerHTML='';fe.className='slot pile foundation'+(found[f].length?'':' empty');if(found[f].length){const c=found[f][found[f].length-1];const e=cardEl(c);e.style.position='relative';fe.appendChild(e);}}
-  const cols=document.getElementById('cols');cols.innerHTML='';
-  for(let c=0;c<7;c++){const pile=document.createElement('div');pile.className='slot pile'+(tab[c].length?'':' empty');pile.style.aspectRatio='auto';pile.style.minHeight='calc((min(98vw,520px)/7 - 2.5%)*1.4)';
-    const off=Math.min(22,(tab[c].length>1?(100/Math.max(tab[c].length,8)):0)+13);
-    tab[c].forEach((card,i)=>{const e=cardEl(card);e.style.top=(i*off)+'%';if(sel&&sel.from==='tab'&&sel.col===c&&i>=sel.idx)e.classList.add('sel');if(card.up)e.addEventListener('click',ev=>{ev.stopPropagation();onTab(c,i);});pile.appendChild(e);});
-    pile.addEventListener('click',()=>onTabEmpty(c));cols.appendChild(pile);}
+  const cols=document.getElementById('cols');cols.innerHTML='';const piles=[];
+  for(let c=0;c<7;c++){const pile=document.createElement('div');pile.className='slot pile'+(tab[c].length?'':' empty');pile.style.aspectRatio='auto';
+    tab[c].forEach((card,i)=>{const e=cardEl(card);if(sel&&sel.from==='tab'&&sel.col===c&&i>=sel.idx)e.classList.add('sel');if(card.up)e.addEventListener('click',ev=>{ev.stopPropagation();onTab(c,i);});pile.appendChild(e);});
+    pile.addEventListener('click',()=>onTabEmpty(c));cols.appendChild(pile);piles.push(pile);}
+  for(let c=0;c<7;c++){const pile=piles[c];const ch=pile.clientWidth*1.4;let y=0,lastY=0;[...pile.children].forEach(e=>{e.style.top=y+'px';lastY=y;y+=e.classList.contains('down')?ch*0.17:ch*0.30;});pile.style.height=(tab[c].length?lastY+ch:ch)+'px';}
   document.getElementById('moves').textContent=moves;document.getElementById('undo').disabled=!history.length;
 }
 function onStock(){pushHist();if(!stock.length){stock=waste.reverse().map(c=>(c.up=false,c));waste=[];}else{for(let i=0;i<drawN&&stock.length;i++){const c=stock.pop();c.up=true;waste.push(c);}}sel=null;moves++;render();}
@@ -372,6 +372,7 @@ document.getElementById('undo').addEventListener('click',undo);
 document.getElementById('new').addEventListener('click',deal);
 document.getElementById('again').addEventListener('click',deal);
 document.getElementById('draw3').addEventListener('click',e=>{drawN=drawN===1?3:1;e.target.textContent='めくり: '+drawN+'枚';deal();});
+window.addEventListener('resize',()=>render());
 deal();
 <\/script></body></html>`;
 

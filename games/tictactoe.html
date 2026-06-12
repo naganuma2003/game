@@ -10,7 +10,8 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:28px;letter-spacing:.2em;t
 .row button{background:transparent;border:1px solid #3a3326;color:var(--sub);padding:7px 14px;border-radius:18px;font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s}
 .row button.on{border-color:var(--gold);color:var(--gold)}
 .status{font-size:16px;min-height:26px;margin-bottom:12px;letter-spacing:.05em}
-#bd{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(82vw,320px);aspect-ratio:1/1}
+#bd{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:8px;width:min(82vw,320px);aspect-ratio:1/1}
+.cell{overflow:hidden;line-height:1}
 .cell{background:#221E17;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:min(16vw,64px);font-weight:800;cursor:pointer}
 .cell.o{color:var(--o)}.cell.x{color:var(--x)}
 .cell.win{background:#46402d;border-color:var(--gold)}

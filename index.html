@@ -75,6 +75,13 @@
     .online-link .on { font-weight: 700; }
     .online-link .od { font-size: 11px; opacity: 0.7; }
     .online-note { font-size: 11px; opacity: 0.6; margin: 8px 2px 0; line-height: 1.5; }
+    .online-minis { display: flex; flex-wrap: wrap; gap: 6px; }
+    .online-mini {
+      font-size: 11.5px; text-decoration: none; color: #cfe0ff;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(80,150,255,0.25);
+      border-radius: 999px; padding: 5px 10px; transition: background 0.15s;
+    }
+    .online-mini:hover { background: rgba(80,150,255,0.2); }
 
     .join-block { margin-bottom: 14px; }
     .jb-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
@@ -315,7 +322,23 @@
           <span><span class="on">将棋</span><br><span class="od">部屋を作る</span></span>
         </a>
 
-        <p class="online-note">※ 部屋を作る側が先手、参加する側が後手です。参加は番号だけでOK（ホストが選んだゲームに自動で入ります）。</p>
+        <div class="jb-or">そのほかの対応ゲーム</div>
+        <div class="online-minis">
+          <a class="online-mini" href="カタン/index.html?online=1">🌾カタン</a>
+          <a class="online-mini" href="games/chess.html?online=1">♞チェス</a>
+          <a class="online-mini" href="games/go.html?online=1">◉囲碁</a>
+          <a class="online-mini" href="games/checkers.html?online=1">🔴チェッカー</a>
+          <a class="online-mini" href="games/backgammon.html?online=1">🎲バックギャモン</a>
+          <a class="online-mini" href="games/hex.html?online=1">⬡ヘックス</a>
+          <a class="online-mini" href="games/connect4.html?online=1">🟡コネクト4</a>
+          <a class="online-mini" href="games/mancala.html?online=1">🪨マンカラ</a>
+          <a class="online-mini" href="games/dobutsu.html?online=1">🦁どうぶつ</a>
+          <a class="online-mini" href="games/tictactoe.html?online=1">⭕三目並べ</a>
+          <a class="online-mini" href="games/memory.html?online=1">🎴神経衰弱</a>
+          <a class="online-mini" href="games/hasami.html?online=1">✂️ハサミ将棋</a>
+        </div>
+
+        <p class="online-note">※ 部屋を作る側が先手、参加する側が後手です。参加は番号だけでOK（ホストが選んだゲームに自動で入ります）。カタンは試験対応です。</p>
       </div>
     </div>
   </div>

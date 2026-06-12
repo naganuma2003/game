@@ -19,6 +19,18 @@
     othello: "オセロ/index.html",
     gomoku: "五目並べ/index.html",
     shogi: "将棋ゲーム/index.html",
+    catan: "カタン/index.html",
+    tictactoe: "games/tictactoe.html",
+    connect4: "games/connect4.html",
+    hex: "games/hex.html",
+    checkers: "games/checkers.html",
+    chess: "games/chess.html",
+    go: "games/go.html",
+    mancala: "games/mancala.html",
+    dobutsu: "games/dobutsu.html",
+    memory: "games/memory.html",
+    backgammon: "games/backgammon.html",
+    hasami: "games/hasami.html",
   };
 
   function randomCode() {

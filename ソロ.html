@@ -244,6 +244,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.2em;t
 <div id="bd"></div>
 <div class="msg" id="msg"></div>
 <div class="foot"><button id="new">新しいゲーム</button></div>
+<div style="font-size:11px;color:var(--sub);margin-top:10px;text-align:center;line-height:1.7">🚩旗の立て方: 「旗モード」をONにしてタップ／PCは右クリック／スマホは長押し</div>
 <script>
 let W=9,H=9,M=10,board,revealed,flags,over,started,timer,sec=0,flagMode=false,cells=[];
 const bd=document.getElementById('bd');
@@ -251,7 +252,16 @@ function setSize(){const cs=Math.min(Math.floor((Math.min(window.innerWidth*0.94
 function init(){clearInterval(timer);sec=0;document.getElementById('time').textContent=0;over=false;started=false;flags=new Set();revealed=new Set();document.getElementById('msg').textContent='';document.getElementById('mleft').textContent=M;board=null;setSize();draw();}
 function plant(safe){board=Array(W*H).fill(0);const spots=[];for(let i=0;i<W*H;i++)if(i!==safe&&!neighbors(safe).includes(i))spots.push(i);for(let i=spots.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[spots[i],spots[j]]=[spots[j],spots[i]];}for(let i=0;i<M;i++)board[spots[i]]=-1;for(let i=0;i<W*H;i++){if(board[i]===-1)continue;board[i]=neighbors(i).filter(n=>board[n]===-1).length;}}
 function neighbors(i){const r=Math.floor(i/W),c=i%W,out=[];for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const nr=r+dr,nc=c+dc;if(nr>=0&&nr<H&&nc>=0&&nc<W)out.push(nr*W+nc);}return out;}
-function draw(){bd.innerHTML='';cells=[];for(let i=0;i<W*H;i++){const d=document.createElement('div');d.className='c';d.addEventListener('click',()=>onTap(i));d.addEventListener('contextmenu',e=>{e.preventDefault();toggleFlag(i);});let pressT;d.addEventListener('touchstart',()=>{pressT=setTimeout(()=>{toggleFlag(i);pressT=null;},380);},{passive:true});d.addEventListener('touchend',()=>{if(pressT){clearTimeout(pressT);}},{passive:true});bd.appendChild(d);cells.push(d);}render();}
+function draw(){bd.innerHTML='';cells=[];for(let i=0;i<W*H;i++){const d=document.createElement('div');d.className='c';
+// 長押しで旗を立てた直後の click / contextmenu は無視する（二重トグルで旗が消えるのを防ぐ）
+let pressT=null,flagAt=0;
+const recently=()=>Date.now()-flagAt<700;
+d.addEventListener('click',()=>{if(recently())return;onTap(i);});
+d.addEventListener('contextmenu',e=>{e.preventDefault();if(recently())return;toggleFlag(i);});
+d.addEventListener('touchstart',()=>{pressT=setTimeout(()=>{toggleFlag(i);flagAt=Date.now();pressT=null;},380);},{passive:true});
+d.addEventListener('touchend',()=>{if(pressT){clearTimeout(pressT);pressT=null;}},{passive:true});
+d.addEventListener('touchmove',()=>{if(pressT){clearTimeout(pressT);pressT=null;}},{passive:true});
+bd.appendChild(d);cells.push(d);}render();}
 function startTimer(){timer=setInterval(()=>{sec++;document.getElementById('time').textContent=sec;},1000);}
 function onTap(i){if(over)return;if(flagMode){toggleFlag(i);return;}if(flags.has(i))return;if(!started){plant(i);started=true;startTimer();}reveal(i);check();}
 function reveal(i){if(revealed.has(i)||flags.has(i))return;if(board[i]===-1){lose(i);return;}const stack=[i];while(stack.length){const k=stack.pop();if(revealed.has(k)||flags.has(k))continue;revealed.add(k);if(board[k]===0)for(const n of neighbors(k))if(!revealed.has(n))stack.push(n);}render();}

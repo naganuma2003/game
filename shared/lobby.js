@@ -182,6 +182,10 @@
       openLobby();
       setStatus("部屋に参加しています…");
       joinCode(code);
+    } else if (params.has("create")) {
+      // Hub's "部屋を作成" flow: open the lobby and create the room right away.
+      openLobby();
+      host();
     } else if (params.has("online")) {
       openLobby();
     }

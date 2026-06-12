@@ -17,6 +17,10 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.2em;t
 .face,.back{position:absolute;inset:0;backface-visibility:hidden;border-radius:9px;display:flex;align-items:center;justify-content:center}
 .back{background:linear-gradient(145deg,var(--back),var(--back2));border:1px solid #0d3320;font-size:20px;color:rgba(255,255,255,.25)}
 .face{background:var(--face);border:1px solid #C9BFA8;transform:rotateY(180deg);font-size:min(8vw,34px)}
+#bd.trump{gap:5px}
+#bd.trump .face{font-size:min(3.8vw,16px);font-weight:700;letter-spacing:-.02em}
+#bd.trump .back{font-size:13px}
+.face .red{color:#C23B26}.face .blk{color:#1C1C1C}
 .card.done{opacity:.35;cursor:default}
 .foot{margin-top:16px}
 .foot button{background:var(--gold);border:none;color:#15120E;font-weight:700;padding:9px 22px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit}
@@ -24,7 +28,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.2em;t
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 <h1>神経衰弱</h1><div class="sub">MEMORY</div>
 <div class="row" id="mode"><button data-m="solo" class="on">ひとり</button><button data-m="pvp">2人対戦</button></div>
-<div class="row" id="size"><button data-n="12" class="on">12枚</button><button data-n="16">16枚</button><button data-n="20">20枚</button></div>
+<div class="row" id="size"><button data-n="12" class="on">12枚</button><button data-n="16">16枚</button><button data-n="20">20枚</button><button data-n="52">トランプ52枚</button></div>
 <div class="status" id="status"></div>
 <div id="bd"></div>
 <div class="foot"><button id="reset">配り直し</button></div>
@@ -46,7 +50,7 @@ document.getElementById('mode').addEventListener('click',e=>{const b=e.target.cl
 document.getElementById('size').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;N=+b.dataset.n;document.querySelectorAll('#size button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 init();
 </script><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-<script src="../shared/lobby.js"></script>
-<script src="../shared/online-core.js"></script>
+<script src="../shared/lobby.js?v=2"></script>
+<script src="../shared/online-core.js?v=2"></script>
 <script>OnlineCore.init({gameId:'memory',statusSel:'#status',hostMark:'プレイヤー1',guestMark:'プレイヤー2',pvpSel:'#mode button[data-m=\"pvp\"]',hideSel:'#mode'});</script>
 </body></html>

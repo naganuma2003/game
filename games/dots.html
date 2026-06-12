@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ドットアンドボックス</title>
+<style>
+:root{--bg:#14110E;--panel:#1F1A14;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#352C20;--me:#3e87d6;--cpu:#e0473a;--dot:#cdbf9c;--empty:#2a2419;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 10px 28px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:22px;letter-spacing:.1em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:8px}
+.row{display:flex;gap:7px;margin-bottom:8px;flex-wrap:wrap;justify-content:center}
+.row button{background:transparent;border:1px solid #3a3326;color:var(--sub);padding:6px 12px;border-radius:18px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s}
+.row button.on{border-color:var(--gold);color:var(--gold)}
+.score{display:flex;gap:16px;align-items:center;margin-bottom:8px;font-size:14px}
+.score .me{color:var(--me);font-weight:700}.score .cpu{color:var(--cpu);font-weight:700}
+.score .turn{color:var(--gold);font-size:12px}
+.bwrap{padding:8px;border-radius:10px;background:var(--panel);box-shadow:0 12px 36px rgba(0,0,0,.5)}
+svg{display:block;width:min(94vw,420px);height:auto}
+.edge{stroke:var(--empty);stroke-width:6;stroke-linecap:round;cursor:pointer;transition:stroke .12s}
+.edge:hover{stroke:#5a4d34}
+.edge.me{stroke:var(--me);cursor:default}.edge.cpu{stroke:var(--cpu);cursor:default}
+.dot{fill:var(--dot)}
+.box{font-size:14px;font-weight:800;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.msg{min-height:20px;font-size:13px;color:var(--gold);margin-top:10px;text-align:center}
+.foot{margin-top:8px}
+.foot button{background:transparent;border:1px solid var(--line);color:var(--txt);padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit}
+.over{position:fixed;inset:0;background:rgba(10,8,5,.85);display:none;align-items:center;justify-content:center;z-index:30}
+.over.show{display:flex}
+.over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:24px 36px;text-align:center}
+.over .t{font-size:23px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:8px}
+.over .s{font-size:14px;margin-bottom:16px}
+.over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
+<h1>ドットアンドボックス</h1><div class="sub">DOTS &amp; BOXES</div>
+<div class="row" id="mode"><button data-m="cpu" class="on">CPU対戦</button><button data-m="pvp">2人対戦</button></div>
+<div class="row" id="size"><button data-s="3">3×3</button><button data-s="4" class="on">4×4</button><button data-s="5">5×5</button></div>
+<div class="score"><span class="me">あなた <span id="s0">0</span></span><span class="turn" id="turn">あなたの番</span><span class="cpu" id="cpulabel">CPU <span id="s1">0</span></span></div>
+<div class="bwrap"><svg id="bd"></svg></div>
+<div class="msg" id="msg">線をタップして箱を作ろう。箱を取ると続けて打てます。</div>
+<div class="foot"><button id="new">最初から</button></div>
+<div class="over" id="over"><div class="c"><div class="t" id="ov-t">勝利</div><div class="s" id="ov-s"></div><button id="again">もう一度</button></div></div>
+<script>
+const NS='http://www.w3.org/2000/svg';
+let SZ=4,mode='cpu';            // SZ = 箱の数(縦横)
+let h,v,owner,turn,score,over,busy; // h[r][c] 横線(SZ+1行 × SZ列), v[r][c] 縦線(SZ行 × SZ+1列)
+const svg=document.getElementById('bd');
+let GAP,PAD,DOT;
+function init(){
+  h=Array.from({length:SZ+1},()=>new Array(SZ).fill(-1));
+  v=Array.from({length:SZ},()=>new Array(SZ+1).fill(-1));
+  owner=Array.from({length:SZ},()=>new Array(SZ).fill(-1));
+  turn=0;score=[0,0];over=false;busy=false;
+  document.getElementById('over').classList.remove('show');
+  document.getElementById('cpulabel').firstChild.textContent=mode==='pvp'?'相手 ':'CPU ';
+  build();render();msg('線をタップして箱を作ろう。箱を取ると続けて打てます。');
+}
+function build(){
+  GAP=Math.min(86,Math.floor(360/SZ));PAD=26;DOT=5;
+  const S=GAP*SZ+PAD*2;
+  svg.setAttribute('viewBox',`0 0 ${S} ${S}`);svg.innerHTML='';
+  const px=c=>PAD+c*GAP, py=r=>PAD+r*GAP;
+  // boxes(背景＋取得色＋ラベル)用グループ
+  for(let r=0;r<SZ;r++)for(let c=0;c<SZ;c++){
+    const rect=document.createElementNS(NS,'rect');
+    rect.setAttribute('x',px(c)+4);rect.setAttribute('y',py(r)+4);
+    rect.setAttribute('width',GAP-8);rect.setAttribute('height',GAP-8);
+    rect.setAttribute('rx',4);rect.setAttribute('fill','transparent');
+    rect.dataset.box=r+'_'+c;svg.appendChild(rect);
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',px(c)+GAP/2);t.setAttribute('y',py(r)+GAP/2);
+    t.setAttribute('class','box');t.dataset.lab=r+'_'+c;svg.appendChild(t);
+  }
+  // 横線
+  for(let r=0;r<=SZ;r++)for(let c=0;c<SZ;c++){
+    const l=document.createElementNS(NS,'line');
+    l.setAttribute('x1',px(c)+DOT);l.setAttribute('y1',py(r));
+    l.setAttribute('x2',px(c+1)-DOT);l.setAttribute('y2',py(r));
+    l.setAttribute('class','edge');l.dataset.h=r+'_'+c;
+    l.addEventListener('click',()=>tap('h',r,c));svg.appendChild(l);
+  }
+  // 縦線
+  for(let r=0;r<SZ;r++)for(let c=0;c<=SZ;c++){
+    const l=document.createElementNS(NS,'line');
+    l.setAttribute('x1',px(c));l.setAttribute('y1',py(r)+DOT);
+    l.setAttribute('x2',px(c));l.setAttribute('y2',py(r+1)-DOT);
+    l.setAttribute('class','edge');l.dataset.v=r+'_'+c;
+    l.addEventListener('click',()=>tap('v',r,c));svg.appendChild(l);
+  }
+  // 点
+  for(let r=0;r<=SZ;r++)for(let c=0;c<=SZ;c++){
+    const d=document.createElementNS(NS,'circle');
+    d.setAttribute('cx',px(c));d.setAttribute('cy',py(r));d.setAttribute('r',DOT);
+    d.setAttribute('class','dot');svg.appendChild(d);
+  }
+}
+function msg(s){document.getElementById('msg').textContent=s;}
+function isHuman(){return mode==='pvp'||turn===0;}
+function render(){
+  for(const l of svg.querySelectorAll('.edge')){
+    let o=-1;
+    if(l.dataset.h){const[r,c]=l.dataset.h.split('_').map(Number);o=h[r][c];}
+    else{const[r,c]=l.dataset.v.split('_').map(Number);o=v[r][c];}
+    l.classList.toggle('me',o===0);l.classList.toggle('cpu',o===1);
+  }
+  for(let r=0;r<SZ;r++)for(let c=0;c<SZ;c++){
+    const rect=svg.querySelector(`[data-box="${r}_${c}"]`);const lab=svg.querySelector(`[data-lab="${r}_${c}"]`);
+    if(owner[r][c]===0){rect.setAttribute('fill','rgba(62,135,214,.22)');lab.textContent='あ';lab.setAttribute('fill','var(--me)');}
+    else if(owner[r][c]===1){rect.setAttribute('fill','rgba(224,71,58,.22)');lab.textContent=mode==='pvp'?'B':'C';lab.setAttribute('fill','var(--cpu)');}
+    else{rect.setAttribute('fill','transparent');lab.textContent='';}
+  }
+  document.getElementById('s0').textContent=score[0];
+  document.getElementById('s1').textContent=score[1];
+  document.getElementById('turn').textContent=over?'終了':(mode==='pvp'?(turn===0?'あなた(青)の番':'相手(赤)の番'):(turn===0?'あなたの番':'CPUの番'));
+}
+function sidesOf(r,c){return (h[r][c]>=0?1:0)+(h[r+1][c]>=0?1:0)+(v[r][c]>=0?1:0)+(v[r][c+1]>=0?1:0);}
+function setEdge(t,r,c,who){
+  if(t==='h')h[r][c]=who;else v[r][c]=who;
+  // この手で完成した箱
+  let got=0;const check=[];
+  if(t==='h'){if(r>0)check.push([r-1,c]);if(r<SZ)check.push([r,c]);}
+  else{if(c>0)check.push([r,c-1]);if(c<SZ)check.push([r,c]);}
+  for(const[br,bc]of check){if(owner[br][bc]<0&&sidesOf(br,bc)===4){owner[br][bc]=who;score[who]++;got++;}}
+  return got;
+}
+function tap(t,r,c){
+  if(over||busy||!isHuman())return;
+  if((t==='h'?h[r][c]:v[r][c])>=0)return;
+  const got=setEdge(t,r,c,turn);
+  afterMove(got);
+}
+function afterMove(got){
+  render();
+  const total=SZ*SZ;
+  if(score[0]+score[1]===total){endGame();return;}
+  if(got===0){turn=1-turn;render();}
+  // 箱を取ったら同じ手番続行
+  if(!isHuman()&&!over){busy=true;render();setTimeout(cpuMove,520);}
+  else if(isHuman())msg(got>0?'箱ゲット！続けて打てます':'');
+}
+/* ---- CPU ---- */
+function freeEdges(){const out=[];
+  for(let r=0;r<=SZ;r++)for(let c=0;c<SZ;c++)if(h[r][c]<0)out.push(['h',r,c]);
+  for(let r=0;r<SZ;r++)for(let c=0;c<=SZ;c++)if(v[r][c]<0)out.push(['v',r,c]);
+  return out;}
+function boxSidesIf(t,r,c){ // この線を引いたとき各隣接箱が何辺になるか最大
+  const check=[];if(t==='h'){if(r>0)check.push([r-1,c]);if(r<SZ)check.push([r,c]);}else{if(c>0)check.push([r,c-1]);if(c<SZ)check.push([r,c]);}
+  let max=0;for(const[br,bc]of check)max=Math.max(max,sidesOf(br,bc));return max;}
+function completesBox(t,r,c){ // この線で4辺になる箱があるか
+  const check=[];if(t==='h'){if(r>0)check.push([r-1,c]);if(r<SZ)check.push([r,c]);}else{if(c>0)check.push([r,c-1]);if(c<SZ)check.push([r,c]);}
+  return check.some(([br,bc])=>owner[br][bc]<0&&sidesOf(br,bc)===3);}
+function cpuMove(){
+  busy=false;if(over)return;
+  const edges=freeEdges();
+  // 1) 取れる箱があれば取る（連鎖して全部）
+  const winning=edges.filter(([t,r,c])=>completesBox(t,r,c));
+  if(winning.length){const[t,r,c]=winning[0];const got=setEdge(t,r,c,1);afterMove(got);return;}
+  // 2) 相手に3辺目を渡さない安全手（引いても箱が3辺にならない）
+  const safe=edges.filter(([t,r,c])=>boxSidesIf(t,r,c)<2); // 引くと最大2辺になる→相手に取られない
+  const pool=safe.length?safe:edges;
+  const[t,r,c]=pool[Math.floor(Math.random()*pool.length)];
+  const got=setEdge(t,r,c,1);afterMove(got);
+}
+function endGame(){over=true;render();const t=document.getElementById('ov-t'),s=document.getElementById('ov-s');
+  if(score[0]>score[1]){t.textContent=mode==='pvp'?'青の勝ち':'あなたの勝ち！🎉';t.style.color='var(--me)';}
+  else if(score[1]>score[0]){t.textContent=mode==='pvp'?'赤の勝ち':'CPUの勝ち';t.style.color='var(--cpu)';}
+  else{t.textContent='引き分け';t.style.color='var(--gold)';}
+  s.textContent=score[0]+' 対 '+score[1];
+  document.getElementById('over').classList.add('show');}
+document.getElementById('new').addEventListener('click',init);
+document.getElementById('again').addEventListener('click',init);
+document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
+document.getElementById('size').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;SZ=+b.dataset.s;document.querySelectorAll('#size button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
+init();
+</script>
+</body>
+</html>

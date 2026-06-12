@@ -86,12 +86,24 @@
     newGame();
   }
 
+  // 人間vsCPUのとき、どちらが先手かを毎回ランダムに決める（振り駒）。
+  function randomizeFirst() {
+    const s = players[SENTE].type, g = players[GOTE].type;
+    const oneEach = (s === "human" && g === "cpu") || (s === "cpu" && g === "human");
+    if (oneEach && Math.random() < 0.5) {
+      const tmp = players[SENTE];
+      players[SENTE] = players[GOTE];
+      players[GOTE] = tmp;
+    }
+  }
+
   startBtn.addEventListener("click", () => {
     online = null;
     players[SENTE].type = document.querySelector('input[name="sente-type"]:checked').value;
     players[GOTE].type = document.querySelector('input[name="gote-type"]:checked').value;
     players[SENTE].level = senteLevel.value;
     players[GOTE].level = goteLevel.value;
+    randomizeFirst();
     enterGameScreen();
   });
   backBtn.addEventListener("click", () => {

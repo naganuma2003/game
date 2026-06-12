@@ -98,7 +98,7 @@ let bd,turn,over,mode='cpu',cells=[],sc={O:0,X:0,D:0};
 const WINS=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
 const board=document.getElementById('bd');
 for(let i=0;i<9;i++){const d=document.createElement('div');d.className='cell';d.addEventListener('click',()=>tap(i));board.appendChild(d);cells.push(d);}
-function init(){bd=Array(9).fill('');turn='O';over=false;render();setStatus();}
+function init(){bd=Array(9).fill('');turn='O';over=false;render();setStatus();if(mode==='cpu'&&Math.random()<0.5){turn='X';setStatus();setTimeout(()=>{move(best('X'));},400);}}
 function setStatus(t){const s=document.getElementById('status');if(t){s.textContent=t;return;}if(mode==='pvp')s.textContent=(turn==='O'?'○':'×')+'の番';else s.textContent=turn==='O'?'あなた（○）の番':'CPUの番';}
 function render(){for(let i=0;i<9;i++){cells[i].textContent=bd[i];cells[i].className='cell'+(bd[i]==='O'?' o':bd[i]==='X'?' x':'');}}
 function winner(b){for(const w of WINS){const[a,c,d]=w;if(b[a]&&b[a]===b[c]&&b[a]===b[d])return{p:b[a],line:w};}if(b.every(x=>x))return{p:'D'};return null;}
@@ -233,6 +233,7 @@ function init(){
   ];
   hands={0:[],1:[]};turn=ME;sel=null;over=false;busy=false;
   document.getElementById('winov').classList.remove('show');render();
+  if(mode==='cpu'&&Math.random()<0.5){turn=YOU;busy=true;render();setTimeout(cpuMove,500);}
 }
 const inB=(r,c)=>r>=0&&r<4&&c>=0&&c<3;
 function pieceMoves(r,c){const p=board[r][c];if(!p)return[];const sign=p.o===ME?1:-1;const out=[];for(const[dr,dc]of MOVES[p.t]){const nr=r+dr*sign,nc=c+dc;if(inB(nr,nc)&&(!board[nr][nc]||board[nr][nc].o!==p.o))out.push([nr,nc]);}return out;}

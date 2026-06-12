@@ -77,12 +77,24 @@
     newGame();
   }
 
+  // 人間vsCPUのとき、どちらが黒（先手）かを毎回ランダムに決める。
+  function randomizeFirst() {
+    const b = players[BLACK].type, w = players[WHITE].type;
+    const oneEach = (b === "human" && w === "cpu") || (b === "cpu" && w === "human");
+    if (oneEach && Math.random() < 0.5) {
+      const tmp = players[BLACK];
+      players[BLACK] = players[WHITE];
+      players[WHITE] = tmp;
+    }
+  }
+
   startBtn.addEventListener("click", () => {
     online = null;
     players[BLACK].type = document.querySelector('input[name="black-type"]:checked').value;
     players[WHITE].type = document.querySelector('input[name="white-type"]:checked').value;
     players[BLACK].level = blackLevel.value;
     players[WHITE].level = whiteLevel.value;
+    randomizeFirst();
     enterGameScreen();
   });
   backBtn.addEventListener("click", () => { gameEl.hidden = true; setupEl.hidden = false; });

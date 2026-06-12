@@ -109,9 +109,21 @@
     newGame();
   }
 
+  // 対人間vsCPUのとき、どちらが黒（先手）かを毎回ランダムに決める（振り駒）。
+  function randomizeFirst() {
+    const b = players[BLACK].type, w = players[WHITE].type;
+    const oneEach = (b === "human" && w === "cpu") || (b === "cpu" && w === "human");
+    if (oneEach && Math.random() < 0.5) {
+      const tmp = players[BLACK];
+      players[BLACK] = players[WHITE];
+      players[WHITE] = tmp;
+    }
+  }
+
   startBtn.addEventListener("click", () => {
     online = null;
     readConfig();
+    randomizeFirst();
     enterGameScreen();
   });
 

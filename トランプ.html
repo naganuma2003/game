@@ -196,7 +196,7 @@ function strength(c){return c.r;} // 0..12
 function makeDeck(){const d=[];for(let s=0;s<4;s++)for(let r=0;r<13;r++)d.push({s,r});return d;}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function sortHand(h){h.sort((a,b)=>a.r-b.r||a.s-b.s);}
-function init(){const d=shuffle(makeDeck());hands=[[],[],[],[]];d.forEach((c,i)=>hands[i%4].push(c));hands.forEach(sortHand);turn=0;field=[];fieldOwner=-1;passes=0;revolution=false;finished=[];gameOver=false;sel=[];document.getElementById('winov').classList.remove('show');render();msg('あなたの番。同じ数字をまとめて出せます');}
+function init(){const d=shuffle(makeDeck());hands=[[],[],[],[]];d.forEach((c,i)=>hands[i%4].push(c));hands.forEach(sortHand);turn=Math.floor(Math.random()*4);field=[];fieldOwner=-1;passes=0;revolution=false;finished=[];gameOver=false;sel=[];document.getElementById('winov').classList.remove('show');render();if(turn===0){msg('あなたの番。同じ数字をまとめて出せます');}else{msg(NAMES[turn]+'から開始');setTimeout(cpuTurn,650);}}
 function cardHtml(c,cls){const col=RED[SUITS[c.s]]?'red':'blk';return '<div class="card '+col+(cls||'')+'"><span class="crn">'+RANKS[c.r]+'<br>'+SUITS[c.s]+'</span><span class="big">'+SUITS[c.s]+'</span></div>';}
 function render(){
   const cpus=document.getElementById('cpus');cpus.innerHTML='';

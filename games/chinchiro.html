@@ -10,6 +10,10 @@
 body{background:radial-gradient(ellipse at 50% 30%,#164a30,#0E2A1C);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 10px 28px;user-select:none}
 h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;margin:2px 0}
 .sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:10px}
+.row{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.row .lab{font-size:11px;color:var(--sub);margin-right:2px}
+.row button{background:transparent;border:1px solid #2c5a40;color:var(--sub);padding:6px 13px;border-radius:18px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s}
+.row button.on{border-color:var(--gold);color:var(--gold)}
 .chips{display:flex;gap:14px;align-items:center;margin-bottom:8px;font-size:14px}
 .chips .b{background:rgba(0,0,0,.28);border-radius:7px;padding:5px 14px}
 .chips b{color:var(--gold)}
@@ -27,104 +31,225 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;
 .bet button:hover{border-color:var(--gold)}
 .bet .betv{font-size:15px;color:var(--gold);font-weight:700;min-width:60px}
 .msg{min-height:24px;font-size:15px;font-weight:700;color:var(--gold);margin:8px 0;text-align:center;letter-spacing:.05em}
-.actions{display:flex;gap:10px;margin-top:4px}
+.actions{display:flex;gap:10px;margin-top:4px;justify-content:center}
 .actions button{background:var(--gold);border:none;color:#13402A;font-weight:700;padding:11px 26px;border-radius:8px;cursor:pointer;font-size:15px;font-family:inherit}
 .actions button:disabled{opacity:.4}
+.actions button.alt{background:transparent;border:1px solid #2c5a40;color:var(--txt)}
+/* multi */
+.mboard{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;width:min(96vw,460px);margin:4px 0 8px}
+.pcard{background:rgba(0,0,0,.25);border:1px solid #1c5e3c;border-radius:10px;padding:8px 10px;min-width:96px;text-align:center}
+.pcard.active{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,162,39,.4)}
+.pcard.me .pn{color:#7fd6a0}
+.pcard.win{background:rgba(201,162,39,.14)}
+.pcard .pn{font-size:12px;color:var(--txt);margin-bottom:3px}
+.pcard .sc{font-size:18px;font-weight:800;color:var(--gold)}
+.pcard .pr{font-size:11px;color:var(--sub);min-height:15px;margin-top:2px}
+.minidice{display:flex;gap:3px;justify-content:center;margin-top:4px;min-height:20px}
+.minidice .md{width:18px;height:18px;border-radius:3px;background:var(--die);position:relative}
+.minidice .md .pip{position:absolute;width:3.4px;height:3.4px;border-radius:50%;background:var(--pip);transform:translate(-50%,-50%)}
 .rule{width:min(94vw,420px);margin-top:14px;font-size:11px;line-height:1.7;color:var(--sub);border-top:1px solid #1c5e3c;padding-top:10px}
 .rule b{color:var(--txt)}
+.hidden{display:none!important}
 </style>
 </head>
 <body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
-<h1>チンチロ</h1><div class="sub">CHINCHIRO — サイコロ3個の丁半勝負</div>
-<div class="chips"><span class="b">チップ <b id="chips">1000</b></span><span class="b">賭け <b id="betv2">100</b></span></div>
+<h1>チンチロ</h1><div class="sub">CHINCHIRO — サイコロ3個の出目勝負</div>
 
-<div class="area"><div class="lab">親（CPU）</div><div class="bowl" id="cpu-bowl"></div><div class="role" id="cpu-role"></div></div>
-<div class="area"><div class="lab">あなた（子）</div><div class="bowl" id="me-bowl"></div><div class="role" id="me-role"></div></div>
+<div class="row" id="mode"><span class="lab">対戦:</span>
+  <button data-m="solo" class="on">1人（CPU）</button>
+  <button data-m="multi">複数人</button>
+</div>
+<div class="row hidden" id="nprow"><span class="lab">人数:</span>
+  <button data-np="2" class="on">2人</button>
+  <button data-np="3">3人</button>
+  <button data-np="4">4人</button>
+</div>
+
+<!-- SOLO -->
+<div id="solo-area">
+  <div class="chips"><span class="b">チップ <b id="chips">1000</b></span><span class="b">賭け <b id="betv2">100</b></span></div>
+  <div class="area"><div class="lab">親（CPU）</div><div class="bowl" id="cpu-bowl"></div><div class="role" id="cpu-role"></div></div>
+  <div class="area"><div class="lab">あなた（子）</div><div class="bowl" id="me-bowl"></div><div class="role" id="me-role"></div></div>
+  <div class="bet" id="betrow">
+    <button data-b="-50">−50</button>
+    <span class="betv" id="betv">100</span>
+    <button data-b="50">+50</button>
+    <button data-b="100">+100</button>
+    <button data-b="max">MAX</button>
+  </div>
+</div>
+
+<!-- MULTI -->
+<div id="multi-area" class="hidden">
+  <div class="mboard" id="mboard"></div>
+  <div class="area"><div class="lab" id="m-turnlab">プレイヤー1 の番</div><div class="bowl" id="m-bowl"></div><div class="role" id="m-role"></div></div>
+</div>
 
 <div class="msg" id="msg">賭けを決めて「振る」</div>
-<div class="bet" id="betrow">
-  <button data-b="-50">−50</button>
-  <span class="betv" id="betv">100</span>
-  <button data-b="50">+50</button>
-  <button data-b="100">+100</button>
-  <button data-b="max">MAX</button>
+<div class="actions">
+  <button id="roll">振る</button>
+  <button id="mreset" class="alt hidden">最初から</button>
 </div>
-<div class="actions"><button id="roll">振る</button></div>
-<div class="rule">
-3個のサイコロを振って役を競います（最大3回振り直し）。<br>
-<b>ピンゾロ</b>(1ゾロ)=5倍 / <b>ゾロ目</b>=3倍 / <b>456(シゴロ)</b>=勝ち / <b>目(2つ同じ＋1つの数)</b>=その目で強弱 / <b>123(ヒフミ)</b>=負け2倍 / 役なし=ハズレ。親(CPU)が先に振り、あなたが上回れば配当、下回れば没収。
-</div>
+<div class="rule" id="rule"></div>
 <script>
-let chips=+(localStorage.getItem('chinchip')||1000),bet=100,phase='bet',busy=false;
 const PIPS={1:[[50,50]],2:[[28,28],[72,72]],3:[[26,26],[50,50],[74,74]],4:[[28,28],[72,28],[28,72],[72,72]],5:[[28,28],[72,28],[50,50],[28,72],[72,72]],6:[[28,26],[72,26],[28,50],[72,50],[28,74],[72,74]]};
-function saveChips(){localStorage.setItem('chinchip',chips);}
 function dieHtml(v,roll){return `<div class="die${roll?' roll':''}">${PIPS[v].map(([x,y])=>`<span class="pip" style="left:${x}%;top:${y}%"></span>`).join('')}</div>`;}
+function miniDice(d){return `<div class="minidice">${d?d.map(v=>`<div class="md">${PIPS[v].map(([x,y])=>`<span class="pip" style="left:${x}%;top:${y}%"></span>`).join('')}</div>`).join(''):''}</div>`;}
 function showDice(sel,dice,roll){document.getElementById(sel).innerHTML=dice.map(v=>dieHtml(v,roll)).join('');}
 function rollDice(){return[1,2,3].map(()=>1+Math.floor(Math.random()*6));}
-// 役判定: {rank, mult, name, bad} rankが大きいほど強い。
-function judge(d){const s=d.slice().sort((a,b)=>a-b);
-  const[a,b,c]=s;
+// 役判定: {rank,mult,name,bad}  rankが大きいほど強い
+function judge(d){const s=d.slice().sort((a,b)=>a-b);const[a,b,c]=s;
   if(a===1&&b===1&&c===1)return{rank:100,mult:5,name:'ピンゾロ！'};
   if(a===b&&b===c)return{rank:90+a,mult:3,name:a+'のゾロ目'};
   if(a===4&&b===5&&c===6)return{rank:80,mult:2,name:'シゴロ(456)'};
   if(a===1&&b===2&&c===3)return{rank:0,mult:2,name:'ヒフミ(123)',bad:true};
-  // 目: 2つ同じ＋1つ
-  let eye=null;
-  if(a===b)eye=c;else if(b===c)eye=a;else if(a===c)eye=b;
+  let eye=null;if(a===b)eye=c;else if(b===c)eye=a;else if(a===c)eye=b;
   if(eye!==null)return{rank:10+eye,mult:1,name:eye+'の目'};
   return{rank:5,mult:0,name:'役なし',none:true};}
-function rollUntilRole(){ // 最大3回、役(目以上 or 役なし確定)
-  let res,dice;
-  for(let i=0;i<3;i++){dice=rollDice();res=judge(dice);if(!res.none||i===2)break;}
-  return{dice,res};}
-function setBet(){document.getElementById('betv').textContent=bet;document.getElementById('betv2').textContent=bet;}
+function isFinalRole(r){return r.rank>=80||r.bad;} // ピンゾロ/ゾロ目/シゴロ/ヒフミのみ確定
+function rollUntilRole(){let res,dice;for(let i=0;i<3;i++){dice=rollDice();res=judge(dice);if(isFinalRole(res)||i===2)break;}return{dice,res};}
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 function msg(s){document.getElementById('msg').textContent=s;}
-async function play(){
+
+let mode='solo',np=2;
+let ONLINE=false,MYSEAT=0,roomSend=null;
+function myTurn(){return !ONLINE||curPlayer===MYSEAT;}
+
+/* ============ SOLO (vs CPU) ============ */
+let chips=+(localStorage.getItem('chinchip')||1000),bet=100,busy=false;
+function saveChips(){localStorage.setItem('chinchip',chips);}
+function setBet(){document.getElementById('betv').textContent=bet;document.getElementById('betv2').textContent=bet;}
+async function playSolo(){
   if(busy)return;busy=true;document.getElementById('roll').disabled=true;
   document.getElementById('cpu-role').textContent='';document.getElementById('me-role').textContent='';
   document.getElementById('cpu-role').className='role';document.getElementById('me-role').className='role';
-  // 親(CPU)
   msg('親（CPU）が振っています…');
   const cpu=rollUntilRole();showDice('cpu-bowl',cpu.dice,true);
   await wait(550);
   document.getElementById('cpu-role').textContent=cpu.res.name;
   if(cpu.res.bad)document.getElementById('cpu-role').className='role bad';
   await wait(500);
-  // 親が強役で即決着の演出（ピンゾロ/ゾロ目/シゴロは親の勝ち確定的だが子も振って比較）
   msg('あなたが振っています…');
   const me=rollUntilRole();showDice('me-bowl',me.dice,true);
   await wait(550);
   document.getElementById('me-role').textContent=me.res.name;
   if(me.res.bad)document.getElementById('me-role').className='role bad';
   await wait(300);
-  settle(cpu.res,me.res);
-  busy=false;
+  settleSolo(cpu.res,me.res);busy=false;
 }
-function settle(cpuR,meR){
-  // 子(あなた)視点。勝てば bet×(自分の倍率) 獲得、負ければ bet×(親の倍率) 没収。引き分け返却。
+function settleSolo(cpuR,meR){
   let delta=0,text;
-  if(meR.rank>cpuR.rank){ // あなたの勝ち
-    const m=meR.mult||1;delta=bet*m;text='あなたの勝ち！ +'+delta+(m>1?'（'+m+'倍）':'');
-  }else if(meR.rank<cpuR.rank){ // 親の勝ち
-    const m=cpuR.mult||1;delta=-bet*m;text='親の勝ち… '+delta+(m>1?'（'+m+'倍）':'');
-  }else{ text='引き分け（賭け返却）'; }
-  chips+=delta;saveChips();
-  document.getElementById('chips').textContent=chips;
-  msg(text);
-  setTimeout(()=>{
-    document.getElementById('roll').disabled=false;
+  if(meR.rank>cpuR.rank){const m=meR.mult||1;delta=bet*m;text='あなたの勝ち！ +'+delta+(m>1?'（'+m+'倍）':'');}
+  else if(meR.rank<cpuR.rank){const m=cpuR.mult||1;delta=-bet*m;text='親の勝ち… '+delta+(m>1?'（'+m+'倍）':'');}
+  else{text='引き分け（賭け返却）';}
+  chips+=delta;saveChips();document.getElementById('chips').textContent=chips;msg(text);
+  setTimeout(()=>{document.getElementById('roll').disabled=false;
     if(chips<=0){chips=1000;saveChips();document.getElementById('chips').textContent=chips;msg('チップが尽きたので1000補充。賭けて「振る」');}
     else msg('次の勝負へ。賭けて「振る」');
-    bet=Math.min(bet,chips);setBet();
-  },1300);
+    bet=Math.min(bet,chips);setBet();},1300);
 }
-function wait(ms){return new Promise(r=>setTimeout(r,ms));}
-document.getElementById('betrow').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||busy)return;const v=b.dataset.b;
-  if(v==='max')bet=chips;else bet=Math.max(50,Math.min(chips,bet+ +v));setBet();});
-document.getElementById('roll').addEventListener('click',play);
+
+/* ============ MULTI (2-4人 / オンライン) ============ */
+let scores=[],curPlayer=0,roundRoles=[],mover=false,roundNo=1;
+function initMulti(){
+  scores=new Array(np).fill(0);curPlayer=0;roundRoles=new Array(np).fill(null);mover=false;roundNo=1;
+  document.getElementById('roll').disabled=false;
+  renderMulti();msg(turnName(curPlayer)+'の番。「振る」をタップ');
+}
+function pname(i){return (ONLINE&&i===MYSEAT)?'あなた(P'+(i+1)+')':'プレイヤー'+(i+1);}
+function turnName(i){return (ONLINE?(i===MYSEAT?'★ あなた':'相手(P'+(i+1)+')'):'プレイヤー'+(i+1));}
+function renderMulti(){
+  const bd=document.getElementById('mboard');bd.innerHTML='';
+  const maxRank=Math.max(...roundRoles.map(r=>r?r.res.rank:-1));
+  for(let i=0;i<np;i++){
+    const r=roundRoles[i];
+    const win=r&&r.res.rank===maxRank&&maxRank>=0;
+    const c=document.createElement('div');
+    c.className='pcard'+(i===curPlayer&&!mover?' active':'')+(ONLINE&&i===MYSEAT?' me':'')+(win&&roundRoles.every(x=>x)?' win':'');
+    c.innerHTML='<div class="pn">'+pname(i)+'</div><div class="sc">'+scores[i]+'</div>'+miniDice(r?r.dice:null)+'<div class="pr'+(r&&r.res.bad?' bad':'')+'" style="'+(r&&r.res.bad?'color:#e0533e':'')+'">'+(r?r.res.name:'—')+'</div>';
+    bd.appendChild(c);
+  }
+  document.getElementById('m-turnlab').textContent=turnName(curPlayer)+'の番（R'+roundNo+'）';
+}
+// 入力 → 中継
+function emit(a){if(ONLINE){if(!myTurn()||mover)return;roomSend(a);}else doAction(a);}
+function doAction(a){if(a.k==='roll')_multiRoll();}
+async function _multiRoll(){
+  if(mover||roundRoles[curPlayer])return;
+  mover=true;document.getElementById('roll').disabled=true;
+  const {dice,res}=rollUntilRole();
+  showDice('m-bowl',dice,true);
+  document.getElementById('m-role').textContent='';document.getElementById('m-role').className='role';
+  await wait(520);
+  roundRoles[curPlayer]={dice,res};
+  const rl=document.getElementById('m-role');rl.textContent=pname(curPlayer)+'： '+res.name;rl.className='role'+(res.bad?' bad':'');
+  renderMulti();
+  await wait(450);
+  // 次へ / 集計
+  if(roundRoles.every(x=>x)){
+    await settleRound();
+  }else{
+    do{curPlayer=(curPlayer+1)%np;}while(roundRoles[curPlayer]);
+    mover=false;document.getElementById('roll').disabled=!myTurn();
+    renderMulti();msg(turnName(curPlayer)+'の番。「振る」をタップ');
+  }
+}
+async function settleRound(){
+  const ranks=roundRoles.map(r=>r.res.rank);
+  const max=Math.max(...ranks);
+  const winners=[];for(let i=0;i<np;i++)if(ranks[i]===max)winners.push(i);
+  for(const w of winners)scores[w]+=(roundRoles[w].res.mult||1);
+  renderMulti();
+  const names=winners.map(w=>pname(w)).join('・');
+  msg('🏆 R'+roundNo+' 勝者: '+names+'（+'+(roundRoles[winners[0]].res.mult||1)+'）');
+  await wait(1500);
+  // 次ラウンド: 勝者から開始
+  roundRoles=new Array(np).fill(null);roundNo++;curPlayer=winners[0];mover=false;
+  showDice('m-bowl',[1,1,1]);document.getElementById('m-role').textContent='';
+  document.getElementById('roll').disabled=!myTurn();
+  renderMulti();msg('次のラウンド。'+turnName(curPlayer)+'の番');
+}
+
+/* ============ shared controls ============ */
+function rollClick(){if(mode==='solo')playSolo();else emit({k:'roll'});}
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('#mode button').forEach(x=>x.classList.toggle('on',x.dataset.m===m));
+  document.getElementById('nprow').classList.toggle('hidden',m!=='multi');
+  document.getElementById('solo-area').classList.toggle('hidden',m!=='solo');
+  document.getElementById('multi-area').classList.toggle('hidden',m!=='multi');
+  document.getElementById('betrow').classList.toggle('hidden',m!=='solo');
+  document.getElementById('mreset').classList.toggle('hidden',m!=='multi');
+  document.getElementById('rule').innerHTML=m==='solo'
+    ? '3個振って役を競う。<b>役（ピンゾロ/ゾロ目/シゴロ/ヒフミ）</b>が出るまで最大3回振り直し。<b>目</b>のみの場合は大きい目が勝ち。倍率: ピンゾロ=5 / ゾロ目=3 / シゴロ=2 / 目=1 / ヒフミ=負け2倍。'
+    : '全員が順番に振り、最も強い役の人が勝ち。役が出るまで最大3回振り直し、目のみの場合は大きい目が勝ち。倍率: ピンゾロ=5/ゾロ目=3/シゴロ=2/目=1。';
+  if(m==='solo'){document.getElementById('roll').disabled=false;showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);setBet();msg('賭けを決めて「振る」');}
+  else initMulti();
+}
+document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;setMode(b.dataset.m);});
+document.getElementById('nprow').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;np=+b.dataset.np;document.querySelectorAll('#nprow button').forEach(x=>x.classList.toggle('on',x===b));initMulti();});
+document.getElementById('betrow').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||busy)return;const v=b.dataset.b;if(v==='max')bet=chips;else bet=Math.max(50,Math.min(chips,bet+ +v));setBet();});
+document.getElementById('roll').addEventListener('click',rollClick);
+document.getElementById('mreset').addEventListener('click',()=>{if(ONLINE)return;initMulti();});
+// init solo view
 showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);setBet();
 document.getElementById('chips').textContent=chips;
+document.getElementById('rule').innerHTML='3個振って役を競う。<b>役（ピンゾロ/ゾロ目/シゴロ/ヒフミ）</b>が出るまで最大3回振り直し。<b>目</b>のみの場合は大きい目が勝ち。倍率: ピンゾロ=5 / ゾロ目=3 / シゴロ=2 / 目=1 / ヒフミ=負け2倍。';
+
+function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
+  document.getElementById('mode').classList.add('hidden');
+  document.getElementById('nprow').classList.add('hidden');
+  setMode('multi');
+}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js?v=2"></script>
+<script src="../shared/online-room.js?v=1"></script>
+<script>
+OnlineRoom.init({gameId:'chinchiro',minPlayers:2,maxPlayers:4,note:'全員で振って役の強さを競います。',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>doAction(msg)});
 </script>
 </body>
 </html>

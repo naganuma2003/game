@@ -18,6 +18,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:23px;letter-spacing:.18em;
 .cpu{background:rgba(0,0,0,.25);border-radius:8px;padding:5px 11px;font-size:12px;text-align:center;min-width:74px}
 .cpu .nm{color:var(--txt)}.cpu .ct{color:var(--gold);font-size:11px}
 .cpu.active{box-shadow:0 0 0 2px var(--gold)}
+.cpu.me .nm{color:#7fd6a0}
 .cpu.done{opacity:.5}.cpu.out{opacity:.4;color:#e0533e}
 .board{display:grid;grid-template-rows:repeat(4,1fr);gap:3px;background:rgba(0,0,0,.18);padding:6px;border-radius:8px;margin:4px 0}
 .brow{display:grid;grid-template-columns:repeat(13,1fr);gap:2px}
@@ -26,6 +27,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:23px;letter-spacing:.18em;
 .bc.red{color:var(--red)}.bc.blk{color:var(--blk)}
 .msg{min-height:20px;font-size:13px;color:var(--gold);margin:8px 0;text-align:center}
 .myhand{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px;width:min(98vw,560px)}
+.handlab{font-size:11px;color:var(--sub);margin-top:6px;min-height:14px}
 .card{width:42px;height:60px;border-radius:6px;background:var(--cardbg);border:1px solid var(--cardline);position:relative;font-weight:700;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .1s}
 .card.red{color:var(--red)}.card.blk{color:var(--blk)}
 .card .crn{position:absolute;top:3px;left:5px;font-size:13px;line-height:1.05}
@@ -46,47 +48,65 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:23px;letter-spacing:.18em;
 .bc.joker-tgt{background:#2a4a20;border:2px solid var(--gold);cursor:pointer}
 .bc.joker-tgt:hover{background:#3a6a30}
 .bc.joker-placed{background:#3a205a !important}
-.win{position:fixed;inset:0;background:rgba(8,20,14,.86);display:none;align-items:center;justify-content:center;z-index:30}
-.win.show{display:flex}
-.win .c{background:#13402A;border:1px solid var(--gold);border-radius:10px;padding:24px 34px;text-align:center;max-width:90vw}
-.win .t{font-size:22px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:10px}
+.win,.handoff{position:fixed;inset:0;background:rgba(8,20,14,.86);display:none;align-items:center;justify-content:center;z-index:30}
+.win.show,.handoff.show{display:flex}
+.win .c,.handoff .c{background:#13402A;border:1px solid var(--gold);border-radius:10px;padding:24px 34px;text-align:center;max-width:90vw}
+.win .t,.handoff .t{font-size:22px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:10px}
 .win .rk{font-size:13px;line-height:1.9;margin-bottom:14px}
-.win button{background:var(--gold);border:none;color:#13402A;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.handoff .s{font-size:13px;margin-bottom:16px}
+.win button,.handoff button{background:var(--gold);border:none;color:#13402A;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.hidden{display:none!important}
 </style>
 </head>
 <body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 <h1>七並べ</h1><div class="sub">SEVENS — パス3回でアウト</div>
-<div class="setup" id="setup"><span class="lab">人数:</span><button data-n="3">3人</button><button data-n="4" class="on">4人</button><span class="lab" style="margin-left:8px">ジョーカー:</span><button data-j="0" class="on">0枚</button><button data-j="1">1枚</button><button data-j="2">2枚</button></div>
+<div class="setup" id="setup">
+  <span class="lab">対戦:</span><button data-g="cpu" class="on">CPU</button><button data-g="local">みんなで</button>
+  <span class="lab" style="margin-left:8px">人数:</span><button data-n="2">2人</button><button data-n="3">3人</button><button data-n="4" class="on">4人</button>
+  <span class="lab" style="margin-left:8px">ジョーカー:</span><button data-j="0" class="on">0枚</button><button data-j="1">1枚</button><button data-j="2">2枚</button>
+</div>
 <div class="cpus" id="cpus"></div>
 <div class="board" id="board"></div>
 <div class="msg" id="msg"></div>
+<div class="handlab" id="handlab"></div>
 <div class="myhand" id="myhand"></div>
 <div class="actions"><button id="pass" class="alt">パス</button></div>
 <div class="foot"><button id="new">配り直し</button></div>
 <div class="win" id="winov"><div class="c"><div class="t" id="wint">結果</div><div class="rk" id="winrk"></div><button id="again">もう一度</button></div></div>
+<div class="handoff" id="handoff"><div class="c"><div class="t" id="ho-t">交代</div><div class="s" id="ho-s">端末を渡してください</div><button id="ho-ok">手札を見る</button></div></div>
 <script>
 const SUITS=['♠','♥','♦','♣'],RED={'♥':1,'♦':1};
-const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K']; // index0=A(1) .. 12=K(13)
-let NAMES=['あなた','CPU A','CPU B','CPU C'];
-function makeNames(n){const a=['あなた'],L='ABCDE';for(let i=1;i<n;i++)a.push('CPU '+L[i-1]);return a;}
-let hands,board,turn,passes,outCnt,finished,gameOver,busy,np=4,jokerCount=0,jokerPending=null;
-// board[suit][rank] = true if placed
+const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+let gmode='cpu',np=4,jokerCount=0;
+let ONLINE=false,MYSEAT=0,roomSend=null;
+let hands,board,turn,passes,outCnt,finished,gameOver,busy,jokerPending=null,localView=0;
+let NAMES=[];
+function isHuman(o){return ONLINE||gmode==='local'||o===0;}
+function viewSeat(){return ONLINE?MYSEAT:(gmode==='cpu'?0:localView);}
+function myControlSeat(){return ONLINE?MYSEAT:(gmode==='cpu'?0:turn);}
+function canAct(){return turn===myControlSeat()&&!gameOver&&!busy&&!outCnt[turn]&&isHuman(turn);}
+function makeNames(){
+  const a=[];for(let i=0;i<np;i++){
+    if(ONLINE)a.push(i===MYSEAT?'あなた':'P'+(i+1));
+    else if(gmode==='cpu')a.push(i===0?'あなた':'CPU '+String.fromCharCode(64+i));
+    else a.push('プレイヤー'+(i+1));
+  }return a;}
 function init(){
   jokerPending=null;
   const deck=[];for(let s=0;s<4;s++)for(let r=0;r<13;r++)deck.push({s,r});
   for(let k=0;k<jokerCount;k++)deck.push({joker:true,s:-1,r:-1});
   for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
-  NAMES=makeNames(np);
+  NAMES=makeNames();
   hands=Array.from({length:np},()=>[]);deck.forEach((c,i)=>hands[i%np].push(c));
   hands.forEach(h=>h.sort((a,b)=>{if(a.joker)return 1;if(b.joker)return -1;return a.s-b.s||a.r-b.r;}));
   board=Array.from({length:4},()=>new Array(13).fill(false));
   passes=new Array(np).fill(0);outCnt=new Array(np).fill(false);finished=[];gameOver=false;busy=false;
   for(let s=0;s<4;s++){board[s][6]=true;for(let o=0;o<np;o++){const idx=hands[o].findIndex(c=>!c.joker&&c.r===6);if(idx>=0)hands[o].splice(idx,1);}}
-  // 7を一番多く持っていた人…ではなく、♦の7(ダイヤ7)を持っていた人から、が一般的だが簡略化: あなたから
-  turn=0;
+  turn=0;localView=0;
   document.getElementById('winov').classList.remove('show');
-  render();msg('あなたの番。出せるカード（光っている）をタップ');
+  document.getElementById('handoff').classList.remove('show');
+  beginTurn(true);
 }
 function msg(s){document.getElementById('msg').textContent=s;}
 function canPlace(c){
@@ -96,135 +116,141 @@ function canPlace(c){
   if(r<6)return board[c.s][r+1];
   return board[c.s][r-1];}
 function validJokerPositions(){
-  const pos=[];
-  for(let s=0;s<4;s++)for(let r=0;r<13;r++){
-    if(!board[s][r]&&((r<6&&board[s][r+1])||(r>6&&board[s][r-1])))pos.push({s,r});
-  }
+  const pos=[];for(let s=0;s<4;s++)for(let r=0;r<13;r++){
+    if(!board[s][r]&&((r<6&&board[s][r+1])||(r>6&&board[s][r-1])))pos.push({s,r});}
   return pos;}
 function legalCards(o){return hands[o].filter(canPlace);}
 function bestJokerPos(o){
   const pos=validJokerPositions();if(!pos.length)return null;
   let best=pos[0],bestScore=-1;
-  for(const p of pos){
-    board[p.s][p.r]=true;
+  for(const p of pos){board[p.s][p.r]=true;
     const score=hands[o].filter(c=>!c.joker&&canPlace(c)).length;
     board[p.s][p.r]=false;
-    if(score>bestScore){bestScore=score;best=p;}
-  }
+    if(score>bestScore){bestScore=score;best=p;}}
   return best;}
-function placeJokerAt(o,s,r){
-  if(board[s][r])return;
-  board[s][r]='J';
-  const idx=hands[o].findIndex(c=>c.joker);
-  if(idx<0)return;
-  hands[o].splice(idx,1);
-  if(o===0)jokerPending=null;
-  if(hands[o].length===0&&!finished.includes(o))finished.push(o);
-  next();}
+function finRank(p){const i=finished.indexOf(p);if(i<0)return null;return['1位 🏆','2位','3位','4位','5位'][i];}
 function render(){
   const cpus=document.getElementById('cpus');cpus.innerHTML='';
   for(let p=0;p<np;p++){const d=document.createElement('div');
-    let cls='cpu'+(turn===p&&!gameOver?' active':'')+(outCnt[p]?' out':'')+(hands[p].length===0?' done':'');
-    d.className=cls;const rk=finRank(p);
+    d.className='cpu'+(turn===p&&!gameOver?' active':'')+(outCnt[p]?' out':'')+(hands[p].length===0?' done':'')+(ONLINE&&p===MYSEAT?' me':'');
+    const rk=finRank(p);
     d.innerHTML=`<div class="nm">${NAMES[p]}</div><div class="ct">${rk||(outCnt[p]?'アウト':hands[p].length+'枚')+' / パス'+passes[p]}</div>`;
     cpus.appendChild(d);}
   const bd=document.getElementById('board');bd.innerHTML='';
-  const jTargets=jokerPending?validJokerPositions():[];
+  const act=canAct();
+  const jTargets=(jokerPending&&act)?validJokerPositions():[];
   for(let s=0;s<4;s++){const row=document.createElement('div');row.className='brow';
     for(let r=0;r<13;r++){const c=document.createElement('div');
-      if(board[s][r]==='J'){
-        c.className='bc on joker-placed '+(RED[SUITS[s]]?'red':'blk');
-        c.textContent=RANKS[r]+SUITS[s];
-      } else if(board[s][r]){
-        c.className='bc on '+(RED[SUITS[s]]?'red':'blk');
-        c.textContent=RANKS[r]+SUITS[s];
-      } else {
-        const isTarget=jTargets.some(p=>p.s===s&&p.r===r);
-        c.className='bc'+(isTarget?' joker-tgt':'');
-        if(isTarget){const _s=s,_r=r;c.addEventListener('click',()=>placeJokerAt(0,_s,_r));}
-      }
+      if(board[s][r]==='J'){c.className='bc on joker-placed '+(RED[SUITS[s]]?'red':'blk');c.textContent=RANKS[r]+SUITS[s];}
+      else if(board[s][r]){c.className='bc on '+(RED[SUITS[s]]?'red':'blk');c.textContent=RANKS[r]+SUITS[s];}
+      else{const isTarget=jTargets.some(p=>p.s===s&&p.r===r);c.className='bc'+(isTarget?' joker-tgt':'');
+        if(isTarget){const _s=s,_r=r;c.addEventListener('click',()=>emit({k:'joker',s:_s,r:_r}));}}
       row.appendChild(c);}
     bd.appendChild(row);}
+  const vs=viewSeat();
+  document.getElementById('handlab').textContent=(ONLINE||gmode==='local')?(NAMES[vs]+' の手札'):'';
   const mh=document.getElementById('myhand');mh.innerHTML='';
-  const myTurn=turn===0&&!gameOver&&!busy&&!outCnt[0];
-  const legal=myTurn?legalCards(0):[];
-  for(const c of hands[0]){const el=document.createElement('div');
-    if(c.joker){
-      const ok=legal.includes(c);
-      const isSel=jokerPending===c;
-      el.className='card joker-card'+(ok?' playable':myTurn?' dim':'')+(isSel?' joker-sel':'');
+  const showHand=hands[vs];
+  const legal=act?legalCards(turn):[];
+  showHand.forEach((c,ci)=>{const el=document.createElement('div');
+    const ok=act&&legal.includes(c);
+    if(c.joker){const isSel=jokerPending===c;
+      el.className='card joker-card'+(ok?' playable':act?' dim':'')+(isSel?' joker-sel':'');
       el.innerHTML=`<span class="crn">JK</span><span class="big">🃏</span>`;
       if(ok)el.addEventListener('click',()=>{jokerPending=isSel?null:c;if(!isSel)msg('置く場所をタップ');render();});
-    } else {
-      const ok=legal.includes(c);
-      el.className='card '+(RED[SUITS[c.s]]?'red':'blk')+(ok?' playable':myTurn?' dim':'');
+    }else{
+      el.className='card '+(RED[SUITS[c.s]]?'red':'blk')+(ok?' playable':act?' dim':'');
       el.innerHTML=`<span class="crn">${RANKS[c.r]}<br>${SUITS[c.s]}</span><span class="big">${SUITS[c.s]}</span>`;
-      if(ok)el.addEventListener('click',()=>{jokerPending=null;playCard(0,c);});
+      if(ok)el.addEventListener('click',()=>{jokerPending=null;emit({k:'play',ci});});
     }
-    mh.appendChild(el);}
-  document.getElementById('pass').disabled=!myTurn;
+    mh.appendChild(el);});
+  document.getElementById('pass').disabled=!act;
 }
-function finRank(p){const i=finished.indexOf(p);if(i<0)return null;return['1位 🏆','2位','3位','4位'][i];}
-function playCard(o,c){if(gameOver)return;board[c.s][c.r]=true;const idx=hands[o].indexOf(c);hands[o].splice(idx,1);
-  if(hands[o].length===0&&!finished.includes(o))finished.push(o);
-  next();}
-function doPass(o){passes[o]++;if(passes[o]>=3){forceOut(o);return;}next();}
+/* ---- input relay ---- */
+function emit(a){if(ONLINE){if(turn!==MYSEAT)return;roomSend(a);}else doAction(a);}
+function doAction(a){
+  if(a.k==='play')_play(turn,a.ci);
+  else if(a.k==='pass')_pass(turn);
+  else if(a.k==='joker')_joker(turn,a.s,a.r);
+}
+function _play(o,ci){if(gameOver)return;const c=hands[o][ci];if(!c||c.joker||!canPlace(c))return;
+  board[c.s][c.r]=true;hands[o].splice(ci,1);
+  if(hands[o].length===0&&!finished.includes(o))finished.push(o);next();}
+function _joker(o,s,r){if(gameOver||board[s][r])return;const idx=hands[o].findIndex(c=>c.joker);if(idx<0)return;
+  board[s][r]='J';hands[o].splice(idx,1);jokerPending=null;
+  if(hands[o].length===0&&!finished.includes(o))finished.push(o);next();}
+function _pass(o){passes[o]++;if(passes[o]>=3){forceOut(o);return;}next();}
 function forceOut(o){outCnt[o]=true;
-  // ジョーカーを先に最善位置に配置
   for(const c of hands[o].slice()){if(c.joker){const pos=bestJokerPos(o);if(pos)board[pos.s][pos.r]='J';hands[o].splice(hands[o].indexOf(c),1);}}
-  // 通常カードを強制配置
-  let changed=true;
-  while(changed){changed=false;for(const c of hands[o].slice()){if(canPlace(c)){board[c.s][c.r]=true;hands[o].splice(hands[o].indexOf(c),1);changed=true;}}}
+  let changed=true;while(changed){changed=false;for(const c of hands[o].slice()){if(canPlace(c)){board[c.s][c.r]=true;hands[o].splice(hands[o].indexOf(c),1);changed=true;}}}
   for(const c of hands[o].slice()){if(c.s>=0)board[c.s][c.r]=true;}
-  hands[o]=[];
-  if(!finished.includes(o)){/* アウトは最下位扱い、finishedには入れない */}
-  msg(NAMES[o]+'は3回パスでアウト！手札を場に出しました');
-  next();}
-function activePlayers(){return[...Array(np).keys()].filter(p=>hands[p].length>0&&!outCnt[p]);}
+  hands[o]=[];msg(NAMES[o]+'は3回パスでアウト！手札を場に出しました');next();}
 function next(){
-  // 勝敗
   const remain=[...Array(np).keys()].filter(p=>hands[p].length>0&&!outCnt[p]);
   if(finished.length>=np-1||remain.length<=1){endGame();return;}
-  let n=turn;
-  for(let k=0;k<np;k++){n=(n+1)%np;if(hands[n].length>0&&!outCnt[n]){turn=n;break;}}
-  render();
-  if(turn===0){msg('あなたの番');}
-  else{busy=true;render();setTimeout(cpuTurn,650);}
+  let n=turn;for(let k=0;k<np;k++){n=(n+1)%np;if(hands[n].length>0&&!outCnt[n]){turn=n;break;}}
+  beginTurn(false);
 }
+function beginTurn(first){
+  jokerPending=null;
+  if(gameOver){render();return;}
+  if(!isHuman(turn)){busy=true;render();setTimeout(cpuTurn,650);return;}
+  // human
+  if(ONLINE){busy=false;render();msg(turn===MYSEAT?'あなたの番。光るカードをタップ':NAMES[turn]+'の番です…');return;}
+  if(gmode==='cpu'){busy=false;localView=0;render();msg('あなたの番');return;}
+  // local hot-seat → handoff
+  busy=true;render();
+  document.getElementById('ho-t').textContent=NAMES[turn]+'の番';
+  document.getElementById('ho-s').textContent='端末を'+NAMES[turn]+'に渡してください';
+  document.getElementById('handoff').classList.add('show');
+}
+document.getElementById('ho-ok').addEventListener('click',()=>{
+  document.getElementById('handoff').classList.remove('show');
+  localView=turn;busy=false;render();msg(NAMES[turn]+'の番。光るカードをタップ');
+});
 function cpuTurn(){const o=turn;busy=false;
-  const legal=legalCards(o);
-  const regularLegal=legal.filter(c=>!c.joker);
-  const jokerLegal=legal.filter(c=>c.joker);
-  if(regularLegal.length){
-    regularLegal.sort((a,b)=>Math.min(a.r,12-a.r)-Math.min(b.r,12-b.r));
-    playCard(o,regularLegal[0]);
-  } else if(jokerLegal.length){
-    const pos=bestJokerPos(o);
-    if(pos){msg(NAMES[o]+'がジョーカーを使います');setTimeout(()=>placeJokerAt(o,pos.s,pos.r),400);}
-    else{msg(NAMES[o]+'はパス（'+(passes[o]+1)+'/3）');doPass(o);}
-  } else{msg(NAMES[o]+'はパス（'+(passes[o]+1)+'/3）');doPass(o);}
+  const legal=legalCards(o);const regularLegal=legal.filter(c=>!c.joker);const jokerLegal=legal.filter(c=>c.joker);
+  if(regularLegal.length){regularLegal.sort((a,b)=>Math.min(a.r,12-a.r)-Math.min(b.r,12-b.r));_play(o,hands[o].indexOf(regularLegal[0]));}
+  else if(jokerLegal.length){const pos=bestJokerPos(o);if(pos){msg(NAMES[o]+'がジョーカーを使います');setTimeout(()=>_joker(o,pos.s,pos.r),400);}else{msg(NAMES[o]+'はパス（'+(passes[o]+1)+'/3）');_pass(o);}}
+  else{msg(NAMES[o]+'はパス（'+(passes[o]+1)+'/3）');_pass(o);}
 }
 function endGame(){gameOver=true;
-  // 残っている人をfinishedに追加（手札少ない順）
   const rest=[...Array(np).keys()].filter(p=>!finished.includes(p)&&!outCnt[p]).sort((a,b)=>hands[a].length-hands[b].length);
   for(const p of rest)finished.push(p);
-  const outs=[...Array(np).keys()].filter(p=>outCnt[p]&&!finished.includes(p));
-  for(const p of outs)finished.push(p);
+  const outs=[...Array(np).keys()].filter(p=>outCnt[p]&&!finished.includes(p));for(const p of outs)finished.push(p);
   render();
   let html='';finished.forEach((p,i)=>{html+=`${i+1}位：${NAMES[p]}${outCnt[p]?'（アウト）':''}<br>`;});
-  const myRank=finished.indexOf(0)+1;
-  document.getElementById('wint').textContent='あなたは '+myRank+'位'+(myRank===1?' 🎉':'');
+  const meSeat=ONLINE?MYSEAT:0;
+  const myRank=finished.indexOf(meSeat)+1;
+  document.getElementById('wint').textContent=(ONLINE||gmode==='cpu')?('あなたは '+myRank+'位'+(myRank===1?' 🎉':'')):'結果';
   document.getElementById('winrk').innerHTML=html;
   document.getElementById('winov').classList.add('show');}
-document.getElementById('pass').addEventListener('click',()=>{if(turn!==0||gameOver||busy)return;
-  if(legalCards(0).length){msg('出せるカードがあります（パスできません）');return;}doPass(0);});
-document.getElementById('new').addEventListener('click',init);
-document.getElementById('again').addEventListener('click',init);
-document.getElementById('setup').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.n){np=+b.dataset.n;document.querySelectorAll('#setup button[data-n]').forEach(x=>x.classList.remove('on'));b.classList.add('on');}
-  if(b.dataset.j!==undefined){jokerCount=+b.dataset.j;document.querySelectorAll('#setup button[data-j]').forEach(x=>x.classList.remove('on'));b.classList.add('on');}
+document.getElementById('pass').addEventListener('click',()=>{if(!canAct())return;
+  if(legalCards(turn).length){msg('出せるカードがあります（パスできません）');return;}emit({k:'pass'});});
+function newGame(){if(ONLINE)return;init();}
+document.getElementById('new').addEventListener('click',newGame);
+document.getElementById('again').addEventListener('click',newGame);
+document.getElementById('setup').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;
+  if(b.dataset.g){gmode=b.dataset.g;document.querySelectorAll('#setup button[data-g]').forEach(x=>x.classList.toggle('on',x===b));}
+  if(b.dataset.n){np=+b.dataset.n;document.querySelectorAll('#setup button[data-n]').forEach(x=>x.classList.toggle('on',x===b));}
+  if(b.dataset.j!==undefined){jokerCount=+b.dataset.j;document.querySelectorAll('#setup button[data-j]').forEach(x=>x.classList.toggle('on',x===b));}
   init();});
 init();
+
+function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
+  document.getElementById('setup').classList.add('hidden');
+  document.querySelector('.foot').classList.add('hidden');
+  if(seat===0)roomSend({k:'setup',np:n,jokerCount});
+  else msg('ホストの設定を待っています…');}
+function applySetup(a){np=a.np;jokerCount=a.jokerCount;init();}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js?v=2"></script>
+<script src="../shared/online-room.js?v=1"></script>
+<script>
+OnlineRoom.init({gameId:'sevens',minPlayers:2,maxPlayers:4,note:'全員でカードをつなげて手札を早く出し切ります。',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>{ if(msg.k==='setup')applySetup(msg); else doAction(msg); }});
 </script>
 </body>
 </html>

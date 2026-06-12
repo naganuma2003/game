@@ -18,11 +18,13 @@
 
     /* Two columns: game list | online panel (横並び) */
     .layout {
-      display: flex; gap: 22px; max-width: 1100px; margin: 0 auto;
-      align-items: flex-start;
+      display: flex; flex-direction: column; gap: 22px; max-width: 1100px; margin: 0 auto;
     }
-    .col-games { flex: 1 1 auto; }
-    .col-online { flex: 0 0 300px; }
+    .col-games { width: 100%; }
+    .col-online { width: 100%; }
+    /* オンラインパネル内を横並びの帯に */
+    .ob-grid { display: flex; gap: 16px; flex-wrap: wrap; }
+    .ob-grid .join-block { flex: 1 1 250px; margin-bottom: 0; }
 
     .grid {
       display: grid; gap: 18px;
@@ -55,7 +57,7 @@
       background: rgba(60, 110, 220, 0.12);
       border: 1px solid rgba(80, 150, 255, 0.4);
       border-radius: 16px; padding: 20px 18px;
-      position: sticky; top: 24px;
+      position: static;
     }
     .online-panel h2 {
       margin: 0 0 4px; font-size: 18px;
@@ -162,15 +164,38 @@
   <p class="sub">遊びたいゲームを選んでください</p>
 
   <div class="layout">
-    <!-- 左：ゲーム一覧 -->
+    <!-- 最上部：オンライン対戦 -->
+    <div class="col-online">
+      <div class="online-panel">
+        <h2>🌐 オンライン対戦</h2>
+        <p class="pdesc">5桁の部屋番号を共有して、離れた相手と対戦できます。番号は<b>ゲーム共通</b>です。</p>
+        <div class="ob-grid">
+          <div class="join-block">
+            <div class="jb-title">部屋を作る</div>
+            <button id="hub-create-btn" class="jb-btn" style="width:100%">＋ 部屋を作成</button>
+            <p class="jb-msg">押すとゲーム選択 → 部屋番号を発行します</p>
+          </div>
+          <div class="join-block">
+            <div class="jb-title">番号で参加する</div>
+            <div class="jb-row">
+              <input id="hub-join-code" class="jb-input" maxlength="5" placeholder="5桁の番号" inputmode="numeric" pattern="\d*" autocomplete="off">
+              <button id="hub-join-btn" class="jb-btn">参加</button>
+            </div>
+            <p id="hub-join-msg" class="jb-msg"></p>
+          </div>
+        </div>
+        <p class="online-note">※ 部屋を作る側が先手、参加する側が後手です。参加は番号だけでOK（ホストが選んだゲームに自動で入ります）。カタンは試験対応です。</p>
+      </div>
+    </div>
+
+    <!-- ゲーム一覧 -->
     <div class="col-games">
       <div class="filterbar" id="filterbar">
         <span class="fb-label">人数:</span>
         <button data-f="all" class="on">すべて</button>
         <button data-f="solo">1人</button>
-        <button data-f="duo">2人</button>
-        <button data-f="multi2">2人以上</button>
-        <button data-f="multi3">3人以上</button>
+        <button data-f="duo">1VS1</button>
+        <button data-f="multi">複数人</button>
       </div>
       <div class="grid">
         <div class="card">
@@ -203,6 +228,20 @@
           <div class="name">チェッカー</div>
           <div class="desc">強制ジャンプ・連続取り・キング昇格。</div>
           <div class="tagrow"><a class="tag" href="games/checkers.html">プレイする →</a><a class="tag tag-online" href="games/checkers.html?online=1">🌐 オンライン</a></div></div>
+
+        <a class="card" href="games/dots.html">
+          <div class="icon">&#x2B1A;</div>
+          <div class="name">ドットアンドボックス</div>
+          <div class="desc">線を引いて箱を取る陣取り。CPU対戦・2人対戦・3サイズ。</div>
+          <span class="tag">プレイする →</span>
+        </a>
+
+        <a class="card" href="games/chinese.html">
+          <div class="icon">&#x2727;</div>
+          <div class="name">チャイニーズチェッカー</div>
+          <div class="desc">星型盤で駒を相手陣へ。ジャンプ連鎖。CPU対戦・2人対戦。</div>
+          <span class="tag">プレイする →</span>
+        </a>
 
         <div class="card">
           <div class="icon">🪨</div>
@@ -364,32 +403,6 @@
       <p class="filter-empty" id="filter-empty">この人数で遊べるゲームはありません</p>
     </div>
 
-    <!-- 右：オンライン対戦 -->
-    <div class="col-online">
-      <div class="online-panel">
-        <h2>🌐 オンライン対戦</h2>
-        <p class="pdesc">5桁の部屋番号を共有して、離れた相手と対戦できます。番号は<b>ゲーム共通</b>です。</p>
-
-        <div class="join-block">
-          <div class="jb-title">部屋を作る</div>
-          <button id="hub-create-btn" class="jb-btn" style="width:100%">＋ 部屋を作成</button>
-          <p class="jb-msg">押すとゲーム選択 → 部屋番号を発行します</p>
-        </div>
-
-        <div class="jb-or">または</div>
-
-        <div class="join-block">
-          <div class="jb-title">番号で参加する</div>
-          <div class="jb-row">
-            <input id="hub-join-code" class="jb-input" maxlength="5" placeholder="5桁の番号" inputmode="numeric" pattern="\d*" autocomplete="off">
-            <button id="hub-join-btn" class="jb-btn">参加</button>
-          </div>
-          <p id="hub-join-msg" class="jb-msg"></p>
-        </div>
-
-        <p class="online-note">※ 部屋を作る側が先手、参加する側が後手です。参加は番号だけでOK（ホストが選んだゲームに自動で入ります）。カタンは試験対応です。</p>
-      </div>
-    </div>
   </div>
 
   <footer>クリックで各ゲームが開きます</footer>
@@ -421,25 +434,27 @@
   </div>
 
   <script>
-    // 人数フィルター: ゲーム名 → [最小人数, 最大人数](CPU席も人数に含む)
+    // 人数フィルター: ゲーム名 → 該当タグ(solo=1人 / duo=1VS1 / multi=複数人[3人以上])
+    // ※ multi(複数人)には純粋な1VS1ゲームは含めない
     (function () {
-      var PLAYERS = {
-        "カタン": [3, 4], "麻雀": [4, 4], "オセロ": [2, 2], "五目並べ": [2, 2],
-        "チェッカー": [2, 2], "マンカラ": [2, 2], "ヘックス": [2, 2], "2048": [1, 1],
-        "テトリス": [1, 1], "コネクトフォー": [2, 2], "ソリティア": [1, 1],
-        "マインスイーパー": [1, 1], "ヒットアンドブロー": [1, 1], "神経衰弱": [1, 2],
-        "ブラックジャック": [1, 1], "大富豪": [4, 4], "七並べ": [4, 4], "将棋": [2, 2],
-        "囲碁": [2, 2], "チェス": [2, 2], "三目並べ": [2, 2], "数独": [1, 1],
-        "カルカソンヌ": [2, 2], "ガイスター": [2, 2], "どうぶつしょうぎ": [2, 2],
-        "バックギャモン": [2, 2], "ハサミ将棋": [2, 2],
-        "テトリス": [1, 1], "ヒットアンドブロー": [1, 1], "七並べ": [4, 4],
-        "チンチロ": [2, 2], "ヨット": [1, 1]
+      var TAGS = {
+        "2048": ["solo"], "テトリス": ["solo"], "ソリティア": ["solo"],
+        "マインスイーパー": ["solo"], "ヒットアンドブロー": ["solo"],
+        "ブラックジャック": ["solo"], "数独": ["solo"], "ヨット": ["solo"],
+        "神経衰弱": ["solo", "duo"],
+        "オセロ": ["duo"], "五目並べ": ["duo"], "チェッカー": ["duo"], "マンカラ": ["duo"],
+        "ヘックス": ["duo"], "コネクトフォー": ["duo"], "将棋": ["duo"], "囲碁": ["duo"],
+        "チェス": ["duo"], "三目並べ": ["duo"], "ガイスター": ["duo"],
+        "どうぶつしょうぎ": ["duo"], "バックギャモン": ["duo"], "ハサミ将棋": ["duo"],
+        "チンチロ": ["duo"], "ドットアンドボックス": ["duo"], "チャイニーズチェッカー": ["duo"],
+        "カタン": ["multi"], "麻雀": ["multi"], "大富豪": ["multi"], "七並べ": ["multi"],
+        "カルカソンヌ": ["duo", "multi"]
       };
       var cards = [].slice.call(document.querySelectorAll(".col-games .grid .card"));
       cards.forEach(function (c) {
         var nameEl = c.querySelector(".name");
-        var p = PLAYERS[(nameEl ? nameEl.textContent : "").trim()] || [1, 99]; // 未登録は常に表示
-        c.dataset.min = p[0]; c.dataset.max = p[1];
+        var t = TAGS[(nameEl ? nameEl.textContent : "").trim()];
+        c.dataset.tags = t ? t.join(",") : "solo,duo,multi"; // 未登録は常に表示
       });
       var bar = document.getElementById("filterbar");
       bar.addEventListener("click", function (e) {
@@ -448,11 +463,7 @@
         b.classList.add("on");
         var f = b.dataset.f, visible = 0;
         cards.forEach(function (c) {
-          var min = +c.dataset.min, max = +c.dataset.max, show = true;
-          if (f === "solo") show = min <= 1;
-          else if (f === "duo") show = min <= 2 && max >= 2;
-          else if (f === "multi2") show = max >= 2;
-          else if (f === "multi3") show = max >= 3;
+          var show = (f === "all") || (("," + c.dataset.tags + ",").indexOf("," + f + ",") >= 0);
           c.style.display = show ? "" : "none";
           if (show) visible++;
         });

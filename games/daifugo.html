@@ -6,6 +6,10 @@
 body{background:radial-gradient(ellipse at 50% 35%,#16384c,#0E1E2A);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:10px 8px 24px;user-select:none}
 h1{font-family:"Hiragino Mincho ProN",serif;font-size:22px;letter-spacing:.12em;margin:2px 0}
 .sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:6px}
+.setup{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.setup .lab{font-size:11px;color:var(--sub);margin-right:2px}
+.setup button{background:rgba(0,0,0,.25);border:1px solid #3a5a6a;color:var(--sub);padding:5px 13px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s}
+.setup button.on{border-color:var(--gold);color:var(--gold);font-weight:700}
 .cpus{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
 .cpu{background:rgba(0,0,0,.25);border-radius:8px;padding:6px 12px;font-size:12px;text-align:center;min-width:78px}
 .cpu .nm{color:var(--txt)}.cpu .ct{color:var(--gold);font-size:11px}
@@ -37,6 +41,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:22px;letter-spacing:.12em;
 </style></head><body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 <h1>大富豪</h1><div class="sub">DAIFUGO — 8切り・革命あり</div>
+<div class="setup" id="setup"><span class="lab">人数:</span><button data-n="3">3人</button><button data-n="4" class="on">4人</button></div>
 <div class="cpus" id="cpus"></div>
 <div class="field"><div class="lab">場</div><div class="cards" id="field"></div><div class="flag" id="flag"></div></div>
 <div class="msg" id="msg"></div>
@@ -47,17 +52,17 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:22px;letter-spacing:.12em;
 const SUITS=['♠','♥','♦','♣'],RED={'♥':1,'♦':1};
 const RANKS=['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
 // strength: index in RANKS (3 weakest .. 2 strongest)
-let hands,turn,field,fieldOwner,passes,revolution,players,finished,sel,gameOver;
-const NAMES=['あなた','CPU A','CPU B','CPU C'];
+let hands,turn,field,fieldOwner,passes,revolution,np=4,finished,sel,gameOver,NAMES=['あなた','CPU A','CPU B','CPU C'];
+function makeNames(n){const a=['あなた'],L='ABCDE';for(let i=1;i<n;i++)a.push('CPU '+L[i-1]);return a;}
 function strength(c){return c.r;} // 0..12
 function makeDeck(){const d=[];for(let s=0;s<4;s++)for(let r=0;r<13;r++)d.push({s,r});return d;}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function sortHand(h){h.sort((a,b)=>a.r-b.r||a.s-b.s);}
-function init(){const d=shuffle(makeDeck());hands=[[],[],[],[]];d.forEach((c,i)=>hands[i%4].push(c));hands.forEach(sortHand);turn=Math.floor(Math.random()*4);field=[];fieldOwner=-1;passes=0;revolution=false;finished=[];gameOver=false;sel=[];document.getElementById('winov').classList.remove('show');render();if(turn===0){msg('あなたの番。同じ数字をまとめて出せます');}else{msg(NAMES[turn]+'から開始');setTimeout(cpuTurn,650);}}
+function init(){NAMES=makeNames(np);const d=shuffle(makeDeck());hands=Array.from({length:np},()=>[]);d.forEach((c,i)=>hands[i%np].push(c));hands.forEach(sortHand);turn=Math.floor(Math.random()*np);field=[];fieldOwner=-1;passes=0;revolution=false;finished=[];gameOver=false;sel=[];document.getElementById('winov').classList.remove('show');render();if(turn===0){msg('あなたの番。同じ数字をまとめて出せます');}else{msg(NAMES[turn]+'から開始');setTimeout(cpuTurn,650);}}
 function cardHtml(c,cls){const col=RED[SUITS[c.s]]?'red':'blk';return '<div class="card '+col+(cls||'')+'"><span class="crn">'+RANKS[c.r]+'<br>'+SUITS[c.s]+'</span><span class="big">'+SUITS[c.s]+'</span></div>';}
 function render(){
   const cpus=document.getElementById('cpus');cpus.innerHTML='';
-  for(let p=1;p<4;p++){const d=document.createElement('div');d.className='cpu'+(turn===p?' active':'')+(hands[p].length===0?' done':'');const rank=finishedRank(p);d.innerHTML='<div class="nm">'+NAMES[p]+'</div><div class="ct">'+(rank||hands[p].length+'枚')+'</div>';cpus.appendChild(d);}
+  for(let p=1;p<np;p++){const d=document.createElement('div');d.className='cpu'+(turn===p?' active':'')+(hands[p].length===0?' done':'');const rank=finishedRank(p);d.innerHTML='<div class="nm">'+NAMES[p]+'</div><div class="ct">'+(rank||hands[p].length+'枚')+'</div>';cpus.appendChild(d);}
   document.getElementById('field').innerHTML=field.map(c=>cardHtml(c)).join('');
   document.getElementById('flag').textContent=(revolution?'⚡革命中（弱強逆転） ':'')+(field.length?(NAMES[fieldOwner]+'が出した'):'');
   const mh=document.getElementById('myhand');mh.innerHTML='';hands[0].forEach((c,i)=>{const w=document.createElement('div');w.innerHTML=cardHtml(c,sel.includes(i)?' sel':'');const el=w.firstChild;el.addEventListener('click',()=>toggle(i));mh.appendChild(el);});
@@ -65,7 +70,8 @@ function render(){
   document.getElementById('play').disabled=!myTurn;document.getElementById('pass').disabled=!myTurn||field.length===0;
   const me=document.querySelector('.cpus');
 }
-function finishedRank(p){const i=finished.indexOf(p);if(i<0)return null;const t=['大富豪','富豪','貧民','大貧民'];return t[i]||'上がり';}
+function rankTitles(n){if(n<=2)return['大富豪','大貧民'];if(n===3)return['大富豪','平民','大貧民'];return['大富豪','富豪','貧民','大貧民'];}
+function finishedRank(p){const i=finished.indexOf(p);if(i<0)return null;const t=rankTitles(np);return t[i]||'上がり';}
 function msg(t){document.getElementById('msg').textContent=t;}
 function toggle(i){const k=sel.indexOf(i);if(k>=0)sel.splice(k,1);else sel.push(i);render();}
 function validSet(cards){if(!cards.length)return false;const r=cards[0].r;if(!cards.every(c=>c.r===r))return false;return true;}
@@ -85,16 +91,16 @@ function playCards(p,idxs){const cards=idxs.map(i=>hands[p][i]);
     if(p===0){turn=0;return;}else{turn=p;setTimeout(cpuTurn,650);return;}}
   advance();
 }
-function advance(){let n=turn;for(let k=0;k<4;k++){n=(n+1)%4;if(hands[n].length>0&&!finished.includes(n)){turn=n;break;}}
+function advance(){let n=turn;for(let k=0;k<np;k++){n=(n+1)%np;if(hands[n].length>0&&!finished.includes(n)){turn=n;break;}}
   // 全員パスで場が流れる(出した人の番に戻る処理はpassで管理)
   render();
   if(activeCount()<=1){checkGameEnd(true);return;}
   if(turn!==0)setTimeout(cpuTurn,650);else msg('あなたの番');
 }
-function activeCount(){let c=0;for(let p=0;p<4;p++)if(hands[p].length>0)c++;return c;}
+function activeCount(){let c=0;for(let p=0;p<np;p++)if(hands[p].length>0)c++;return c;}
 function doPass(p){passes++;render();
   // 自分以外全員パス → 場を流す
-  const active=[0,1,2,3].filter(x=>hands[x].length>0&&!finished.includes(x));
+  const active=[...Array(np).keys()].filter(x=>hands[x].length>0&&!finished.includes(x));
   if(passes>=active.length-1||(fieldOwner>=0&&hands[fieldOwner].length===0)){
     field=[];const owner=fieldOwner;fieldOwner=-1;passes=0;
     // 場を出した人(まだ手札あり)から再開、いなければ次
@@ -105,7 +111,7 @@ function doPass(p){passes++;render();
   }
   advance();
 }
-function advanceFrom(start){let n=start<0?turn:start;for(let k=0;k<4;k++){n=(n+1)%4;if(hands[n].length>0&&!finished.includes(n)){turn=n;return;}}}
+function advanceFrom(start){let n=start<0?turn:start;for(let k=0;k<np;k++){n=(n+1)%np;if(hands[n].length>0&&!finished.includes(n)){turn=n;return;}}}
 function cpuTurn(){if(gameOver)return;const p=turn;if(hands[p].length===0||finished.includes(p)){advance();return;}
   const move=cpuChoose(p);
   if(move){playCards(p,move);}else{doPass(p);}
@@ -130,14 +136,15 @@ function cpuChoose(p){const h=hands[p];
   if(h[pick[0]].r===12&&h.length>need+1&&cand.length>1)return cand[1]||cand[0];
   return pick;
 }
-function checkGameEnd(force){const active=[0,1,2,3].filter(p=>hands[p].length>0);
+function checkGameEnd(force){const active=[...Array(np).keys()].filter(p=>hands[p].length>0);
   if(active.length<=1){if(active.length===1&&!finished.includes(active[0]))finished.push(active[0]);gameOver=true;showResult();return true;}
   return false;}
-function showResult(){const titles=['大富豪','富豪','貧民','大貧民'];let html='';finished.forEach((p,i)=>{html+=(titles[i]||(i+1)+'位')+'：'+NAMES[p]+'<br>';});
+function showResult(){const titles=rankTitles(np);let html='';finished.forEach((p,i)=>{html+=(titles[i]||(i+1)+'位')+'：'+NAMES[p]+'<br>';});
   const myRank=finished.indexOf(0);document.getElementById('wint').textContent='あなたは '+(titles[myRank]||'—');
   document.getElementById('winrank').innerHTML=html;document.getElementById('winov').classList.add('show');}
 document.getElementById('play').addEventListener('click',()=>{if(turn!==0||!sel.length)return;const cards=sel.map(i=>hands[0][i]);if(!validSet(cards)){msg('同じ数字のカードを選んでください');return;}if(!beats(cards)){msg('場のカードに勝てません');return;}const idxs=sel.slice();sel=[];playCards(0,idxs);});
 document.getElementById('pass').addEventListener('click',()=>{if(turn!==0||field.length===0)return;sel=[];doPass(0);});
 document.getElementById('again').addEventListener('click',init);
+document.getElementById('setup').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.n;document.querySelectorAll('#setup button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 init();
 </script></body></html>

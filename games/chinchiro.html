@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>チンチロ</title>
+<style>
+:root{--bg:#0E2A1C;--felt:#13402A;--txt:#EDE6D6;--sub:#8FB29C;--gold:#C9A227;--die:#F4EFE2;--pip:#222;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(ellipse at 50% 30%,#164a30,#0E2A1C);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 10px 28px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:10px}
+.chips{display:flex;gap:14px;align-items:center;margin-bottom:8px;font-size:14px}
+.chips .b{background:rgba(0,0,0,.28);border-radius:7px;padding:5px 14px}
+.chips b{color:var(--gold)}
+.area{width:min(94vw,420px);margin:6px 0;text-align:center}
+.lab{font-size:11px;color:var(--sub);letter-spacing:.12em;margin-bottom:6px}
+.bowl{background:rgba(0,0,0,.22);border:2px solid #1c5e3c;border-radius:60px;padding:16px;display:flex;gap:12px;justify-content:center;min-height:78px;align-items:center}
+.die{width:46px;height:46px;border-radius:9px;background:var(--die);position:relative;box-shadow:0 3px 7px rgba(0,0,0,.45)}
+.die.roll{animation:sh .4s ease}
+@keyframes sh{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-12deg)}75%{transform:translateY(-4px) rotate(12deg)}}
+.die .pip{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--pip);transform:translate(-50%,-50%)}
+.role{font-size:17px;font-weight:700;color:var(--gold);min-height:24px;margin-top:6px;letter-spacing:.06em}
+.role.bad{color:#e0533e}
+.bet{display:flex;gap:8px;align-items:center;justify-content:center;margin:8px 0;flex-wrap:wrap}
+.bet button{background:#13402A;border:1px solid #2c5a40;color:var(--txt);padding:8px 13px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px}
+.bet button:hover{border-color:var(--gold)}
+.bet .betv{font-size:15px;color:var(--gold);font-weight:700;min-width:60px}
+.msg{min-height:24px;font-size:15px;font-weight:700;color:var(--gold);margin:8px 0;text-align:center;letter-spacing:.05em}
+.actions{display:flex;gap:10px;margin-top:4px}
+.actions button{background:var(--gold);border:none;color:#13402A;font-weight:700;padding:11px 26px;border-radius:8px;cursor:pointer;font-size:15px;font-family:inherit}
+.actions button:disabled{opacity:.4}
+.rule{width:min(94vw,420px);margin-top:14px;font-size:11px;line-height:1.7;color:var(--sub);border-top:1px solid #1c5e3c;padding-top:10px}
+.rule b{color:var(--txt)}
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
+<h1>チンチロ</h1><div class="sub">CHINCHIRO — サイコロ3個の丁半勝負</div>
+<div class="chips"><span class="b">チップ <b id="chips">1000</b></span><span class="b">賭け <b id="betv2">100</b></span></div>
+
+<div class="area"><div class="lab">親（CPU）</div><div class="bowl" id="cpu-bowl"></div><div class="role" id="cpu-role"></div></div>
+<div class="area"><div class="lab">あなた（子）</div><div class="bowl" id="me-bowl"></div><div class="role" id="me-role"></div></div>
+
+<div class="msg" id="msg">賭けを決めて「振る」</div>
+<div class="bet" id="betrow">
+  <button data-b="-50">−50</button>
+  <span class="betv" id="betv">100</span>
+  <button data-b="50">+50</button>
+  <button data-b="100">+100</button>
+  <button data-b="max">MAX</button>
+</div>
+<div class="actions"><button id="roll">振る</button></div>
+<div class="rule">
+3個のサイコロを振って役を競います（最大3回振り直し）。<br>
+<b>ピンゾロ</b>(1ゾロ)=5倍 / <b>ゾロ目</b>=3倍 / <b>456(シゴロ)</b>=勝ち / <b>目(2つ同じ＋1つの数)</b>=その目で強弱 / <b>123(ヒフミ)</b>=負け2倍 / 役なし=ハズレ。親(CPU)が先に振り、あなたが上回れば配当、下回れば没収。
+</div>
+<script>
+let chips=+(localStorage.getItem('chinchip')||1000),bet=100,phase='bet',busy=false;
+const PIPS={1:[[50,50]],2:[[28,28],[72,72]],3:[[26,26],[50,50],[74,74]],4:[[28,28],[72,28],[28,72],[72,72]],5:[[28,28],[72,28],[50,50],[28,72],[72,72]],6:[[28,26],[72,26],[28,50],[72,50],[28,74],[72,74]]};
+function saveChips(){localStorage.setItem('chinchip',chips);}
+function dieHtml(v,roll){return `<div class="die${roll?' roll':''}">${PIPS[v].map(([x,y])=>`<span class="pip" style="left:${x}%;top:${y}%"></span>`).join('')}</div>`;}
+function showDice(sel,dice,roll){document.getElementById(sel).innerHTML=dice.map(v=>dieHtml(v,roll)).join('');}
+function rollDice(){return[1,2,3].map(()=>1+Math.floor(Math.random()*6));}
+// 役判定: {rank, mult, name, bad} rankが大きいほど強い。
+function judge(d){const s=d.slice().sort((a,b)=>a-b);
+  const[a,b,c]=s;
+  if(a===1&&b===1&&c===1)return{rank:100,mult:5,name:'ピンゾロ！'};
+  if(a===b&&b===c)return{rank:90+a,mult:3,name:a+'のゾロ目'};
+  if(a===4&&b===5&&c===6)return{rank:80,mult:2,name:'シゴロ(456)'};
+  if(a===1&&b===2&&c===3)return{rank:0,mult:2,name:'ヒフミ(123)',bad:true};
+  // 目: 2つ同じ＋1つ
+  let eye=null;
+  if(a===b)eye=c;else if(b===c)eye=a;else if(a===c)eye=b;
+  if(eye!==null)return{rank:10+eye,mult:1,name:eye+'の目'};
+  return{rank:5,mult:0,name:'役なし',none:true};}
+function rollUntilRole(){ // 最大3回、役(目以上 or 役なし確定)
+  let res,dice;
+  for(let i=0;i<3;i++){dice=rollDice();res=judge(dice);if(!res.none||i===2)break;}
+  return{dice,res};}
+function setBet(){document.getElementById('betv').textContent=bet;document.getElementById('betv2').textContent=bet;}
+function msg(s){document.getElementById('msg').textContent=s;}
+async function play(){
+  if(busy)return;busy=true;document.getElementById('roll').disabled=true;
+  document.getElementById('cpu-role').textContent='';document.getElementById('me-role').textContent='';
+  document.getElementById('cpu-role').className='role';document.getElementById('me-role').className='role';
+  // 親(CPU)
+  msg('親（CPU）が振っています…');
+  const cpu=rollUntilRole();showDice('cpu-bowl',cpu.dice,true);
+  await wait(550);
+  document.getElementById('cpu-role').textContent=cpu.res.name;
+  if(cpu.res.bad)document.getElementById('cpu-role').className='role bad';
+  await wait(500);
+  // 親が強役で即決着の演出（ピンゾロ/ゾロ目/シゴロは親の勝ち確定的だが子も振って比較）
+  msg('あなたが振っています…');
+  const me=rollUntilRole();showDice('me-bowl',me.dice,true);
+  await wait(550);
+  document.getElementById('me-role').textContent=me.res.name;
+  if(me.res.bad)document.getElementById('me-role').className='role bad';
+  await wait(300);
+  settle(cpu.res,me.res);
+  busy=false;
+}
+function settle(cpuR,meR){
+  // 子(あなた)視点。勝てば bet×(自分の倍率) 獲得、負ければ bet×(親の倍率) 没収。引き分け返却。
+  let delta=0,text;
+  if(meR.rank>cpuR.rank){ // あなたの勝ち
+    const m=meR.mult||1;delta=bet*m;text='あなたの勝ち！ +'+delta+(m>1?'（'+m+'倍）':'');
+  }else if(meR.rank<cpuR.rank){ // 親の勝ち
+    const m=cpuR.mult||1;delta=-bet*m;text='親の勝ち… '+delta+(m>1?'（'+m+'倍）':'');
+  }else{ text='引き分け（賭け返却）'; }
+  chips+=delta;saveChips();
+  document.getElementById('chips').textContent=chips;
+  msg(text);
+  setTimeout(()=>{
+    document.getElementById('roll').disabled=false;
+    if(chips<=0){chips=1000;saveChips();document.getElementById('chips').textContent=chips;msg('チップが尽きたので1000補充。賭けて「振る」');}
+    else msg('次の勝負へ。賭けて「振る」');
+    bet=Math.min(bet,chips);setBet();
+  },1300);
+}
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+document.getElementById('betrow').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||busy)return;const v=b.dataset.b;
+  if(v==='max')bet=chips;else bet=Math.max(50,Math.min(chips,bet+ +v));setBet();});
+document.getElementById('roll').addEventListener('click',play);
+showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);setBet();
+document.getElementById('chips').textContent=chips;
+</script>
+</body>
+</html>

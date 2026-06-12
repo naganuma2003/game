@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ヨット</title>
+<style>
+:root{--bg:#14110E;--panel:#1F1A14;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#352C20;--die:#F4EFE2;--pip:#222;--keep:#2E7D46;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 10px 28px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:8px}
+.dice{display:flex;gap:10px;justify-content:center;margin:8px 0}
+.die{width:52px;height:52px;border-radius:10px;background:var(--die);position:relative;box-shadow:0 3px 7px rgba(0,0,0,.4);cursor:pointer;transition:transform .1s}
+.die.keep{outline:3px solid var(--keep);outline-offset:1px}
+.die.keep::after{content:"キープ";position:absolute;bottom:-15px;left:0;right:0;text-align:center;font-size:9px;color:var(--keep);font-weight:700}
+.die.roll{animation:sh .35s ease}
+@keyframes sh{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.die .pip{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--pip);transform:translate(-50%,-50%)}
+.rollbar{display:flex;gap:12px;align-items:center;margin:18px 0 8px}
+.rollbar button{background:var(--gold);border:none;color:#14110E;font-weight:700;padding:11px 26px;border-radius:9px;cursor:pointer;font-size:15px;font-family:inherit}
+.rollbar button:disabled{opacity:.4}
+.rollbar .left{font-size:12px;color:var(--sub)}
+.hint{font-size:11px;color:var(--sub);margin-bottom:8px;text-align:center}
+.sheet{width:min(94vw,400px);border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--line);font-size:14px}
+.srow:last-child{border-bottom:none}
+.srow.head{background:rgba(255,255,255,.04);font-size:11px;color:var(--sub);letter-spacing:.1em;padding:6px 13px}
+.srow .nm{flex:1}
+.srow .pt{width:54px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.srow.open{cursor:pointer}
+.srow.open:hover{background:rgba(201,162,39,.12)}
+.srow.open .pt{color:var(--gold)}
+.srow.used{opacity:.55}.srow.used .pt{color:var(--txt)}
+.srow.total{background:rgba(201,162,39,.1);font-weight:700}
+.srow.total .pt{color:var(--gold);font-size:16px}
+.bonus{font-size:11px;color:var(--sub)}
+.over{position:fixed;inset:0;background:rgba(10,8,5,.85);display:none;align-items:center;justify-content:center;z-index:30}
+.over.show{display:flex}
+.over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:26px 38px;text-align:center}
+.over .t{font-size:24px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:8px}
+.over .s{font-size:15px;margin-bottom:16px}
+.over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
+<h1>ヨット</h1><div class="sub">YACHT — サイコロ役作り</div>
+<div class="dice" id="dice"></div>
+<div class="rollbar"><button id="roll">サイコロを振る</button><span class="left" id="left">残り3回</span></div>
+<div class="hint">振った後、残したいサイコロをタップで「キープ」。最大3回振って、下の表の空き枠をタップで記入。</div>
+<div class="sheet" id="sheet"></div>
+<div class="over" id="over"><div class="c"><div class="t">ゲーム終了！</div><div class="s" id="ov-s"></div><button id="again">もう一度</button></div></div>
+<script>
+const PIPS={1:[[50,50]],2:[[28,28],[72,72]],3:[[26,26],[50,50],[74,74]],4:[[28,28],[72,28],[28,72],[72,72]],5:[[28,28],[72,28],[50,50],[28,72],[72,72]],6:[[28,26],[72,26],[28,50],[72,50],[28,74],[72,74]]};
+const CATS=[
+  {id:'ones',name:'1の目',up:true,fn:d=>sum(d.filter(x=>x===1))},
+  {id:'twos',name:'2の目',up:true,fn:d=>sum(d.filter(x=>x===2))},
+  {id:'threes',name:'3の目',up:true,fn:d=>sum(d.filter(x=>x===3))},
+  {id:'fours',name:'4の目',up:true,fn:d=>sum(d.filter(x=>x===4))},
+  {id:'fives',name:'5の目',up:true,fn:d=>sum(d.filter(x=>x===5))},
+  {id:'sixes',name:'6の目',up:true,fn:d=>sum(d.filter(x=>x===6))},
+  {id:'three',name:'スリーカード',fn:d=>nKind(d,3)?sum(d):0},
+  {id:'four',name:'フォーカード',fn:d=>nKind(d,4)?sum(d):0},
+  {id:'full',name:'フルハウス',fn:d=>isFull(d)?25:0},
+  {id:'sstr',name:'Sストレート',fn:d=>straight(d,4)?30:0},
+  {id:'lstr',name:'Lストレート',fn:d=>straight(d,5)?40:0},
+  {id:'yacht',name:'ヨット(5個同じ)',fn:d=>nKind(d,5)?50:0},
+  {id:'chance',name:'チャンス',fn:d=>sum(d)}
+];
+const sum=a=>a.reduce((x,y)=>x+y,0);
+function counts(d){const c={};d.forEach(v=>c[v]=(c[v]||0)+1);return c;}
+function nKind(d,n){return Object.values(counts(d)).some(v=>v>=n);}
+function isFull(d){const v=Object.values(counts(d)).sort();return v.length===2&&v[0]===2&&v[1]===3;}
+function straight(d,len){const s=[...new Set(d)].sort((a,b)=>a-b);let run=1,best=1;for(let i=1;i<s.length;i++){if(s[i]===s[i-1]+1){run++;best=Math.max(best,run);}else run=1;}return best>=len;}
+let dice,keep,rolls,scores,turn,over;
+function init(){dice=[1,1,1,1,1];keep=[false,false,false,false,false];rolls=0;scores={};turn=0;over=false;
+  document.getElementById('over').classList.remove('show');renderDice();renderSheet();updateRollBtn();}
+function renderDice(){const el=document.getElementById('dice');el.innerHTML='';dice.forEach((v,i)=>{
+  const d=document.createElement('div');d.className='die'+(keep[i]?' keep':'');
+  d.innerHTML=PIPS[v].map(([x,y])=>`<span class="pip" style="left:${x}%;top:${y}%"></span>`).join('');
+  if(rolls>0)d.addEventListener('click',()=>{keep[i]=!keep[i];renderDice();});
+  el.appendChild(d);});}
+function updateRollBtn(){document.getElementById('roll').disabled=rolls>=3||over;
+  document.getElementById('left').textContent=over?'—':'残り'+(3-rolls)+'回';}
+function roll(){if(rolls>=3||over)return;rolls++;
+  for(let i=0;i<5;i++)if(!keep[i])dice[i]=1+Math.floor(Math.random()*6);
+  const el=document.getElementById('dice');renderDice();
+  el.querySelectorAll('.die').forEach((d,i)=>{if(!keep[i])d.classList.add('roll');});
+  updateRollBtn();renderSheet();}
+function upperSum(){return CATS.filter(c=>c.up&&scores[c.id]!==undefined).reduce((s,c)=>s+scores[c.id],0);}
+function bonus(){return upperSum()>=63?35:0;}
+function grandTotal(){return CATS.reduce((s,c)=>s+(scores[c.id]||0),0)+bonus();}
+function renderSheet(){const sh=document.getElementById('sheet');sh.innerHTML='';
+  const head=(t)=>{const r=document.createElement('div');r.className='srow head';r.innerHTML=`<span class="nm">${t}</span><span class="pt"></span>`;sh.appendChild(r);};
+  head('上段（合計63以上でボーナス+35）');
+  for(const c of CATS.filter(c=>c.up))catRow(sh,c);
+  // ボーナス行
+  const br=document.createElement('div');br.className='srow';
+  br.innerHTML=`<span class="nm bonus">上段ボーナス（${upperSum()}/63）</span><span class="pt">${bonus()}</span>`;sh.appendChild(br);
+  head('下段');
+  for(const c of CATS.filter(c=>!c.up))catRow(sh,c);
+  const tr=document.createElement('div');tr.className='srow total';
+  tr.innerHTML=`<span class="nm">合計</span><span class="pt">${grandTotal()}</span>`;sh.appendChild(tr);}
+function catRow(sh,c){const r=document.createElement('div');
+  const used=scores[c.id]!==undefined;
+  const preview=(!used&&rolls>0)?c.fn(dice):null;
+  r.className='srow'+(used?' used':(rolls>0?' open':''));
+  r.innerHTML=`<span class="nm">${c.name}</span><span class="pt">${used?scores[c.id]:(preview!==null?preview:'')}</span>`;
+  if(!used&&rolls>0)r.addEventListener('click',()=>record(c));
+  sh.appendChild(r);}
+function record(c){if(scores[c.id]!==undefined||rolls===0||over)return;
+  scores[c.id]=c.fn(dice);turn++;
+  // 次のターンへ
+  keep=[false,false,false,false,false];rolls=0;
+  renderDice();renderSheet();updateRollBtn();
+  if(turn>=13)finish();}
+function finish(){over=true;updateRollBtn();
+  document.getElementById('ov-s').textContent='合計 '+grandTotal()+' 点'+(grandTotal()>=200?'（ハイスコア級！）':'');
+  document.getElementById('over').classList.add('show');}
+document.getElementById('roll').addEventListener('click',roll);
+document.getElementById('again').addEventListener('click',init);
+init();
+</script>
+</body>
+</html>

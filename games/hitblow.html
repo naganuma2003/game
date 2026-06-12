@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ヒットアンドブロー</title>
+<style>
+:root{--bg:#14110E;--panel:#1F1A14;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#352C20;--hit:#6CC56C;--blow:#E8C84F;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 10px 28px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:24px;letter-spacing:.12em;margin:2px 0}
+.sub{font-size:10.5px;color:var(--sub);letter-spacing:.2em;margin-bottom:10px}
+.row{display:flex;gap:8px;margin-bottom:10px}
+.row button{background:transparent;border:1px solid #3a3326;color:var(--sub);padding:6px 13px;border-radius:18px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:all .2s}
+.row button.on{border-color:var(--gold);color:var(--gold)}
+.disp{display:flex;gap:8px;margin:6px 0 4px}
+.slot{width:54px;height:60px;background:var(--panel);border:2px solid var(--line);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800}
+.slot.active{border-color:var(--gold)}
+.pad{display:grid;grid-template-columns:repeat(5,52px);gap:7px;margin:10px 0}
+.pad button{background:var(--panel);border:1px solid var(--line);color:var(--txt);font-size:20px;padding:11px 0;border-radius:9px;cursor:pointer;font-weight:700}
+.pad button:active{border-color:var(--gold)}
+.pad button.wide{grid-column:span 2;font-size:14px}
+.go{background:var(--gold)!important;color:#14110E!important;font-weight:700;font-size:15px!important}
+.go:disabled{opacity:.4}
+.msg{min-height:22px;font-size:14px;color:var(--gold);margin:6px 0;letter-spacing:.04em}
+.history{width:min(94vw,360px);margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.h-row{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 12px}
+.h-no{font-size:12px;color:var(--sub);width:24px}
+.h-guess{font-size:19px;font-weight:700;letter-spacing:.18em;flex:1}
+.h-res{display:flex;gap:10px;font-size:13px;font-weight:700}
+.h-res .hit{color:var(--hit)}.h-res .blow{color:var(--blow)}
+.foot{margin-top:14px}
+.foot button{background:transparent;border:1px solid var(--line);color:var(--txt);padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit}
+.over{position:fixed;inset:0;background:rgba(10,8,5,.85);display:none;align-items:center;justify-content:center;z-index:30}
+.over.show{display:flex}
+.over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:26px 38px;text-align:center}
+.over .t{font-size:24px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:8px}
+.over .s{font-size:14px;color:var(--txt);margin-bottom:16px;letter-spacing:.1em}
+.over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.rule{width:min(94vw,360px);margin-top:14px;font-size:11px;line-height:1.7;color:var(--sub);border-top:1px solid var(--line);padding-top:10px}
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
+<h1>ヒットアンドブロー</h1><div class="sub">HIT &amp; BLOW</div>
+<div class="row" id="diff">
+  <button data-n="3" data-t="8">3桁・8回</button>
+  <button data-n="4" data-t="10" class="on">4桁・10回</button>
+  <button data-n="5" data-t="12">5桁・12回</button>
+</div>
+<div class="disp" id="disp"></div>
+<div class="pad" id="pad"></div>
+<div class="msg" id="msg"></div>
+<div class="history" id="history"></div>
+<div class="foot"><button id="new">新しいゲーム</button></div>
+<div class="rule">
+0〜9の数字を重複なく並べた秘密の番号を当てます。<b style="color:var(--hit)">ヒット</b>＝数字も位置も一致。<b style="color:var(--blow)">ブロー</b>＝数字はあるが位置違い。全部ヒットで勝ち！
+</div>
+<div class="over" id="over"><div class="c"><div class="t" id="ov-t">正解！</div><div class="s" id="ov-s"></div><button id="again">もう一度</button></div></div>
+<script>
+let N=4,MAX=10,secret,guess,tries,over;
+const disp=document.getElementById('disp'),pad=document.getElementById('pad'),hist=document.getElementById('history');
+function genSecret(){const d=[0,1,2,3,4,5,6,7,8,9];for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}return d.slice(0,N);}
+function init(){secret=genSecret();guess=[];tries=0;over=false;hist.innerHTML='';document.getElementById('over').classList.remove('show');msg('数字を選んで「判定」');renderDisp();}
+function msg(s){document.getElementById('msg').textContent=s;}
+function renderDisp(){disp.innerHTML='';for(let i=0;i<N;i++){const d=document.createElement('div');d.className='slot'+(i===guess.length?' active':'');d.textContent=guess[i]!==undefined?guess[i]:'';disp.appendChild(d);}}
+function buildPad(){pad.innerHTML='';for(let v=0;v<=9;v++){const b=document.createElement('button');b.textContent=v;b.addEventListener('click',()=>push(v));pad.appendChild(b);}
+  const del=document.createElement('button');del.className='wide';del.textContent='⌫ 消す';del.addEventListener('click',pop);pad.appendChild(del);
+  const go=document.createElement('button');go.className='wide go';go.id='go';go.textContent='判定';go.addEventListener('click',submit);pad.appendChild(go);}
+function push(v){if(over||guess.length>=N)return;if(guess.includes(v)){msg('同じ数字は使えません');return;}guess.push(v);msg('');renderDisp();}
+function pop(){if(over||!guess.length)return;guess.pop();renderDisp();}
+function submit(){if(over)return;if(guess.length!==N){msg(N+'桁すべて入力してください');return;}
+  let hit=0,blow=0;
+  for(let i=0;i<N;i++){if(guess[i]===secret[i])hit++;else if(secret.includes(guess[i]))blow++;}
+  tries++;
+  addHistory(guess.slice(),hit,blow);
+  if(hit===N){finish(true);return;}
+  if(tries>=MAX){finish(false);return;}
+  msg(`${hit} ヒット / ${blow} ブロー　（残り${MAX-tries}回）`);
+  guess=[];renderDisp();}
+function addHistory(g,hit,blow){const r=document.createElement('div');r.className='h-row';
+  r.innerHTML=`<span class="h-no">${tries}</span><span class="h-guess">${g.join(' ')}</span>`+
+    `<span class="h-res"><span class="hit">${hit} H</span><span class="blow">${blow} B</span></span>`;
+  hist.insertBefore(r,hist.firstChild);}
+function finish(win){over=true;const t=document.getElementById('ov-t'),s=document.getElementById('ov-s');
+  if(win){t.textContent='正解！ 🎉';t.style.color='var(--gold)';s.textContent=tries+'回で当てました（'+secret.join(' ')+'）';}
+  else{t.textContent='ゲームオーバー';t.style.color='#e0533e';s.textContent='正解は '+secret.join(' ')+' でした';}
+  document.getElementById('over').classList.add('show');}
+window.addEventListener('keydown',e=>{if(e.key>='0'&&e.key<='9')push(+e.key);else if(e.key==='Backspace'){e.preventDefault();pop();}else if(e.key==='Enter')submit();});
+document.getElementById('new').addEventListener('click',init);
+document.getElementById('again').addEventListener('click',init);
+document.getElementById('diff').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;N=+b.dataset.n;MAX=+b.dataset.t;document.querySelectorAll('#diff button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
+buildPad();init();
+</script>
+</body>
+</html>

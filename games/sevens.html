@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>七並べ</title>
+<style>
+:root{--bg:#0E2A1C;--felt:#13402A;--txt:#EDE6D6;--sub:#8FB29C;--gold:#C9A227;--cardbg:#F4EFE3;--cardline:#C9BFA8;--red:#C23B26;--blk:#1C1C1C;--empty:#1c4d34;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(ellipse at 50% 30%,#164a30,#0E2A1C);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:12px 6px 26px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:23px;letter-spacing:.18em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:8px}
+.cpus{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+.cpu{background:rgba(0,0,0,.25);border-radius:8px;padding:5px 11px;font-size:12px;text-align:center;min-width:74px}
+.cpu .nm{color:var(--txt)}.cpu .ct{color:var(--gold);font-size:11px}
+.cpu.active{box-shadow:0 0 0 2px var(--gold)}
+.cpu.done{opacity:.5}.cpu.out{opacity:.4;color:#e0533e}
+.board{display:grid;grid-template-rows:repeat(4,1fr);gap:3px;background:rgba(0,0,0,.18);padding:6px;border-radius:8px;margin:4px 0}
+.brow{display:grid;grid-template-columns:repeat(13,1fr);gap:2px}
+.bc{aspect-ratio:5/7;min-width:24px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:min(2.6vw,13px);font-weight:700;background:var(--empty)}
+.bc.on{background:var(--cardbg)}
+.bc.red{color:var(--red)}.bc.blk{color:var(--blk)}
+.msg{min-height:20px;font-size:13px;color:var(--gold);margin:8px 0;text-align:center}
+.myhand{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px;width:min(98vw,560px)}
+.card{width:42px;height:60px;border-radius:6px;background:var(--cardbg);border:1px solid var(--cardline);position:relative;font-weight:700;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .1s}
+.card.red{color:var(--red)}.card.blk{color:var(--blk)}
+.card .crn{position:absolute;top:3px;left:5px;font-size:13px;line-height:1.05}
+.card .big{position:absolute;bottom:2px;right:5px;font-size:17px;opacity:.8}
+.card.playable{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,162,39,.5)}
+.card.playable:hover{transform:translateY(-6px)}
+.card.dim{opacity:.4}
+.actions{display:flex;gap:10px;margin-top:10px}
+.actions button{background:var(--gold);border:none;color:#13402A;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit}
+.actions button.alt{background:transparent;border:1px solid #3a6a4c;color:var(--txt)}
+.actions button:disabled{opacity:.4}
+.foot{margin-top:8px}
+.foot button{background:transparent;border:1px solid #3a6a4c;color:var(--txt);padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit}
+.win{position:fixed;inset:0;background:rgba(8,20,14,.86);display:none;align-items:center;justify-content:center;z-index:30}
+.win.show{display:flex}
+.win .c{background:#13402A;border:1px solid var(--gold);border-radius:10px;padding:24px 34px;text-align:center;max-width:90vw}
+.win .t{font-size:22px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:10px}
+.win .rk{font-size:13px;line-height:1.9;margin-bottom:14px}
+.win button{background:var(--gold);border:none;color:#13402A;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
+<h1>七並べ</h1><div class="sub">SEVENS — パス3回でアウト</div>
+<div class="cpus" id="cpus"></div>
+<div class="board" id="board"></div>
+<div class="msg" id="msg"></div>
+<div class="myhand" id="myhand"></div>
+<div class="actions"><button id="pass" class="alt">パス</button></div>
+<div class="foot"><button id="new">配り直し</button></div>
+<div class="win" id="winov"><div class="c"><div class="t" id="wint">結果</div><div class="rk" id="winrk"></div><button id="again">もう一度</button></div></div>
+<script>
+const SUITS=['♠','♥','♦','♣'],RED={'♥':1,'♦':1};
+const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K']; // index0=A(1) .. 12=K(13)
+const NAMES=['あなた','CPU A','CPU B','CPU C'];
+let hands,board,turn,passes,outCnt,finished,gameOver,busy;
+// board[suit][rank] = true if placed
+function init(){
+  const deck=[];for(let s=0;s<4;s++)for(let r=0;r<13;r++)deck.push({s,r});
+  for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+  hands=[[],[],[],[]];deck.forEach((c,i)=>hands[i%4].push(c));
+  hands.forEach(h=>h.sort((a,b)=>a.s-b.s||a.r-b.r));
+  board=Array.from({length:4},()=>new Array(13).fill(false));
+  passes=[0,0,0,0];outCnt=[false,false,false,false];finished=[];gameOver=false;busy=false;
+  // 7(rank6)を自動で場に出す
+  for(let s=0;s<4;s++){board[s][6]=true;for(const o of[0,1,2,3]){const idx=hands[o].findIndex(c=>c.r===6);if(idx>=0)hands[o].splice(idx,1);}}
+  // 7を一番多く持っていた人…ではなく、♦の7(ダイヤ7)を持っていた人から、が一般的だが簡略化: あなたから
+  turn=0;
+  document.getElementById('winov').classList.remove('show');
+  render();msg('あなたの番。出せるカード（光っている）をタップ');
+}
+function msg(s){document.getElementById('msg').textContent=s;}
+function canPlace(c){const r=c.r;if(board[c.s][r])return false;
+  if(r===6)return true;
+  if(r<6)return board[c.s][r+1];   // 下方向は隣(大きい側)が出ていれば
+  return board[c.s][r-1];}          // 上方向は隣(小さい側)が出ていれば
+function legalCards(o){return hands[o].filter(canPlace);}
+function render(){
+  const cpus=document.getElementById('cpus');cpus.innerHTML='';
+  for(let p=0;p<4;p++){const d=document.createElement('div');
+    let cls='cpu'+(turn===p&&!gameOver?' active':'')+(outCnt[p]?' out':'')+(hands[p].length===0?' done':'');
+    d.className=cls;const rk=finRank(p);
+    d.innerHTML=`<div class="nm">${NAMES[p]}</div><div class="ct">${rk||(outCnt[p]?'アウト':hands[p].length+'枚')+' / パス'+passes[p]}</div>`;
+    cpus.appendChild(d);}
+  const bd=document.getElementById('board');bd.innerHTML='';
+  for(let s=0;s<4;s++){const row=document.createElement('div');row.className='brow';
+    for(let r=0;r<13;r++){const c=document.createElement('div');
+      c.className='bc'+(board[s][r]?' on '+(RED[SUITS[s]]?'red':'blk'):'');
+      if(board[s][r])c.textContent=RANKS[r]+SUITS[s];
+      row.appendChild(c);}
+    bd.appendChild(row);}
+  const mh=document.getElementById('myhand');mh.innerHTML='';
+  const myTurn=turn===0&&!gameOver&&!busy&&!outCnt[0];
+  const legal=myTurn?legalCards(0):[];
+  for(const c of hands[0]){const el=document.createElement('div');
+    const ok=legal.includes(c);
+    el.className='card '+(RED[SUITS[c.s]]?'red':'blk')+(ok?' playable':myTurn?' dim':'');
+    el.innerHTML=`<span class="crn">${RANKS[c.r]}<br>${SUITS[c.s]}</span><span class="big">${SUITS[c.s]}</span>`;
+    if(ok)el.addEventListener('click',()=>playCard(0,c));
+    mh.appendChild(el);}
+  document.getElementById('pass').disabled=!myTurn;
+}
+function finRank(p){const i=finished.indexOf(p);if(i<0)return null;return['1位 🏆','2位','3位','4位'][i];}
+function playCard(o,c){if(gameOver)return;board[c.s][c.r]=true;const idx=hands[o].indexOf(c);hands[o].splice(idx,1);
+  if(hands[o].length===0&&!finished.includes(o))finished.push(o);
+  next();}
+function doPass(o){passes[o]++;if(passes[o]>=3){forceOut(o);return;}next();}
+function forceOut(o){outCnt[o]=true;
+  // 手札を全て場に強制配置（七並べのアウト処理）
+  let changed=true;
+  while(changed){changed=false;for(const c of hands[o].slice()){if(canPlace(c)){board[c.s][c.r]=true;hands[o].splice(hands[o].indexOf(c),1);changed=true;}}}
+  // まだ出せないカードは…全部出るまで隣を埋める簡略: 残りも強制配置
+  for(const c of hands[o].slice()){board[c.s][c.r]=true;}
+  hands[o]=[];
+  if(!finished.includes(o)){/* アウトは最下位扱い、finishedには入れない */}
+  msg(NAMES[o]+'は3回パスでアウト！手札を場に出しました');
+  next();}
+function activePlayers(){return[0,1,2,3].filter(p=>hands[p].length>0&&!outCnt[p]);}
+function next(){
+  // 勝敗
+  const remain=[0,1,2,3].filter(p=>hands[p].length>0&&!outCnt[p]);
+  if(finished.length>=3||remain.length<=1){endGame();return;}
+  let n=turn;
+  for(let k=0;k<4;k++){n=(n+1)%4;if(hands[n].length>0&&!outCnt[n]){turn=n;break;}}
+  render();
+  if(turn===0){msg('あなたの番');}
+  else{busy=true;render();setTimeout(cpuTurn,650);}
+}
+function cpuTurn(){const o=turn;busy=false;
+  const legal=legalCards(o);
+  if(legal.length){
+    // 端(A,K)に近いカードを優先的に出す簡易戦略
+    legal.sort((a,b)=>Math.min(a.r,12-a.r)-Math.min(b.r,12-b.r));
+    playCard(o,legal[0]);
+  }else{msg(NAMES[o]+'はパス（'+(passes[o]+1)+'/3）');doPass(o);}
+}
+function endGame(){gameOver=true;
+  // 残っている人をfinishedに追加（手札少ない順）
+  const rest=[0,1,2,3].filter(p=>!finished.includes(p)&&!outCnt[p]).sort((a,b)=>hands[a].length-hands[b].length);
+  for(const p of rest)finished.push(p);
+  const outs=[0,1,2,3].filter(p=>outCnt[p]&&!finished.includes(p));
+  for(const p of outs)finished.push(p);
+  render();
+  let html='';finished.forEach((p,i)=>{html+=`${i+1}位：${NAMES[p]}${outCnt[p]?'（アウト）':''}<br>`;});
+  const myRank=finished.indexOf(0)+1;
+  document.getElementById('wint').textContent='あなたは '+myRank+'位'+(myRank===1?' 🎉':'');
+  document.getElementById('winrk').innerHTML=html;
+  document.getElementById('winov').classList.add('show');}
+document.getElementById('pass').addEventListener('click',()=>{if(turn!==0||gameOver||busy)return;
+  if(legalCards(0).length){msg('出せるカードがあります（パスできません）');return;}doPass(0);});
+document.getElementById('new').addEventListener('click',init);
+document.getElementById('again').addEventListener('click',init);
+init();
+</script>
+</body>
+</html>

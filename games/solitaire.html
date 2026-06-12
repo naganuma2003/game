@@ -65,10 +65,13 @@ const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 let stock,waste,found,tab,sel,moves,drawN=1,history,score=0,hint=null;
 function addScore(n){score=Math.max(0,score+n);}
 function clearHint(){hint=null;document.getElementById('msg').textContent='';}
+function autoDest(card,exceptCol){const ds=[];for(let d=0;d<7;d++){if(d===exceptCol)continue;if(canStackTab(card,d))ds.push(d);}return ds;}
 const NAME=c=>RANKS[c.r]+SUITS[c.s];
 function makeDeck(){const d=[];for(let s=0;s<4;s++)for(let r=0;r<13;r++)d.push({s,r,up:false});return d;}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function deal(){const d=shuffle(makeDeck());tab=[[],[],[],[],[],[],[]];for(let c=0;c<7;c++){for(let k=0;k<=c;k++){const card=d.pop();card.up=(k===c);tab[c].push(card);}}stock=d;stock.forEach(c=>c.up=false);waste=[];found=[[],[],[],[]];sel=null;moves=0;score=0;hint=null;history=[];document.getElementById('winov').classList.remove('show');document.getElementById('msg').textContent='';render();}
+function deal(){const d=shuffle(makeDeck());tab=[[],[],[],[],[],[],[]];for(let c=0;c<7;c++){for(let k=0;k<=c;k++){const card=d.pop();card.up=(k===c);tab[c].push(card);}}stock=d;stock.forEach(c=>c.up=false);
+  // 最初に表になる7枚にAが来ないよう、山札の非Aカードと中身を入れ替える
+  for(let c=0;c<7;c++){const top=tab[c][tab[c].length-1];if(top.r===0){const j=stock.findIndex(x=>x.r!==0);if(j>=0){[top.r,stock[j].r]=[stock[j].r,top.r];[top.s,stock[j].s]=[stock[j].s,top.s];}}}waste=[];found=[[],[],[],[]];sel=null;moves=0;score=0;hint=null;history=[];document.getElementById('winov').classList.remove('show');document.getElementById('msg').textContent='';render();}
 function snapshot(){return JSON.stringify({stock,waste,found,tab,moves,score});}
 function pushHist(){history.push(snapshot());if(history.length>40)history.shift();}
 function color(c){return RED[SUITS[c.s]]?'red':'blk';}
@@ -116,6 +119,11 @@ function onTab(c,i){clearHint();const card=tab[c][i];const top=i===tab[c].length
     return;
   }
   if(top){ if(selectFound(card,{from:'tab',col:c,idx:i}))return; }
+  // 置ける場所が1箇所だけならタップで自動移動(K基部→空列の無意味移動は除く)
+  if(!(i===0&&card.r===12)){
+    const ds=autoDest(card,c);
+    if(ds.length===1){sel={from:'tab',col:c,idx:i};tryMoveTo({type:'tab',col:ds[0]});return;}
+  }
   sel={from:'tab',col:c,idx:i};render();
 }
 function onTabEmpty(c){clearHint();if(sel)tryMoveTo({type:'tab',col:c});}
@@ -125,6 +133,8 @@ function wasteClick(){clearHint();
   if(sel&&sel.from==='waste'){sel=null;render();return;}
   if(sel){sel=null;} // 他の選択中 → 場札に持ち替え
   if(selectFound(card,{from:'waste'}))return;
+  const ds=autoDest(card,-1);
+  if(ds.length===1){sel={from:'waste'};tryMoveTo({type:'tab',col:ds[0]});return;}
   sel={from:'waste'};render();}
 document.getElementById('waste').addEventListener('click',wasteClick);
 for(let f=0;f<4;f++)document.getElementById('f'+f).addEventListener('click',()=>{if(sel)tryMoveToFound(f);});

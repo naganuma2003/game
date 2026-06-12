@@ -27,14 +27,15 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.2em;t
 </style></head><body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 <h1>神経衰弱</h1><div class="sub">MEMORY</div>
-<div class="row" id="mode"><button data-m="solo" class="on">ひとり</button><button data-m="pvp">2人対戦</button></div>
+<div class="row" id="mode"><button data-m="solo" class="on">ひとり</button><button data-m="pvp">対戦</button></div>
+<div class="row" id="np" style="display:none"><button data-np="2" class="on">2人</button><button data-np="3">3人</button><button data-np="4">4人</button></div>
 <div class="row" id="size"><button data-n="12" class="on">12枚</button><button data-n="16">16枚</button><button data-n="20">20枚</button><button data-n="52">トランプ52枚</button></div>
 <div class="status" id="status"></div>
 <div id="bd"></div>
 <div class="foot"><button id="reset">配り直し</button></div>
 <script>
 const EMO=['🍎','🍌','🍇','🍓','🍑','🍊','🍉','🥝','🍒','🦁','🐰','🐼','🐸','🐧','🦊','🐶','⭐','🌙','🌸','🍀'];
-let N=12,deck,flipped,matched,busy,mode='solo',moves,turn,score;
+let N=12,deck,flipped,matched,busy,mode='solo',moves,turn,score,np=2;
 const bd=document.getElementById('bd');
 function init(){deck=[];
 if(N===52){
@@ -45,17 +46,18 @@ if(N===52){
   const pool=EMO.slice(0,N/2);pool.forEach((e,i)=>{deck.push({e,k:i},{e,k:i});});
 }
 for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
-flipped=[];matched=new Set();busy=false;moves=0;turn=0;score=[0,0];
+flipped=[];matched=new Set();busy=false;moves=0;turn=0;score=new Array(np).fill(0);
 const cols=N<=16?4:N<=20?5:8;bd.style.gridTemplateColumns='repeat('+cols+',1fr)';
 bd.classList.toggle('trump',N===52);
 bd.innerHTML='';deck.forEach((c,i)=>{const el=document.createElement('div');el.className='card';const face=N===52?'<span class="'+(c.red?'red':'blk')+'">'+c.e+'</span>':c.e;el.innerHTML='<div class="back">?</div><div class="face">'+face+'</div>';el.addEventListener('click',()=>tap(i));bd.appendChild(el);});
 setStatus();}
-function setStatus(){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='めくった回数: <b>'+moves+'</b>　そろえた: <b>'+matched.size/2+'/'+(N/2)+'</b>';else s.innerHTML='<b>プレイヤー'+(turn+1)+'</b>の番　（P1: '+score[0]+' / P2: '+score[1]+'）';}
+function setStatus(){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='めくった回数: <b>'+moves+'</b>　そろえた: <b>'+matched.size/2+'/'+(N/2)+'</b>';else{let sc=score.map((v,i)=>'P'+(i+1)+': '+v).join(' / ');s.innerHTML='<b>プレイヤー'+(turn+1)+'</b>の番　（'+sc+'）';}}
 function cardEl(i){return bd.children[i];}
-function tap(i){if(busy||matched.has(i)||flipped.includes(i))return;cardEl(i).classList.add('flip');flipped.push(i);if(flipped.length===2){busy=true;moves++;const[a,b]=flipped;if(deck[a].k===deck[b].k){matched.add(a);matched.add(b);if(mode==='pvp')score[turn]++;setTimeout(()=>{cardEl(a).classList.add('done');cardEl(b).classList.add('done');flipped=[];busy=false;setStatus();checkEnd();},420);}else{setTimeout(()=>{cardEl(a).classList.remove('flip');cardEl(b).classList.remove('flip');flipped=[];busy=false;if(mode==='pvp'){turn=1-turn;}setStatus();},820);}}else{setStatus();}}
-function checkEnd(){if(matched.size===N){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='クリア！ <b>'+moves+'回</b>でそろえました 🎉';else{const r=score[0]>score[1]?'プレイヤー1の勝ち！':score[1]>score[0]?'プレイヤー2の勝ち！':'引き分け';s.innerHTML='<b>'+r+'</b>（'+score[0]+' - '+score[1]+'）';}}}
+function tap(i){if(busy||matched.has(i)||flipped.includes(i))return;cardEl(i).classList.add('flip');flipped.push(i);if(flipped.length===2){busy=true;moves++;const[a,b]=flipped;if(deck[a].k===deck[b].k){matched.add(a);matched.add(b);if(mode==='pvp')score[turn]++;setTimeout(()=>{cardEl(a).classList.add('done');cardEl(b).classList.add('done');flipped=[];busy=false;setStatus();checkEnd();},420);}else{setTimeout(()=>{cardEl(a).classList.remove('flip');cardEl(b).classList.remove('flip');flipped=[];busy=false;if(mode==='pvp'){turn=(turn+1)%np;}setStatus();},820);}}else{setStatus();}}
+function checkEnd(){if(matched.size===N){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='クリア！ <b>'+moves+'回</b>でそろえました 🎉';else{const max=Math.max(...score);const winners=score.map((v,i)=>v===max?i+1:null).filter(x=>x);const r=winners.length>1?'引き分け（P'+winners.join(', P')+'）':'プレイヤー'+winners[0]+'の勝ち！';const sc=score.map((v,i)=>'P'+(i+1)+': '+v).join(' / ');s.innerHTML='<b>'+r+'</b>（'+sc+'）';}}}
 document.getElementById('reset').addEventListener('click',init);
-document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
+document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.getElementById('np').style.display=mode==='pvp'?'flex':'none';init();});
+document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 document.getElementById('size').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;N=+b.dataset.n;document.querySelectorAll('#size button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 init();
 </script><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>

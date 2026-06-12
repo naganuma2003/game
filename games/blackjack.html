@@ -30,6 +30,14 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.15em;
 </style></head><body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 <h1>ブラックジャック</h1><div class="sub">BLACKJACK — 21を目指せ</div>
+<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px" id="np">
+<span style="font-size:11px;color:var(--sub);align-self:center;margin-right:2px">人数:</span>
+<button data-np="1" class="on" style="background:transparent;border:1px solid #3a6a4c;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">1人</button>
+<button data-np="2" style="background:transparent;border:1px solid #3a6a4c;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">2人</button>
+<button data-np="3" style="background:transparent;border:1px solid #3a6a4c;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">3人</button>
+<button data-np="4" style="background:transparent;border:1px solid #3a6a4c;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">4人</button>
+</div>
+<div id="curp" style="font-size:13px;color:var(--gold);min-height:18px;margin-bottom:4px;display:none"></div>
 <div class="chips"><span class="b">チップ <b id="chips">1000</b></span><span class="b">ベット <b id="betv">0</b></span></div>
 <div class="area"><div class="lab">ディーラー <span id="dtot"></span></div><div class="hand" id="dhand"></div></div>
 <div class="area"><div class="lab">あなた <span id="ptot"></span></div><div class="hand" id="phand"></div></div>
@@ -46,12 +54,16 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.15em;
 <script>
 const SUITS=['♠','♥','♦','♣'],RED={'♥':1,'♦':1};
 const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-let deck,pl,dl,chips=+(localStorage.getItem('bjchips')||1000),bet=0,phase='bet';
-function saveChips(){localStorage.setItem('bjchips',chips);}
+let deck,pl,dl,bet=0,phase='bet',np=1,cur=0;
+let allChips=[1,2,3,4].map(i=>+(localStorage.getItem('bjchips'+i)||1000));
+function chips(){return allChips[cur];}
+function setChips(v){allChips[cur]=v;}
+function saveChips(){allChips.forEach((v,i)=>localStorage.setItem('bjchips'+(i+1),v));}
+function updateCurP(){const el=document.getElementById('curp');if(np>1){el.style.display='block';el.textContent='プレイヤー '+(cur+1)+' の番';}else el.style.display='none';}
 function newDeck(){deck=[];for(let s=0;s<4;s++)for(let r=0;r<13;r++)deck.push({s,r});for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}}
 function val(h){let t=0,a=0;for(const c of h){let v=Math.min(c.r+1,10);if(c.r===0){v=11;a++;}t+=v;}while(t>21&&a){t-=10;a--;}return t;}
 function cardHtml(c,down){if(down)return '<div class="card down"></div>';const cls=RED[SUITS[c.s]]?'red':'blk';return '<div class="card '+cls+'"><span class="crn">'+RANKS[c.r]+'<br>'+SUITS[c.s]+'</span><span class="big">'+SUITS[c.s]+'</span></div>';}
-function render(hideHole){document.getElementById('chips').textContent=chips;document.getElementById('betv').textContent=bet;
+function render(hideHole){document.getElementById('chips').textContent=chips();document.getElementById('betv').textContent=bet;
   document.getElementById('phand').innerHTML=pl.map(c=>cardHtml(c)).join('');
   document.getElementById('dhand').innerHTML=dl.map((c,i)=>cardHtml(c,hideHole&&i===1)).join('');
   document.getElementById('ptot').textContent=pl.length?'('+val(pl)+')':'';
@@ -68,13 +80,17 @@ function stand(){if(phase!=='play')return;phase='dealer';while(val(dl)<17)dl.pus
   else{m='引き分け';r=0;}
   if(bj&&r===1){m='ブラックジャック！ 🎉';r=1.5;}
   finish(m,r);}
-function finish(m,r){phase='over';if(r>0)chips+=Math.floor(bet*r);else if(r<0)chips-=bet;saveChips();
+function finish(m,r){phase='over';if(r>0)setChips(chips()+Math.floor(bet*r));else if(r<0)setChips(chips()-bet);saveChips();
   msg(m+'　('+(r>0?'+':'')+Math.floor(bet*r)+')');render(false);
-  setTimeout(()=>{document.getElementById('actions').style.display='none';document.getElementById('betrow').style.display='flex';bet=0;phase='bet';if(chips<=0){chips=1000;saveChips();msg('チップが尽きたので1000補充しました');}else msg('次のベットをどうぞ');render(false);},1400);}
+  setTimeout(()=>{document.getElementById('actions').style.display='none';document.getElementById('betrow').style.display='flex';bet=0;phase='bet';
+    if(chips()<=0){setChips(1000);saveChips();msg('チップが尽きたので1000補充しました');}
+    if(np>1){cur=(cur+1)%np;updateCurP();msg('プレイヤー'+(cur+1)+'のベットをどうぞ');}
+    else msg('次のベットをどうぞ');render(false);},1400);}
 function msg(t){document.getElementById('msg').textContent=t;}
-document.getElementById('betrow').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!b.dataset.b)return;if(phase!=='bet')return;const v=b.dataset.b;if(v==='clear')bet=0;else if(v==='max')bet=chips;else bet=Math.min(chips,bet+ +v);render(false);if(bet>0&&document.getElementById('msg').textContent.includes('ベット'))msg('「配る」でスタート');});
+document.getElementById('betrow').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!b.dataset.b)return;if(phase!=='bet')return;const v=b.dataset.b;if(v==='clear')bet=0;else if(v==='max')bet=chips();else bet=Math.min(chips(),bet+ +v);render(false);if(bet>0&&document.getElementById('msg').textContent.includes('ベット'))msg('「配る」でスタート');});
 document.getElementById('deal').addEventListener('click',startRound);
 document.getElementById('hit').addEventListener('click',hit);
 document.getElementById('stand').addEventListener('click',stand);
 pl=[];dl=[];render(false);
+document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!b.dataset.np)return;if(phase!=='bet'){msg('ラウンド終了後に変更してください');return;}np=+b.dataset.np;cur=0;document.querySelectorAll('#np button').forEach(x=>{x.classList.remove('on');x.style.borderColor='#3a6a4c';x.style.color='var(--sub)';});b.classList.add('on');b.style.borderColor='var(--gold)';b.style.color='var(--gold)';updateCurP();render(false);if(np>1)msg('プレイヤー1のベットをどうぞ');});
 </script></body></html>

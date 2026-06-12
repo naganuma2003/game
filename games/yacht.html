@@ -46,6 +46,14 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;
 <body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 <h1>ヨット</h1><div class="sub">YACHT — サイコロ役作り</div>
+<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px" id="np">
+<span style="font-size:11px;color:var(--sub);align-self:center;margin-right:2px">人数:</span>
+<button data-np="1" class="on" style="background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">1人</button>
+<button data-np="2" style="background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">2人</button>
+<button data-np="3" style="background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">3人</button>
+<button data-np="4" style="background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">4人</button>
+</div>
+<div id="curp" style="font-size:13px;color:var(--gold);min-height:18px;margin-bottom:4px;display:none"></div>
 <div class="dice" id="dice"></div>
 <div class="rollbar"><button id="roll">サイコロを振る</button><span class="left" id="left">残り3回</span></div>
 <div class="hint">振った後、残したいサイコロをタップで「キープ」。最大3回振って、下の表の空き枠をタップで記入。</div>
@@ -73,9 +81,14 @@ function counts(d){const c={};d.forEach(v=>c[v]=(c[v]||0)+1);return c;}
 function nKind(d,n){return Object.values(counts(d)).some(v=>v>=n);}
 function isFull(d){const v=Object.values(counts(d)).sort();return v.length===2&&v[0]===2&&v[1]===3;}
 function straight(d,len){const s=[...new Set(d)].sort((a,b)=>a-b);let run=1,best=1;for(let i=1;i<s.length;i++){if(s[i]===s[i-1]+1){run++;best=Math.max(best,run);}else run=1;}return best>=len;}
-let dice,keep,rolls,scores,turn,over;
-function init(){dice=[1,1,1,1,1];keep=[false,false,false,false,false];rolls=0;scores={};turn=0;over=false;
-  document.getElementById('over').classList.remove('show');renderDice();renderSheet();updateRollBtn();}
+let dice,keep,rolls,allScores,turn,over,np=1,curPlayer;
+function init(){dice=[1,1,1,1,1];keep=[false,false,false,false,false];rolls=0;
+  allScores=Array.from({length:np},()=>({}));turn=0;curPlayer=0;over=false;
+  document.getElementById('over').classList.remove('show');
+  document.getElementById('curp').style.display=np>1?'block':'none';
+  updateCurP();renderDice();renderSheet();updateRollBtn();}
+function scores(){return allScores[curPlayer];}
+function updateCurP(){if(np>1)document.getElementById('curp').textContent='プレイヤー '+(curPlayer+1)+' の番（'+turn+'/13問目）';}
 function renderDice(){const el=document.getElementById('dice');el.innerHTML='';dice.forEach((v,i)=>{
   const d=document.createElement('div');d.className='die'+(keep[i]?' keep':'');
   d.innerHTML=PIPS[v].map(([x,y])=>`<span class="pip" style="left:${x}%;top:${y}%"></span>`).join('');
@@ -88,9 +101,9 @@ function roll(){if(rolls>=3||over)return;rolls++;
   const el=document.getElementById('dice');renderDice();
   el.querySelectorAll('.die').forEach((d,i)=>{if(!keep[i])d.classList.add('roll');});
   updateRollBtn();renderSheet();}
-function upperSum(){return CATS.filter(c=>c.up&&scores[c.id]!==undefined).reduce((s,c)=>s+scores[c.id],0);}
-function bonus(){return upperSum()>=63?35:0;}
-function grandTotal(){return CATS.reduce((s,c)=>s+(scores[c.id]||0),0)+bonus();}
+function upperSum(p){const sc=p!==undefined?allScores[p]:scores();return CATS.filter(c=>c.up&&sc[c.id]!==undefined).reduce((s,c)=>s+sc[c.id],0);}
+function bonus(p){return upperSum(p)>=63?35:0;}
+function grandTotal(p){const sc=p!==undefined?allScores[p]:scores();return CATS.reduce((s,c)=>s+(sc[c.id]||0),0)+bonus(p);}
 function renderSheet(){const sh=document.getElementById('sheet');sh.innerHTML='';
   const head=(t)=>{const r=document.createElement('div');r.className='srow head';r.innerHTML=`<span class="nm">${t}</span><span class="pt"></span>`;sh.appendChild(r);};
   head('上段（合計63以上でボーナス+35）');
@@ -103,23 +116,31 @@ function renderSheet(){const sh=document.getElementById('sheet');sh.innerHTML=''
   const tr=document.createElement('div');tr.className='srow total';
   tr.innerHTML=`<span class="nm">合計</span><span class="pt">${grandTotal()}</span>`;sh.appendChild(tr);}
 function catRow(sh,c){const r=document.createElement('div');
-  const used=scores[c.id]!==undefined;
+  const used=scores()[c.id]!==undefined;
   const preview=(!used&&rolls>0)?c.fn(dice):null;
   r.className='srow'+(used?' used':(rolls>0?' open':''));
-  r.innerHTML=`<span class="nm">${c.name}</span><span class="pt">${used?scores[c.id]:(preview!==null?preview:'')}</span>`;
+  r.innerHTML=`<span class="nm">${c.name}</span><span class="pt">${used?scores()[c.id]:(preview!==null?preview:'')}</span>`;
   if(!used&&rolls>0)r.addEventListener('click',()=>record(c));
   sh.appendChild(r);}
-function record(c){if(scores[c.id]!==undefined||rolls===0||over)return;
-  scores[c.id]=c.fn(dice);turn++;
-  // 次のターンへ
+function record(c){if(scores()[c.id]!==undefined||rolls===0||over)return;
+  scores()[c.id]=c.fn(dice);
   keep=[false,false,false,false,false];rolls=0;
-  renderDice();renderSheet();updateRollBtn();
-  if(turn>=13)finish();}
+  if(np>1){
+    curPlayer=(curPlayer+1)%np;
+    if(curPlayer===0)turn++;
+    if(turn>=13){finish();return;}
+  } else {
+    turn++;
+    if(turn>=13){finish();return;}
+  }
+  updateCurP();renderDice();renderSheet();updateRollBtn();}
 function finish(){over=true;updateRollBtn();
-  document.getElementById('ov-s').textContent='合計 '+grandTotal()+' 点'+(grandTotal()>=200?'（ハイスコア級！）':'');
+  if(np===1){document.getElementById('ov-s').textContent='合計 '+grandTotal()+' 点'+(grandTotal()>=200?'（ハイスコア級！）':'');}
+  else{const totals=allScores.map((_,p)=>grandTotal(p));const max=Math.max(...totals);const winners=totals.map((v,i)=>v===max?i+1:null).filter(x=>x);const r=winners.length>1?'引き分け（P'+winners.join(', P')+'）':'プレイヤー'+winners[0]+'の勝ち！';const det=totals.map((v,i)=>'P'+(i+1)+': '+v+'点').join(' / ');document.getElementById('ov-s').innerHTML=r+'<br><span style="font-size:13px">'+det+'</span>';}
   document.getElementById('over').classList.add('show');}
 document.getElementById('roll').addEventListener('click',roll);
 document.getElementById('again').addEventListener('click',init);
+document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>{x.classList.remove('on');x.style.borderColor='#3a3326';x.style.color='var(--sub)';});b.classList.add('on');b.style.borderColor='var(--gold)';b.style.color='var(--gold)';init();});
 init();
 </script>
 </body>

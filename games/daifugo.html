@@ -121,8 +121,13 @@ function cpuChoose(p){const h=hands[p];
   const groups={};h.forEach((c,i)=>{(groups[c.r]=groups[c.r]||[]).push(i);});
   const ranks=Object.keys(groups).map(Number).sort((a,b)=>revolution?b-a:a-b);
   if(field.length===0){
-    // lead: 出せる中で一番弱い、枚数は単発優先(2は温存)
-    for(const r of ranks){if(r===12&&h.length>3)continue;return [groups[r][0]];}
+    for(const r of ranks){
+      if(r===12&&h.length>3)continue;
+      const g=groups[r];
+      if(g.length>=3)return g.slice(0,3);
+      if(g.length>=2&&h.length>4)return g.slice(0,2);
+      return [g[0]];
+    }
     return [groups[ranks[0]][0]];
   }
   const need=field.length,fs=strength(field[0]);
@@ -142,7 +147,7 @@ function checkGameEnd(force){const active=[...Array(np).keys()].filter(p=>hands[
 function showResult(){const titles=rankTitles(np);let html='';finished.forEach((p,i)=>{html+=(titles[i]||(i+1)+'位')+'：'+NAMES[p]+'<br>';});
   const myRank=finished.indexOf(0);document.getElementById('wint').textContent='あなたは '+(titles[myRank]||'—');
   document.getElementById('winrank').innerHTML=html;document.getElementById('winov').classList.add('show');}
-document.getElementById('play').addEventListener('click',()=>{if(turn!==0||!sel.length)return;const cards=sel.map(i=>hands[0][i]);if(!validSet(cards)){msg('同じ数字のカードを選んでください');return;}if(!beats(cards)){msg('場のカードに勝てません');return;}const idxs=sel.slice();sel=[];playCards(0,idxs);});
+document.getElementById('play').addEventListener('click',()=>{if(turn!==0||!sel.length)return;const cards=sel.map(i=>hands[0][i]);if(!validSet(cards)){msg('同じ数字のカードを選んでください');return;}if(field.length>0&&cards.length!==field.length){msg('場と同じ'+field.length+'枚を選んでください');return;}if(!beats(cards)){msg('場のカードより強い札が必要です');return;}const idxs=sel.slice();sel=[];playCards(0,idxs);});
 document.getElementById('pass').addEventListener('click',()=>{if(turn!==0||field.length===0)return;sel=[];doPass(0);});
 document.getElementById('again').addEventListener('click',init);
 document.getElementById('setup').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.n;document.querySelectorAll('#setup button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});

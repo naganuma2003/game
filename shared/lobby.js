@@ -31,6 +31,9 @@
     memory: "games/memory.html",
     backgammon: "games/backgammon.html",
     hasami: "games/hasami.html",
+    geister: "games/geister.html",
+    dots: "games/dots.html",
+    chinese: "games/chinese.html",
   };
 
   function randomCode() {

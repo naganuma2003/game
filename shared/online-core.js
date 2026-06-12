@@ -13,6 +13,8 @@
  *   hideSel (mode buttons to hide during online; null = none), note })
  */
 (function () {
+  let _replaying = false, _send = null;
+
   function mulberry32(a) {
     return function () {
       a |= 0; a = a + 0x6D2B79F5 | 0;
@@ -92,14 +94,15 @@
     function replayClick(i) {
       const el = allEls()[i];
       if (!el) return;
-      replaying = true;
+      replaying = true; _replaying = true;
       try { el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })); }
-      finally { replaying = false; }
+      finally { replaying = false; _replaying = false; }
       updateBadge();
     }
 
     document.addEventListener('click', (e) => {
       if (!online || replaying) return;
+      if (cfg.blockRelay && cfg.blockRelay()) return;
       const t = e.target;
       if (t.closest && t.closest('#online-lobby,#online-btn,#oc-badge')) return; // local-only UI
       updateSticky();
@@ -124,6 +127,7 @@
       badge.style.display = 'block';
       document.getElementById('online-btn').style.display = 'none';
       updateBadge(cfg.startNote ? ('🌐 ' + cfg.startNote) : undefined);
+      if (cfg.afterStart) cfg.afterStart(mySeat);
     }
 
     /* ---- wire into the shared lobby (same room namespace as other games) ---- */
@@ -133,7 +137,7 @@
       guestColor: 1,
       basePrefix: '../',
       startOnline: (seat, send) => {
-        mySeat = seat; sendFn = send;
+        mySeat = seat; sendFn = send; _send = send;
         if (seat === 0) {
           const seed = (Math.random() * 0x7fffffff) | 0;
           try { send({ t: 'seed', seed }); } catch (_) {}
@@ -146,6 +150,7 @@
       applyRemote: (msg) => {
         if (msg.t === 'seed') beginMatch(msg.seed);
         else if (msg.t === 'click') replayClick(msg.i);
+        else if (cfg.customMsg) cfg.customMsg(msg);
       },
       onPeerLeft: () => {
         if (!online) return;
@@ -156,5 +161,9 @@
     });
   }
 
-  window.OnlineCore = { init };
+  window.OnlineCore = {
+    init,
+    send: (m) => { try { _send && _send(m); } catch (_) {} },
+    isReplaying: () => _replaying,
+  };
 })();

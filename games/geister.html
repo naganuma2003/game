@@ -141,6 +141,8 @@ let turn,phase;      // phase: 'setup'|'play'|'over'
 let setupPlayer;     // pvp用
 let sel=null,busy=false,history=[],lastMove=null;
 let viewer=0;        // pvp: 今色が見えているプレイヤー
+let onet=false,oMy=0,oMyRdy=false,oOppCfg=null;
+const isRpl=()=>typeof OnlineCore!=='undefined'&&OnlineCore.isReplaying();
 
 const EXITS=o=>o===0?[[0,0],[0,N-1]]:[[N-1,0],[N-1,N-1]];
 
@@ -383,6 +385,8 @@ function isHumanSide(o){return mode==='pvp'||o===0;}
 /* =============== input =============== */
 function onCell(r,c){
   if(busy)return;
+  if(onet&&phase==='setup'&&setupPlayer!==oMy)return;
+  if(onet&&phase==='play'&&turn!==oMy&&!isRpl())return;
   if(phase==='setup'){
     const p=at(r,c);
     const o=mode==='pvp'?setupPlayer:0;
@@ -394,7 +398,7 @@ function onCell(r,c){
   }
   if(phase!=='play')return;
   if(!isHumanSide(turn))return;
-  if(mode==='pvp'&&viewer!==turn)return;
+  if(mode==='pvp'&&viewer!==turn&&!isRpl())return;
   const p=at(r,c);
   if(sel){
     const m=legalMovesOf(sel).find(m=>m.r===r&&m.c===c);
@@ -416,6 +420,17 @@ document.getElementById('setup-rnd').addEventListener('click',()=>{
 
 document.getElementById('setup-ok').addEventListener('click',()=>{
   if(phase!=='setup')return;
+  if(onet&&setupPlayer!==oMy)return;
+  if(onet){
+    const mine=pieces.filter(p=>p.o===oMy);
+    if(mine.filter(p=>p.col==='B').length!==4){msg('青4・赤4にしてください');return;}
+    oMyRdy=true;
+    try{OnlineCore.send({t:'gcfg',cols:pieces.filter(p=>p.o===oMy).map(p=>({id:p.id,col:p.col}))});}catch(_){}
+    msg('相手の準備を待っています…');
+    document.getElementById('setup-ok').disabled=true;
+    if(oOppCfg)gnetStart();
+    return;
+  }
   const o=mode==='pvp'?setupPlayer:0;
   const mine=pieces.filter(p=>p.o===o);
   const b=mine.filter(p=>p.col==='B').length;
@@ -437,6 +452,7 @@ document.getElementById('setup-ok').addEventListener('click',()=>{
 
 document.getElementById('exitbtn').addEventListener('click',()=>{
   if(!sel||!canExit(sel))return;
+  if(onet&&sel.o!==oMy)return;
   pushHistory();
   finish(sel.o,'青おばけが脱出に成功');
 });
@@ -475,6 +491,7 @@ function execMove(p,m){
 }
 
 function handoff(title,sub,cb){
+  if(onet){setTimeout(()=>{cb();viewer=oMy;render();},0);return;}
   document.getElementById('h-t').textContent=title;
   document.getElementById('h-s').textContent=sub;
   document.getElementById('hov').classList.add('show');
@@ -600,7 +617,7 @@ function cpuTurn(){
 
 /* =============== controls =============== */
 document.getElementById('undo').addEventListener('click',()=>{
-  if(!history.length||busy||phase!=='play')return;
+  if(!history.length||busy||phase!=='play'||onet)return;
   let h=history.pop();
   if(mode!=='pvp'){while(history.length&&h.turn!==0)h=history.pop();}
   pieces=h.pieces.map(p=>({...p}));
@@ -620,6 +637,42 @@ document.getElementById('modes').addEventListener('click',e=>{
 });
 
 init();
+
+function gnetMsg(m){
+  if(m.t==='gcfg'){
+    m.cols.forEach(({id,col})=>{const p=pieces.find(x=>x.id===id);if(p)p.col=col;});
+    oOppCfg=m.cols;
+    if(oMyRdy)gnetStart();
+    else msg('相手の準備ができました。あなたの駒の色を設定して「この配置で開始」をタップ。');
+  }
+}
+function gnetStart(){
+  phase='play';turn=0;viewer=oMy;sel=null;
+  document.getElementById('setup-ok').disabled=false;
+  uiPhase();render();
+  msg(oMy===0?'あなた(下側)の番です。':'相手(下側)の番から始まります。');
+}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js?v=2"></script>
+<script src="../shared/online-core.js?v=2"></script>
+<script>
+OnlineCore.init({
+  gameId:'geister',
+  statusSel:'#msg',
+  hostMark:'下側',
+  guestMark:'上側',
+  pvpSel:'#modes button[data-m="pvp"]',
+  hideSel:'#modes',
+  blockRelay:()=>typeof phase!=='undefined'&&phase==='setup',
+  customMsg:gnetMsg,
+  note:'各自の駒の色を設定してから対局開始。',
+  afterStart:(seat)=>{
+    onet=true; oMy=seat; oMyRdy=false; oOppCfg=null;
+    viewer=seat; setupPlayer=seat;
+    render(); uiPhase();
+  },
+});
 </script>
 </body>
 </html>

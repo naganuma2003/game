@@ -312,7 +312,15 @@ function open(g){
   frame.srcdoc=SRC[g.id]||'<body style="color:#999;font-family:sans-serif;padding:40px;text-align:center">準備中</body>';
   player.classList.add('show');
   history.pushState({game:g.id},'','#'+g.id);
+  setTimeout(()=>{try{frame.focus();frame.contentWindow.focus();}catch(_){}},60);
 }
+window.addEventListener('keydown',e=>{
+  if(!player.classList.contains('show'))return;
+  const k=e.key;
+  if(k.startsWith('Arrow')||/^[0-9]$/.test(k)||k==='Backspace'||k==='Delete'){
+    try{frame.contentWindow.dispatchEvent(new frame.contentWindow.KeyboardEvent('keydown',{key:k,bubbles:true}));if(k.startsWith('Arrow'))e.preventDefault();}catch(_){}
+  }
+});
 function closeGame(){player.classList.remove('show');frame.srcdoc='';}
 document.getElementById('backbtn').addEventListener('click',()=>{closeGame();if(location.hash)history.pushState({},'','#');});
 window.addEventListener('popstate',e=>{if(!e.state||!e.state.game)closeGame();else{const g=GAMES.find(x=>x.id===e.state.game);if(g)open(g);}});

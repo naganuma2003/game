@@ -320,6 +320,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:24px;letter-spacing:.2em;t
   <div class="cols" id="cols"></div>
 </div>
 <div class="msg" id="msg"></div>
+<div style="font-size:11px;color:var(--sub);text-align:center;margin-top:8px;line-height:1.7;max-width:min(98vw,520px)">カードをタップ→置き場所をタップで移動／一番下のカードをタップすると右上の組札（A→2→…）へ自動で送れます<br>左上の山札をタップでめくり・空いた列にはK（キング）だけ置けます</div>
 <div class="win" id="winov"><div class="card2"><div class="t">クリア！ 🎉</div><button id="again">もう一度</button></div></div>
 <script>
 const SUITS=['♠','♥','♦','♣'],RED={'♥':1,'♦':1};
@@ -390,7 +391,17 @@ function open(g){
   frame.srcdoc=SRC[g.id]||'<body style="color:#999;font-family:sans-serif;padding:40px;text-align:center">準備中</body>';
   player.classList.add('show');
   history.pushState({game:g.id},'','#'+g.id);
+  // キー操作がゲームに届くよう、iframe にフォーカスを移す
+  setTimeout(()=>{try{frame.focus();frame.contentWindow.focus();}catch(_){}},60);
 }
+// 親ウィンドウにフォーカスがある場合でも矢印/数字キーをゲームへ転送
+window.addEventListener('keydown',e=>{
+  if(!player.classList.contains('show'))return;
+  const k=e.key;
+  if(k.startsWith('Arrow')||/^[0-9]$/.test(k)||k==='Backspace'||k==='Delete'){
+    try{frame.contentWindow.dispatchEvent(new frame.contentWindow.KeyboardEvent('keydown',{key:k,bubbles:true}));if(k.startsWith('Arrow'))e.preventDefault();}catch(_){}
+  }
+});
 function closeGame(){player.classList.remove('show');frame.srcdoc='';}
 document.getElementById('backbtn').addEventListener('click',()=>{closeGame();if(location.hash)history.pushState({},'','#');});
 window.addEventListener('popstate',e=>{if(!e.state||!e.state.game)closeGame();else{const g=GAMES.find(x=>x.id===e.state.game);if(g)open(g);}});

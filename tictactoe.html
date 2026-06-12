@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>三目並べ</title><style>
+:root{--bg:#15120E;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#4A4030;--o:#5b9bd5;--x:#e0533e;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:18px 12px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:28px;letter-spacing:.2em;text-indent:.2em;margin:2px 0}
+.sub{font-size:11px;color:var(--sub);letter-spacing:.2em;margin-bottom:14px}
+.row{display:flex;gap:8px;margin-bottom:14px}
+.row button{background:transparent;border:1px solid #3a3326;color:var(--sub);padding:7px 14px;border-radius:18px;font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s}
+.row button.on{border-color:var(--gold);color:var(--gold)}
+.status{font-size:16px;min-height:26px;margin-bottom:12px;letter-spacing:.05em}
+#bd{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(82vw,320px);aspect-ratio:1/1}
+.cell{background:#221E17;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:min(16vw,64px);font-weight:800;cursor:pointer}
+.cell.o{color:var(--o)}.cell.x{color:var(--x)}
+.cell.win{background:#46402d;border-color:var(--gold)}
+.foot{margin-top:18px}
+.foot button{background:var(--gold);border:none;color:#15120E;font-weight:700;padding:9px 22px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit}
+.score{display:flex;gap:18px;margin-top:14px;font-size:13px;color:var(--sub)}
+.score b{color:var(--txt)}
+</style></head><body>
+<a href="index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
+<h1>三目並べ</h1><div class="sub">TIC-TAC-TOE</div>
+<div class="row" id="mode">
+  <button data-m="cpu" class="on">CPU対戦</button>
+  <button data-m="pvp">2人対戦</button>
+</div>
+<div class="status" id="status">あなた（○）の番</div>
+<div id="bd"></div>
+<div class="score"><span>○ <b id="sO">0</b></span><span>引分 <b id="sD">0</b></span><span>× <b id="sX">0</b></span></div>
+<div class="foot"><button id="reset">もう一度</button></div>
+<script>
+let bd,turn,over,mode='cpu',cells=[],sc={O:0,X:0,D:0};
+const WINS=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+const board=document.getElementById('bd');
+for(let i=0;i<9;i++){const d=document.createElement('div');d.className='cell';d.addEventListener('click',()=>tap(i));board.appendChild(d);cells.push(d);}
+function init(){bd=Array(9).fill('');turn='O';over=false;render();setStatus();if(mode==='cpu'&&Math.random()<0.5){turn='X';setStatus();setTimeout(()=>{move(best('X'));},400);}}
+function setStatus(t){const s=document.getElementById('status');if(t){s.textContent=t;return;}if(mode==='pvp')s.textContent=(turn==='O'?'○':'×')+'の番';else s.textContent=turn==='O'?'あなた（○）の番':'CPUの番';}
+function render(){for(let i=0;i<9;i++){cells[i].textContent=bd[i];cells[i].className='cell'+(bd[i]==='O'?' o':bd[i]==='X'?' x':'');}}
+function winner(b){for(const w of WINS){const[a,c,d]=w;if(b[a]&&b[a]===b[c]&&b[a]===b[d])return{p:b[a],line:w};}if(b.every(x=>x))return{p:'D'};return null;}
+function tap(i){if(over||bd[i])return;if(mode==='cpu'&&turn!=='O')return;move(i);}
+function move(i){bd[i]=turn;render();const w=winner(bd);if(w){end(w);return;}turn=turn==='O'?'X':'O';setStatus();if(mode==='cpu'&&turn==='X'){setTimeout(()=>{const m=best('X');move(m);},350);}}
+function end(w){over=true;if(w.p==='D'){sc.D++;setStatus('引き分け');}else{sc[w.p]++;if(w.line)for(const j of w.line)cells[j].classList.add('win');if(mode==='pvp')setStatus((w.p==='O'?'○':'×')+'の勝ち！');else setStatus(w.p==='O'?'あなたの勝ち！🎉':'CPUの勝ち');}
+document.getElementById('sO').textContent=sc.O;document.getElementById('sX').textContent=sc.X;document.getElementById('sD').textContent=sc.D;}
+function best(p){const o=p==='X'?'O':'X';function mm(b,who){const w=winner(b);if(w){if(w.p===p)return{s:10};if(w.p===o)return{s:-10};return{s:0};}let best=null;for(let i=0;i<9;i++){if(b[i])continue;b[i]=who;const r=mm(b,who===p?o:p);b[i]='';const s=r.s;if(best===null||(who===p?s>best.s:s<best.s))best={s,i};}return best;}
+return mm(bd.slice(),p).i;}
+document.getElementById('reset').addEventListener('click',init);
+document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
+init();
+</script></body></html>

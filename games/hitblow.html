@@ -95,7 +95,7 @@ const COLORS=[
 let mode='num',N=4,DUP=false,MAX=10,secret,guess,tries,over;
 let pmode='solo',np=2,curPlayer=0,winner=-1,mHist=[];
 let ONLINE=false,MYSEAT=0,roomSend=null;
-const PCOL=['#3e87d6','#e0473a','#5cb568','#e8c244'];
+const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a']; // P1赤 P2青 P3緑 P4黄
 function myTurn(){return !ONLINE||curPlayer===MYSEAT;}
 const disp=document.getElementById('disp'),pad=document.getElementById('pad'),hist=document.getElementById('history');
 // 使える値の集合
@@ -112,8 +112,9 @@ function init(){MAX=maxTries();secret=genSecret();guess=[];tries=0;over=false;wi
 function turnLabel(){return ONLINE?(curPlayer===MYSEAT?'★あなた(P'+(curPlayer+1)+')':'相手(P'+(curPlayer+1)+')'):'プレイヤー'+(curPlayer+1);}
 function updateTurnMsg(){
   if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(curPlayer===MYSEAT&&!over);
-  if(pmode==='solo')msg(mode==='num'?'数字を選んで「判定」':'色を選んで「判定」');
-  else msg(turnLabel()+'の番：'+(mode==='num'?'数字':'色')+'を入力して「判定」');}
+  const mEl=document.getElementById('msg');
+  if(pmode==='solo'){mEl.style.color='var(--gold)';msg(mode==='num'?'数字を選んで「判定」':'色を選んで「判定」');}
+  else{mEl.style.color=PCOL[curPlayer];mEl.style.fontWeight='700';msg(turnLabel()+'の番：'+(mode==='num'?'数字':'色')+'を入力して「判定」');}}
 function updatePad(){const off=(pmode==='multi'&&!myTurn());pad.style.opacity=off?'.4':'1';pad.style.pointerEvents=off?'none':'auto';}
 function msg(s){document.getElementById('msg').textContent=s;}
 function symHtml(v){return mode==='num'?String(v):`<span class="ball" style="background:${COLORS[v].css}"></span>`;}

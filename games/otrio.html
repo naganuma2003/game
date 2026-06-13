@@ -58,8 +58,8 @@ svg{display:block;width:min(92vw,400px);height:auto}
 <script>
 const NS='http://www.w3.org/2000/svg';
 const COLORS=[
-  {nm:'青',c:'#3e87d6'},
   {nm:'赤',c:'#e0473a'},
+  {nm:'青',c:'#3e87d6'},
   {nm:'緑',c:'#4ec05e'},
   {nm:'黄',c:'#e0c34a'}
 ];
@@ -95,6 +95,7 @@ function updateTurn(){
   const nm=COLORS[turn].nm;
   if(ONLINE)t.textContent=(turn===MYSEAT?'★ あなた':'相手')+'('+nm+')の番';
   else t.textContent=mode==='pvp'?(nm+'の番'):(turn===0?'あなた('+nm+')の番':'CPU('+nm+')の番');
+  t.style.color=COLORS[turn].c;t.style.fontWeight='800';
   if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(turn===MYSEAT&&!over);
 }
 function updateStock(){

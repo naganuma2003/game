@@ -83,6 +83,7 @@ function isFull(d){const v=Object.values(counts(d)).sort();return v.length===2&&
 function straight(d,len){const s=[...new Set(d)].sort((a,b)=>a-b);let run=1,best=1;for(let i=1;i<s.length;i++){if(s[i]===s[i-1]+1){run++;best=Math.max(best,run);}else run=1;}return best>=len;}
 let dice,keep,rolls,allScores,turn,over,np=1,curPlayer;
 let ONLINE=false,MYSEAT=0,roomSend=null;
+const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a']; // P1赤 P2青 P3緑 P4黄
 function myTurn(){return !ONLINE||curPlayer===MYSEAT;}
 // online: route every input through the relay so all clients apply in one order
 function emit(a){if(ONLINE){if(!myTurn()||over)return;roomSend(a);}else doAction(a);}
@@ -101,7 +102,9 @@ function updateCurP(){
   if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(curPlayer===MYSEAT&&!over);
   if(np<=1)return;
   const me=ONLINE&&curPlayer===MYSEAT;
-  document.getElementById('curp').textContent=(me?'★ あなた（P'+(curPlayer+1)+'）':'プレイヤー '+(curPlayer+1))+' の番（'+turn+'/13問目）';}
+  const cp=document.getElementById('curp');
+  cp.textContent=(me?'★ あなた（P'+(curPlayer+1)+'）':'プレイヤー '+(curPlayer+1))+' の番（'+turn+'/13問目）';
+  cp.style.color=over?'var(--gold)':PCOL[curPlayer];cp.style.fontWeight='800';}
 function renderDice(){const el=document.getElementById('dice');el.innerHTML='';dice.forEach((v,i)=>{
   const d=document.createElement('div');d.className='die'+(keep[i]?' keep':'');
   d.innerHTML=PIPS[v].map(([x,y])=>`<span class="pip" style="left:${x}%;top:${y}%"></span>`).join('');

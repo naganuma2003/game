@@ -72,6 +72,7 @@ const SUITS=['♠','♥','♦','♣'],RED={'♥':1,'♦':1};
 const RANKS=['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
 // strength: index in RANKS (3 weakest .. 2 strongest)
 let hands,turn,field,fieldOwner,passes,revolution,np=4,jokerCount=0,finished,sel,gameOver,NAMES=['あなた','CPU A','CPU B','CPU C'];
+const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a']; // P1赤 P2青 P3緑 P4黄
 let gmode='cpu',ONLINE=false,MYSEAT=0,roomSend=null,localView=0;
 function isHuman(o){return ONLINE||gmode==='local'||o===0;}
 function viewSeat(){return ONLINE?MYSEAT:(gmode==='cpu'?0:localView);}
@@ -105,13 +106,14 @@ function cardHtml(c,cls){if(c.joker)return '<div class="card joker'+(cls||'')+'"
 function render(){
   const vs=viewSeat();
   const cpus=document.getElementById('cpus');cpus.innerHTML='';
-  for(let p=0;p<np;p++){if(p===vs)continue;const d=document.createElement('div');d.className='cpu'+(turn===p?' active':'')+(hands[p].length===0?' done':'')+(ONLINE&&p===MYSEAT?' me':'');const rank=finishedRank(p);d.innerHTML='<div class="nm">'+NAMES[p]+'</div><div class="ct">'+(rank||hands[p].length+'枚')+'</div>';cpus.appendChild(d);}
+  for(let p=0;p<np;p++){if(p===vs)continue;const d=document.createElement('div');d.className='cpu'+(turn===p?' active':'')+(hands[p].length===0?' done':'')+(ONLINE&&p===MYSEAT?' me':'');const rank=finishedRank(p);d.innerHTML='<div class="nm" style="color:'+PCOL[p]+';font-weight:800">'+NAMES[p]+'</div><div class="ct">'+(rank||hands[p].length+'枚')+'</div>';cpus.appendChild(d);}
   document.getElementById('field').innerHTML=field.map(c=>cardHtml(c)).join('');
   document.getElementById('flag').textContent=(revolution?'⚡革命中（弱強逆転） ':'')+(field.length?(NAMES[fieldOwner]+'が出した'):'');
   document.getElementById('handlab').textContent=(ONLINE||gmode==='local')?(NAMES[vs]+' の手札'):'';
   const act=canAct();
   const mh=document.getElementById('myhand');mh.innerHTML='';hands[vs].forEach((c,i)=>{const w=document.createElement('div');w.innerHTML=cardHtml(c,(act&&sel.includes(i))?' sel':'');const el=w.firstChild;if(act)el.addEventListener('click',()=>toggle(i));mh.appendChild(el);});
   document.getElementById('play').disabled=!act;document.getElementById('pass').disabled=!act||field.length===0;
+  document.getElementById('msg').style.color=gameOver?'var(--gold)':PCOL[turn];document.getElementById('msg').style.fontWeight='700';
   if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(turn===MYSEAT&&!gameOver);
 }
 function rankTitles(n){if(n<=2)return['大富豪','大貧民'];if(n===3)return['大富豪','平民','大貧民'];return['大富豪','富豪','貧民','大貧民'];}

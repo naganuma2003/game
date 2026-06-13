@@ -38,6 +38,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.2em;t
 const EMO=['🍎','🍌','🍇','🍓','🍑','🍊','🍉','🥝','🍒','🦁','🐰','🐼','🐸','🐧','🦊','🐶','⭐','🌙','🌸','🍀'];
 let N=12,deck,flipped,matched,busy,mode='solo',moves,turn,score,np=2;
 let ONLINE=false,MYSEAT=0,roomSend=null;
+const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a']; // P1赤 P2青 P3緑 P4黄
 const bd=document.getElementById('bd');
 function init(){deck=[];
 if(N===52){
@@ -53,7 +54,7 @@ const cols=N<=16?4:N<=20?5:8;bd.style.gridTemplateColumns='repeat('+cols+',1fr)'
 bd.classList.toggle('trump',N===52);
 bd.innerHTML='';deck.forEach((c,i)=>{const el=document.createElement('div');el.className='card';const face=N===52?'<span class="'+(c.red?'red':'blk')+'">'+c.e+'</span>':c.e;el.innerHTML='<div class="back">?</div><div class="face">'+face+'</div>';el.addEventListener('click',()=>tap(i));bd.appendChild(el);});
 setStatus();}
-function setStatus(){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='めくった回数: <b>'+moves+'</b>　そろえた: <b>'+matched.size/2+'/'+(N/2)+'</b>';else{let sc=score.map((v,i)=>'P'+(i+1)+': '+v).join(' / ');const who=ONLINE?(turn===MYSEAT?'★あなた(P'+(turn+1)+')':'相手(P'+(turn+1)+')'):'プレイヤー'+(turn+1);s.innerHTML='<b>'+who+'</b>の番　（'+sc+'）';}
+function setStatus(){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='めくった回数: <b>'+moves+'</b>　そろえた: <b>'+matched.size/2+'/'+(N/2)+'</b>';else{let sc=score.map((v,i)=>'<span style="color:'+PCOL[i]+';font-weight:700">P'+(i+1)+': '+v+'</span>').join(' / ');const who=ONLINE?(turn===MYSEAT?'★あなた(P'+(turn+1)+')':'相手(P'+(turn+1)+')'):'プレイヤー'+(turn+1);s.innerHTML='<b style="color:'+PCOL[turn]+'">'+who+'</b>の番　（'+sc+'）';}
   if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(turn===MYSEAT&&matched.size<N);}
 function cardEl(i){return bd.children[i];}
 function tap(i){if(busy||matched.has(i)||flipped.includes(i))return;

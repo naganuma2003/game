@@ -139,6 +139,7 @@ function initMulti(){
   renderMulti();updateMultiControls();
   msg(turnName(curPlayer)+'：ベットを決めて「ベット確定」');
 }
+const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a']; // P1赤 P2青 P3緑 P4黄
 function pname(i){return (ONLINE&&i===MYSEAT)?'あなた(P'+(i+1)+')':'P'+(i+1);}
 function turnName(i){return ONLINE?(i===MYSEAT?'★あなた':'相手(P'+(i+1)+')'):'プレイヤー'+(i+1);}
 function renderMulti(){
@@ -151,7 +152,7 @@ function renderMulti(){
     seat.className='seat'+((mPhase==='bet'||mPhase==='play')&&i===curPlayer?' active':'')+(ONLINE&&i===MYSEAT?' me':'');
     const rc=p.res==null?'':(p.res>0?'#6CC56C':p.res<0?'#e0533e':'var(--gold)');
     const rt=p.res==null?'':(p.res>0?'勝ち':p.res<0?'負け':'引分');
-    seat.innerHTML='<div class="snm"><span>'+pname(i)+(p.done&&mPhase==='play'?' ✓':'')+'</span><span class="sc">'+p.chips+'</span></div>'+
+    seat.innerHTML='<div class="snm"><span style="color:'+PCOL[i]+';font-weight:800">'+pname(i)+(p.done&&mPhase==='play'?' ✓':'')+'</span><span class="sc">'+p.chips+'</span></div>'+
       '<div class="shand">'+p.hand.map(c=>cardHtml(c,false,true)).join('')+'</div>'+
       '<div class="stot">'+(p.hand.length?'('+val(p.hand)+')'+(p.bet?' 賭'+p.bet:''):(p.bet?'賭'+p.bet:''))+'</div>'+
       '<div class="sres" style="color:'+rc+'">'+rt+'</div>';
@@ -166,6 +167,7 @@ function updateMultiControls(){
   document.getElementById('m-actions').style.display=actShow?'flex':'none';
   document.getElementById('m-nextrow').style.display=nextShow?'flex':'none';
   if(betShow){pendBet=Math.min(pendBet||100,players[curPlayer].chips);document.getElementById('m-betv').textContent=pendBet;}
+  document.getElementById('msg').style.color=(mPhase==='bet'||mPhase==='play')?PCOL[curPlayer]:'var(--gold)';
   if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(curPlayer===MYSEAT&&(mPhase==='bet'||mPhase==='play'));
 }
 // 退出席の代理: bet相は最小ベット, play相はstandをホストが送信

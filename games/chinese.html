@@ -63,6 +63,8 @@ let occ;           // id -> playerIdx or -1
 let adj;
 let svg=document.getElementById('bd');
 let sel=null,dests=[],turn=0,over=false,busy=false,winners=[];
+let ONLINE=false,MYSEAT=0,roomSend=null;
+function myTurn(){return !ONLINE||turn===MYSEAT;}
 
 function zoneFor(r,col,rowLen){
   if(r<4)return 'A';
@@ -102,10 +104,11 @@ function updateTurn(){
   const t=document.getElementById('turn');
   if(over){t.textContent='対局終了';return;}
   const nm=COLORS[turn].nm;
-  if(mode==='pvp')t.textContent=nm+'の番';
+  if(ONLINE)t.textContent=(turn===MYSEAT?'★ あなた':'相手')+'('+nm+')の番';
+  else if(mode==='pvp')t.textContent=nm+'の番';
   else t.textContent=turn===0?'あなた('+nm+')の番':'CPU('+nm+')の番';
 }
-function isHuman(){return mode==='pvp'||turn===0;}
+function isHuman(){return ONLINE?myTurn():(mode==='pvp'||turn===0);}
 function render(){
   const xs=cells.map(c=>c.x),ys=cells.map(c=>c.y);
   const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
@@ -153,15 +156,22 @@ function onCell(id){
   if(occ[id]===turn){sel=id;dests=legalMoves(id);render();return;}
   sel=null;dests=[];render();
 }
-function move(from,to){
-  occ[to]=turn;occ[from]=-1;sel=null;dests=[];
-  if(checkWin(turn)&&!winners.includes(turn)){
-    winners.push(turn);
-    if(winners.length>=np-1||np===2){over=true;render();finish();return;}
+function move(from,to){emit({k:'move',from,to});}
+function emit(a){if(ONLINE)roomSend(a);else doAction(a);}
+function doAction(a){
+  if(over)return;
+  if(a.k==='move'){
+    const from=a.from,to=a.to;
+    if(occ[from]!==turn||occ[to]!==-1)return;
+    occ[to]=turn;occ[from]=-1;sel=null;dests=[];
+    if(checkWin(turn)&&!winners.includes(turn)){
+      winners.push(turn);
+      if(winners.length>=np-1||np===2){over=true;render();finish();return;}
+    }
+    nextTurn();
+    render();updateTurn();
+    if(!ONLINE&&!isHuman()&&!over){busy=true;setTimeout(cpuMove,520);}
   }
-  nextTurn();
-  render();updateTurn();
-  if(!isHuman()&&!over){busy=true;setTimeout(cpuMove,520);}
 }
 function nextTurn(){let n=turn;for(let k=0;k<np;k++){n=(n+1)%np;if(!winners.includes(n)){turn=n;return;}}}
 function checkWin(p){const goal=myGoalZone(p);
@@ -169,7 +179,7 @@ function checkWin(p){const goal=myGoalZone(p);
   return goalCells.every(c=>occ[c.id]===p);}
 function zoneCentroid(z){const zc=cells.filter(c=>c.zone===z);
   const x=zc.reduce((s,c)=>s+c.x,0)/zc.length,y=zc.reduce((s,c)=>s+c.y,0)/zc.length;return{x,y};}
-function cpuMove(){busy=false;if(over)return;const p=turn;
+function cpuMove(){busy=false;if(over||ONLINE)return;const p=turn;
   const gc=zoneCentroid(myGoalZone(p));
   let best=null,bestScore=-1e9;
   for(const c of cells){if(occ[c.id]!==p)continue;
@@ -180,7 +190,7 @@ function cpuMove(){busy=false;if(over)return;const p=turn;
       let sc=(d0-d1)*10 + (t.zone===myGoalZone(p)?15:0) + Math.random()*2;
       if(sc>bestScore){bestScore=sc;best=[c.id,to];}}}
   if(!best){nextTurn();render();updateTurn();if(!isHuman())setTimeout(cpuMove,520);return;}
-  move(best[0],best[1]);
+  doAction({k:'move',from:best[0],to:best[1]});
 }
 function finish(){
   if(np===2){winners.push([0,1].find(p=>!winners.includes(p)));}
@@ -197,10 +207,19 @@ document.getElementById('again').addEventListener('click',init);
 document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 init();
+
+function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
+  document.getElementById('np').style.display='none';
+  document.getElementById('mode').style.display='none';
+  init();}
 </script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=3"></script>
-<script src="../shared/online-core.js?v=3"></script>
-<script>OnlineCore.init({gameId:'chinese',statusSel:'#turn',hostMark:'青',guestMark:'赤',pvpSel:'#mode button[data-m="pvp"]',hideSel:'#mode,#np',note:'2人対局。青がホスト、赤がゲストです。'});</script>
+<script src="../shared/online-room.js?v=1"></script>
+<script>
+OnlineRoom.init({gameId:'chinese',minPlayers:2,maxPlayers:3,note:'星型盤で対面の三角ゴールを目指す。2〜3人対応。',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>doAction(msg)});
+</script>
 </body>
 </html>

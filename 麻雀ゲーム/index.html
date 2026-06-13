@@ -861,11 +861,13 @@ const Score = (() => {
 
     if (allTanyao(counts)) yaku.push({ name: '断么九', han: 1 });
 
-    // 役牌
+    // 役牌（連風牌は場風＋自風で2翻）
     for (const m of pons) {
       if (Tiles.isDragon(m.t)) yaku.push({ name: '役牌 ' + Tiles.name(m.t), han: 1 });
-      else if (m.t === ctx.roundWind) yaku.push({ name: '場風 ' + Tiles.name(m.t), han: 1 });
-      else if (m.t === ctx.seatWind) yaku.push({ name: '自風 ' + Tiles.name(m.t), han: 1 });
+      else {
+        if (m.t === ctx.roundWind) yaku.push({ name: '場風 ' + Tiles.name(m.t), han: 1 });
+        if (m.t === ctx.seatWind) yaku.push({ name: '自風 ' + Tiles.name(m.t), han: 1 });
+      }
     }
 
     // 一盃口 / 二盃口（門前のみ）
@@ -1492,7 +1494,7 @@ const AI = (() => {
     const pl = state.players[p];
     if (draw) {
       if (state.wall.length === 0) return { type: 'ryuukyoku' };
-      pl.tempFuriten = false;
+      if (!pl.riichi) pl.tempFuriten = false; // リーチ中は見逃しフリテンが永続
       pl.drawn = state.wall.shift();
       state.afterKan = false;
     }

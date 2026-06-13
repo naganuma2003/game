@@ -83,7 +83,9 @@ function init(){
   render(); updateTurn(); updateStock();
   if(!isHuman()) setTimeout(cpuMove, 600);
 }
-function isHuman(){return ONLINE?myTurn():(mode==='pvp'||turn===0);}
+function isCpuSeat(){return ONLINE&&window.OnlineRoom&&OnlineRoom.isCpu(turn);}
+function isHuman(){if(ONLINE){if(isCpuSeat())return false;return turn===MYSEAT;}return mode==='pvp'||turn===0;}
+function shouldRunCpu(){if(over)return false;if(ONLINE)return isCpuSeat()&&OnlineRoom.isHost();return !isHuman();}
 function setActionUI(){
   document.getElementById('abMove').classList.toggle('on',action==='move');
   document.getElementById('abWall').classList.toggle('on',action==='wall');
@@ -254,15 +256,17 @@ function finishTurn(){
   action='move';
   setActionUI();
   render(); updateTurn(); updateStock();
-  if(!ONLINE && !over && !isHuman()) setTimeout(cpuMove, 600);
+  if(shouldRunCpu()) setTimeout(cpuMove, 600);
+  else if(!ONLINE && !over && !isHuman()) setTimeout(cpuMove, 600);
 }
 function nextTurn(){let n=turn;for(let k=0;k<np;k++){n=(n+1)%np;if(!winners.includes(n)){turn=n;return;}}}
 
 function cpuMove(){
-  if(over||ONLINE) return;
+  if(over)return;
+  if(ONLINE&&(!OnlineRoom.isHost()||!isCpuSeat()))return;
   const p=turn;
   const myMoves=pawnMoves(p);
-  for(const [r,c] of myMoves){if(isGoal(p,r,c)){doAction({k:'move',r,c});return;}}
+  for(const [r,c] of myMoves){if(isGoal(p,r,c)){emit({k:'move',r,c});return;}}
   const myDist=distFrom(p,pawns[p].r,pawns[p].c);
   let bestMove=null, bestMoveDist=Infinity;
   for(const [r,c] of myMoves){
@@ -288,10 +292,10 @@ function cpuMove(){
       }
     }
   }
-  if(bestWall && bestWallScore>=3){doAction({k:'wall',r:bestWall.r,c:bestWall.c,d:bestWall.d});return;}
-  if(bestMove){doAction({k:'move',r:bestMove[0],c:bestMove[1]});return;}
-  if(myMoves.length){const[r,c]=myMoves[0];doAction({k:'move',r,c});return;}
-  nextTurn(); render(); updateTurn(); if(!ONLINE&&!over && !isHuman())setTimeout(cpuMove,600);
+  if(bestWall && bestWallScore>=3){emit({k:'wall',r:bestWall.r,c:bestWall.c,d:bestWall.d});return;}
+  if(bestMove){emit({k:'move',r:bestMove[0],c:bestMove[1]});return;}
+  if(myMoves.length){const[r,c]=myMoves[0];emit({k:'move',r,c});return;}
+  nextTurn(); render(); updateTurn(); if(shouldRunCpu())setTimeout(cpuMove,600); else if(!ONLINE&&!over&&!isHuman())setTimeout(cpuMove,600);
 }
 
 function finish(){
@@ -310,11 +314,12 @@ init();
 function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
   document.getElementById('np').classList.add('hidden');
   document.getElementById('mode').classList.add('hidden');
-  init();}
+  init();
+  if(shouldRunCpu())setTimeout(cpuMove,600);}
 </script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=2"></script>
-<script src="../shared/online-room.js?v=1"></script>
+<script src="../shared/online-room.js?v=2"></script>
 <script>
 OnlineRoom.init({gameId:'quoridor',minPlayers:2,maxPlayers:4,note:'駒を進めるか壁を置く。先に対面の辺へ。',
   onStart:(seat,n,send)=>startOnline(seat,n,send),

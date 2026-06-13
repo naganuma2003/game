@@ -45,9 +45,10 @@
   function init(cfg) {
     const MIN = cfg.minPlayers || 2, MAX = cfg.maxPlayers || 4;
     let peer = null;
-    let isHost = false, started = false, mySeat = 0, nPlayers = 0;
+    let isHost = false, started = false, mySeat = 0, nPlayers = 0, nCpus = 0;
     // host only: seat 0 is the host; guests[] holds {conn, seat, alive}
     let guests = [];
+    let cpus = 0; // host's chosen CPU count, applied at start
 
     /* ---------- lobby UI ---------- */
     const ui = document.createElement('div');
@@ -74,6 +75,11 @@
 #join-code{width:120px;font-size:18px;font-weight:700;letter-spacing:.18em;text-align:center;padding:7px;border-radius:8px;border:none}
 #oc-roster{margin:10px 0 0;font-size:13px;color:#bcd}
 #oc-roster b{color:#ffd34d}
+#cpu-row{margin:10px 0 0;font-size:12px;color:#bcd;display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap}
+#cpu-row[hidden]{display:none}
+#cpu-row .lab{opacity:.85}
+#cpu-row button{background:#3a4358;border:1px solid #555f7a;color:#edf1f8;padding:3px 10px;border-radius:14px;font-size:12px;cursor:pointer}
+#cpu-row button.on{background:#e0a13a;border-color:#e0a13a;color:#1d2330;font-weight:700}
 #start-room{margin-top:12px}
 #start-room[hidden]{display:none}
 #online-status{min-height:18px;margin:12px 0 0;font-size:12px;font-weight:600;color:#ffd34d;line-height:1.5}
@@ -94,6 +100,7 @@
       <div class="oc-join"><input id="join-code" maxlength="4" placeholder="4桁の番号" inputmode="numeric" autocomplete="off"><button id="join-room" class="oc-btn">参加</button></div>
     </div>
     <p id="oc-roster"></p>
+    <div id="cpu-row" hidden><span class="lab">CPUを追加:</span><span id="cpu-btns"></span></div>
     <button id="start-room" class="oc-btn" hidden>この人数で開始</button>
     <p id="online-status"></p>
   </div>
@@ -131,9 +138,29 @@
     }
 
     function rosterText() {
-      const txt = `参加者 <b>${nPlayersNow()}/${MAX}</b>人` + (nPlayersNow() < MIN ? `（最低${MIN}人で開始できます）` : '');
+      const humans = nPlayersNow();
+      let txt = `参加者 <b>${humans}/${MAX}</b>人`;
+      if (isHost && cpus > 0) txt += `（+ CPU ${cpus}）`;
+      const total = humans + (isHost ? cpus : 0);
+      if (total < MIN) txt += `（最低${MIN}人で開始できます）`;
       $('oc-roster').innerHTML = txt;
-      try { cfg.onRoster && cfg.onRoster(nPlayersNow(), MAX); } catch (_) {}
+      if (isHost) {
+        const maxCpu = MAX - humans;
+        const minCpu = Math.max(0, MIN - humans);
+        if (cpus > maxCpu) cpus = maxCpu;
+        if (cpus < minCpu) cpus = minCpu;
+        renderCpuButtons(humans);
+      }
+      try { cfg.onRoster && cfg.onRoster(humans, MAX); } catch (_) {}
+    }
+    function renderCpuButtons(humans) {
+      const row = $('cpu-row');
+      const maxCpu = MAX - humans;
+      row.hidden = !isHost || maxCpu < 1;
+      let html = '';
+      for (let i = 0; i <= maxCpu; i++) html += `<button data-cpu="${i}" class="${i === cpus ? 'on' : ''}">${i}</button>`;
+      $('cpu-btns').innerHTML = html;
+      $('cpu-btns').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { cpus = +b.dataset.cpu; rosterText(); }));
     }
     function nPlayersNow() { return isHost ? 1 + guests.filter(g => g.alive).length : nPlayers; }
 
@@ -198,17 +225,18 @@
     }
     function hostStart() {
       if (started || !isHost) return;
-      const n = nPlayersNow();
-      if (n < MIN) { setStatus(`最低${MIN}人必要です。`); return; }
+      const humans = nPlayersNow();
+      const n = humans + cpus;
+      if (n < MIN) { setStatus(`最低${MIN}人必要です（CPUを増やせます）。`); return; }
+      if (n > MAX) { setStatus(`${MAX}人以内にしてください。`); return; }
       started = true;
-      // Re-number seats compactly over the survivors so seats are 0..n-1.
       const alive = guests.filter(g => g.alive);
       alive.forEach((g, i) => { g.seat = i + 1; });
       guests = alive;
       nPlayers = n;
       const seed = (Math.random() * 0x7fffffff) | 0;
-      guests.forEach(g => { try { g.conn.send({ t: 'start', seed, n, seat: g.seat }); } catch (_) {} });
-      beginMatch(0, n, seed);
+      guests.forEach(g => { try { g.conn.send({ t: 'start', seed, n, seat: g.seat, cpus }); } catch (_) {} });
+      beginMatch(0, n, seed, cpus);
     }
 
     /* ---------- GUEST ---------- */
@@ -240,7 +268,7 @@
           } else if (m.t === 'full') {
             setStatus('満員、または対局が始まっています。');
           } else if (m.t === 'start') {
-            beginMatch(m.seat, m.n, m.seed);
+            beginMatch(m.seat, m.n, m.seed, m.cpus || 0);
           } else if (m.t === 'act') {
             deliver(m.from, m.msg);
           } else if (m.t === 'left') {
@@ -261,12 +289,13 @@
     }
 
     /* ---------- match start ---------- */
-    function beginMatch(seat, n, seed) {
-      started = true; mySeat = seat; nPlayers = n;
+    function beginMatch(seat, n, seed, cpusIn) {
+      started = true; mySeat = seat; nPlayers = n; nCpus = cpusIn || 0;
       Math.random = mulberry32(seed);
       hideLobby();
       $('online-btn').style.display = 'none';
-      showBadge('🌐 オンライン（あなたはP' + (seat + 1) + '）');
+      const cpuTxt = nCpus > 0 ? ` / CPU×${nCpus}` : '';
+      showBadge('🌐 オンライン（あなたはP' + (seat + 1) + cpuTxt + '）');
       try { cfg.onStart && cfg.onStart(seat, n, send); } catch (e) { console.error(e); }
     }
 
@@ -285,12 +314,17 @@
     else if (params.has('create')) { openLobby(); host(); }
     else if (params.has('online')) { openLobby(); }
 
-    return {
+    const api = {
       send,
       isOnline: () => started,
       seat: () => mySeat,
       count: () => nPlayers,
+      isCpu: (s) => started && nCpus > 0 && s >= (nPlayers - nCpus),
+      isHost: () => isHost,
+      cpuCount: () => nCpus,
     };
+    Object.assign(window.OnlineRoom, api);
+    return api;
   }
 
   window.OnlineRoom = { init };

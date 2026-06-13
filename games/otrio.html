@@ -79,9 +79,12 @@ function init(){
   document.getElementById('over').classList.remove('show');
   document.getElementById('msg').textContent='';
   render();updateTurn();updateStock();
-  if(!isHuman())setTimeout(cpuMove,600);
+  if(shouldRunCpu())setTimeout(cpuMove,600);
+  else if(!ONLINE&&!isHuman())setTimeout(cpuMove,600);
 }
-function isHuman(){return ONLINE?myTurn():(mode==='pvp'||turn===0);}
+function isCpuSeat(){return ONLINE&&window.OnlineRoom&&OnlineRoom.isCpu(turn);}
+function isHuman(){if(ONLINE){if(isCpuSeat())return false;return turn===MYSEAT;}return mode==='pvp'||turn===0;}
+function shouldRunCpu(){if(over)return false;if(ONLINE)return isCpuSeat()&&OnlineRoom.isHost();return !isHuman();}
 function updateTurn(){
   const t=document.getElementById('turn');
   if(over){t.textContent='対局終了';return;}
@@ -141,21 +144,26 @@ function render(){
     html+=`<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="6" class="cell-bg"/>`;
     const cx=x+CELL/2,cy=y+CELL/2;
     // 3 rings: large(2)=46, medium(1)=32, small(0)=18
-    const radii=[18,32,46];
+    // 小=棒(ポスト)状の小さなディスク, 中/大=リング
+    const radii=[10,32,46];
     for(let s=2;s>=0;s--){
       const r2=radii[s];
       const owner=board[r][c][s];
       const isEmpty=owner<0;
       const interactive=isHuman()&&!over&&isEmpty&&stock[turn][s]>0;
-      const fill=isEmpty?'none':COLORS[owner].c;
-      const stroke=isEmpty?'var(--empty)':COLORS[owner].c;
-      const sw=isEmpty?2:5;
-      html+=`<circle cx="${cx}" cy="${cy}" r="${r2}" fill="${fill}" fill-opacity="0" stroke="${stroke}" stroke-width="${sw}" class="ring${isEmpty?' empty':''}${interactive?'':' disabled'}" ${interactive?`data-p="${r},${c},${s}"`:''}/>`;
+      if(s===0){
+        const fill=isEmpty?'#d7cfba':COLORS[owner].c;
+        const stroke=isEmpty?'rgba(0,0,0,.45)':'rgba(0,0,0,.3)';
+        html+=`<circle cx="${cx}" cy="${cy}" r="${r2}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" class="ring${interactive?'':' disabled'}" ${interactive?`data-p="${r},${c},${s}"`:''}/>`;
+        html+=`<circle cx="${cx}" cy="${cy}" r="${(r2*0.34).toFixed(1)}" fill="rgba(0,0,0,.3)" pointer-events="none"/>`;
+        html+=`<circle cx="${(cx-r2*0.3).toFixed(1)}" cy="${(cy-r2*0.3).toFixed(1)}" r="${(r2*0.22).toFixed(1)}" fill="rgba(255,255,255,.45)" pointer-events="none"/>`;
+      }else{
+        const fill=isEmpty?'none':COLORS[owner].c;
+        const stroke=isEmpty?'var(--empty)':COLORS[owner].c;
+        const sw=isEmpty?2:5;
+        html+=`<circle cx="${cx}" cy="${cy}" r="${r2}" fill="${fill}" fill-opacity="0" stroke="${stroke}" stroke-width="${sw}" class="ring${isEmpty?' empty':''}${interactive?'':' disabled'}" ${interactive?`data-p="${r},${c},${s}"`:''}/>`;
+      }
     }
-    // 中央の棒（写真のポスト風）— クリックは奥のリングに通す
-    html+=`<circle cx="${cx}" cy="${cy}" r="7" fill="#d7cfba" stroke="rgba(0,0,0,.5)" stroke-width="1" pointer-events="none"/>`;
-    html+=`<circle cx="${cx-1.8}" cy="${cy-1.8}" r="2" fill="rgba(255,255,255,.5)" pointer-events="none"/>`;
-    html+=`<circle cx="${cx}" cy="${cy}" r="2.3" fill="rgba(0,0,0,.42)" pointer-events="none"/>`;
   }
   if(winInfo){
     if(winInfo.kind==='concentric'){
@@ -186,12 +194,15 @@ function doAction(a){
     if([...Array(np).keys()].every(p=>noStock(p))){over=true;render();finishDraw();return;}
     turn=(turn+1)%np;
     render();updateTurn();updateStock();
-    if(!ONLINE&&!isHuman()&&!over)setTimeout(cpuMove,600);
+    if(shouldRunCpu())setTimeout(cpuMove,600);
+    else if(!ONLINE&&!isHuman()&&!over)setTimeout(cpuMove,600);
   }
 }
 
 function cpuMove(){
-  if(over)return;const p=turn;
+  if(over)return;
+  if(ONLINE&&(!OnlineRoom.isHost()||!isCpuSeat()))return;
+  const p=turn;
   // 1. winning move
   for(let r=0;r<3;r++)for(let c=0;c<3;c++)for(let s=0;s<3;s++){
     if(!placeable(r,c,s,p))continue;
@@ -224,7 +235,7 @@ function cpuMove(){
   if(cands.length)doCpuPlace(cands[0].r,cands[0].c,cands[0].s);
   else{over=true;render();finishDraw();}
 }
-function doCpuPlace(r,c,s){doAction({k:'place',r,c,s});}
+function doCpuPlace(r,c,s){emit({k:'place',r,c,s});}
 
 function finish(){
   const nm=COLORS[winner].nm;
@@ -246,11 +257,12 @@ init();
 function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
   document.getElementById('np').classList.add('hidden');
   document.getElementById('mode').classList.add('hidden');
-  init();}
+  init();
+  if(shouldRunCpu())setTimeout(cpuMove,600);}
 </script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=2"></script>
-<script src="../shared/online-room.js?v=1"></script>
+<script src="../shared/online-room.js?v=2"></script>
 <script>
 OnlineRoom.init({gameId:'otrio',minPlayers:2,maxPlayers:4,note:'3サイズのリングで揃える3目並べ。',
   onStart:(seat,n,send)=>startOnline(seat,n,send),

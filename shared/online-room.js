@@ -30,7 +30,20 @@
 (function () {
   const ROOM_PREFIX = "ngroom-";
   const ALPHABET = "0123456789";
-  function randomCode() { let s = ""; for (let i = 0; i < 4; i++) s += ALPHABET[Math.floor(Math.random() * ALPHABET.length)]; return s; }
+  // 対局開始時に seedRng() がグローバルの Math.random を決定論的な擬似乱数へ
+  // 差し替えるため、部屋番号にはそれと無関係な乱数を使う（暗号乱数 → 無ければ
+  // スクリプト読込時の native Math.random）。これをしないと「一緒に遊んだ二人が
+  // 同期した乱数列から同じ番号の部屋を作る」衝突が起きる。
+  const _nativeRandom = Math.random;
+  function randomCode() {
+    try {
+      if (window.crypto && crypto.getRandomValues) {
+        const a = new Uint32Array(1); crypto.getRandomValues(a);
+        return ("000" + (a[0] % 10000)).slice(-4);
+      }
+    } catch (_) {}
+    let s = ""; for (let i = 0; i < 4; i++) s += ALPHABET[Math.floor(_nativeRandom() * ALPHABET.length)]; return s;
+  }
   const roomId = (code) => ROOM_PREFIX + code;
 
   function init(cfg) {
@@ -119,11 +132,13 @@
     <p id="oc-roster"></p>
     <div id="cpu-row" hidden><span class="lab">CPUを追加:</span><span id="cpu-btns"></span></div>
     <button id="start-room" class="oc-btn" hidden>この人数で開始</button>
-    <div class="oc-div">または</div>
-    <div class="oc-sec"><h3>対局中に切れたら再接続</h3>
-      <div class="oc-join"><input id="recon-code" maxlength="4" placeholder="部屋番号" inputmode="numeric" autocomplete="off"><button id="recon-room" class="oc-btn" style="background:#3a8f5a;color:#fff">再接続</button></div>
+    <div id="recon-wrap" hidden>
+      <div class="oc-div">または</div>
+      <div class="oc-sec"><h3>中断した対局に再接続</h3>
+        <button id="reclaim-room" class="oc-btn" hidden style="background:#3a8f5a;color:#fff;margin-bottom:8px">🔄 前の対局に再接続</button>
+        <div class="oc-join"><input id="recon-code" maxlength="4" placeholder="部屋番号" inputmode="numeric" autocomplete="off"><button id="recon-room" class="oc-btn" style="background:#3a8f5a;color:#fff">再接続</button></div>
+      </div>
     </div>
-    <button id="reclaim-room" class="oc-btn" hidden style="background:#3a8f5a;color:#fff;margin-top:10px">🔄 前の対局に再接続</button>
     <p id="online-status"></p>
   </div>
 </div>
@@ -213,14 +228,21 @@
       const pkt = { t: 'roster', seats: [...roster], relaySeat, gen };
       guests.forEach(g => { if (g.alive) { try { g.conn.send(pkt); } catch (_) {} } });
     }
+    let _hostTries = 0;
     function host() {
       if (typeof Peer === 'undefined') { setStatus('通信ライブラリの読み込みに失敗しました。'); return; }
+      if (started) return;
+      // 二重生成ガード: すでに部屋を作成済み／作成中なら新しい Peer を作らない
+      // （?create とクリックの二重発火などで同じ番号の部屋が二つできるのを防ぐ）
+      if (isHost && peer && !peer.destroyed) { $('room-code-box').hidden = false; showRoom(code); return; }
       isHost = true; relaySeat = 0;
       $('create-room').disabled = true; $('join-room').disabled = true;
       code = randomCode();
       setStatus('部屋を作成中…');
+      try { if (peer && !peer.destroyed) peer.destroy(); } catch (_) {}
       peer = new Peer(roomId(code));
       peer.on('open', () => {
+        _hostTries = 0;
         $('room-code').textContent = code;
         $('room-code-box').hidden = false;
         $('start-room').hidden = false;
@@ -231,8 +253,11 @@
       peer.on('connection', wireIncoming);
       peer.on('error', (err) => {
         const t = err && err.type;
-        if (t === 'unavailable-id') setStatus('その番号は使用中です。もう一度お試しください。');
-        else setStatus('接続エラー: ' + (t || '不明'));
+        if (t === 'unavailable-id') {
+          // 番号衝突: 別番号で自動リトライ（同じ番号の部屋が二つできるのを防ぐ）
+          if (_hostTries++ < 5) { try { peer.destroy(); } catch (_) {} isHost = false; setTimeout(host, 120); return; }
+          setStatus('部屋番号の発行に失敗しました。もう一度お試しください。');
+        } else setStatus('接続エラー: ' + (t || '不明'));
         $('create-room').disabled = false; $('join-room').disabled = false;
         isHost = false;
       });
@@ -306,7 +331,7 @@
       nPlayers = n;
       relaySeat = 0; gen = 0;
       roster = new Set([0]); guests.forEach(g => roster.add(g.seat));
-      const seed = (Math.random() * 0x7fffffff) | 0;
+      const seed = (_nativeRandom() * 0x7fffffff) | 0;
       guests.forEach(g => { try { g.conn.send({ t: 'start', seed, n, seat: g.seat, cpus }); } catch (_) {} });
       beginMatch(0, n, seed, cpus);
       broadcastRoster();
@@ -382,7 +407,7 @@
     // 再接続用セッションは localStorage に保存（タブを閉じても残る。60分で失効）
     const SESSION_TTL = 60 * 60 * 1000;
     function saveSession() {
-      try { localStorage.setItem('ngRoom:' + cfg.gameId, JSON.stringify({ code, seat: mySeat, ts: Date.now() })); } catch (_) {}
+      try { localStorage.setItem('ngRoom:' + cfg.gameId, JSON.stringify({ code, seat: mySeat, ts: Date.now(), game: cfg.gameId, path: location.pathname })); } catch (_) {}
     }
     function clearSession() { try { localStorage.removeItem('ngRoom:' + cfg.gameId); } catch (_) {} }
     // Snapshot of the live game for a reconnecting player (relay side).
@@ -562,14 +587,19 @@
     // after a drop should just put you back in); older sessions show a button.
     (function () {
       const saved = savedSession();
+      if (!(saved && cfg.applyState && /^\d{4}$/.test(saved.code || ''))) return;
+      // 中断したセッションがあるときだけ再接続UIを表示（通常時は出さない）
+      const wrap = $('recon-wrap'); if (wrap) wrap.hidden = false;
       const btn = $('reclaim-room');
-      if (saved && cfg.applyState && /^\d{4}$/.test(saved.code || '')) {
-        btn.hidden = false;
-        btn.textContent = '🔄 前の対局に再接続（P' + ((saved.seat | 0) + 1) + '）';
-        btn.addEventListener('click', () => { btn.disabled = true; openLobby(); reclaim(saved.code, saved.seat | 0); });
-        const fresh = saved.ts && (Date.now() - saved.ts < 2 * 60 * 1000);
-        const noHubIntent = !(new URLSearchParams(location.search)).has('create');
-        if (fresh && noHubIntent) { btn.disabled = true; openLobby(); reclaim(saved.code, saved.seat | 0); }
+      btn.hidden = false;
+      btn.textContent = '🔄 前の対局に再接続（P' + ((saved.seat | 0) + 1) + '）';
+      btn.addEventListener('click', () => { btn.disabled = true; openLobby(); reclaim(saved.code, saved.seat | 0); });
+      const p = new URLSearchParams(location.search);
+      const fresh = saved.ts && (Date.now() - saved.ts < 2 * 60 * 1000);
+      // ハブの再接続ボタン(?reconnect)か、直近に切れた再読み込みなら自動で復帰を試みる。
+      // ?create / ?autojoin は別目的なので自動復帰しない。
+      if (p.has('reconnect') || (fresh && !p.has('create') && !p.has('autojoin'))) {
+        btn.disabled = true; openLobby(); reclaim(saved.code, saved.seat | 0);
       }
     })();
     $('copy-code').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('room-code').textContent); $('copy-code').textContent = 'コピー済み'; setTimeout(() => $('copy-code').textContent = 'コピー', 1500); } catch (_) {} });
@@ -578,6 +608,7 @@
     const params = new URLSearchParams(location.search);
     if (params.has('autojoin')) { openLobby(); setStatus('部屋に参加しています…'); joinCode(params.get('autojoin')); }
     else if (params.has('create')) { openLobby(); host(); }
+    else if (params.has('reconnect')) { openLobby(); if (!savedSession()) setStatus('再接続できる対局が見つかりませんでした。'); }
     else if (params.has('online')) { openLobby(); }
 
     const api = {

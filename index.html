@@ -185,6 +185,7 @@
           </div>
         </div>
         <p class="online-note">※ 部屋を作る側が先手、参加する側が後手です。参加は番号だけでOK（ホストが選んだゲームに自動で入ります）。カタンは試験対応です。</p>
+        <button id="hub-reconnect" hidden style="width:100%;margin-top:12px;background:rgba(58,143,90,.9);color:#fff;border:none;border-radius:8px;padding:11px;font:700 14px/1 'Segoe UI',sans-serif;cursor:pointer">🔄 中断した対局に再接続</button>
       </div>
     </div>
 
@@ -520,6 +521,35 @@
       }
       btn.addEventListener("click", go);
       input.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
+    })();
+  </script>
+
+  <script>
+    // 中断した対局がある場合だけ「再接続」ボタンを表示（通常時は出さない）。
+    // 各ゲームが対局開始時に localStorage["ngRoom:<id>"] = {code,seat,ts,game,path}
+    // を書くので、期限内(60分)の最新セッションへ ?reconnect=1 で戻す。
+    (function () {
+      var TTL = 60 * 60 * 1000;
+      var btn = document.getElementById("hub-reconnect");
+      if (!btn) return;
+      var best = null;
+      try {
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (!k || k.indexOf("ngRoom:") !== 0) continue;
+          var o = null; try { o = JSON.parse(localStorage.getItem(k)); } catch (e) { continue; }
+          if (!o || !o.ts || !o.path) continue;
+          if (Date.now() - o.ts > TTL) { try { localStorage.removeItem(k); } catch (e) {} continue; }
+          if (!best || o.ts > best.ts) best = o;
+        }
+      } catch (e) {}
+      if (best) {
+        btn.hidden = false;
+        btn.addEventListener("click", function () {
+          var sep = best.path.indexOf("?") >= 0 ? "&" : "?";
+          location.href = best.path + sep + "reconnect=1";
+        });
+      }
     })();
   </script>
 </body>

@@ -178,7 +178,7 @@ function turnName(i){return (ONLINE?(i===MYSEAT?'★あなた':'相手(P'+(i+1)+
 function myAct(){return !ONLINE||curPlayer===MYSEAT;}
 function initMulti(){
   players=[];for(let i=0;i<np;i++)players.push({chips:1000,bet:0,roll:null,last:''});
-  dealer=0;roundNo=1;startBetPhase();
+  dealer=Math.floor(Math.random()*np);roundNo=1;startBetPhase(); // 親ランダム
 }
 function startBetPhase(){
   mPhase='bet';

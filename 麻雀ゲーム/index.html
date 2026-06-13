@@ -1378,6 +1378,8 @@ const AI = (() => {
         };
       }),
       wall: [], deadwall: [], doraIndicators: [], uraIndicators: [],
+      // 起家（最初の親）をランダムに。オンラインは開始直後で全員の乱数が一致するため同一になる
+      startDealer: Math.floor(Math.random() * 4),
       dealer: 0, kyoku: 0, honba: 0, riichiSticks: 0,
       roundWind: 27, callMade: false,
       lastDiscard: null, lastDiscardBy: null,
@@ -1386,7 +1388,7 @@ const AI = (() => {
   }
 
   function setupHand() {
-    state.dealer = state.kyoku % 4;
+    state.dealer = (state.startDealer + state.kyoku) % 4;
     state.roundWind = state.kyoku < 4 ? 27 : 28;
     for (const p of state.players) {
       p.hand = []; p.drawn = null; p.discards = []; p.melds = [];

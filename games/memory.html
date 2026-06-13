@@ -48,7 +48,7 @@ if(N===52){
   const pool=EMO.slice(0,N/2);pool.forEach((e,i)=>{deck.push({e,k:i},{e,k:i});});
 }
 for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
-flipped=[];matched=new Set();busy=false;moves=0;turn=0;score=new Array(np).fill(0);
+flipped=[];matched=new Set();busy=false;moves=0;turn=mode==='pvp'?Math.floor(Math.random()*np):0;score=new Array(np).fill(0);
 const cols=N<=16?4:N<=20?5:8;bd.style.gridTemplateColumns='repeat('+cols+',1fr)';
 bd.classList.toggle('trump',N===52);
 bd.innerHTML='';deck.forEach((c,i)=>{const el=document.createElement('div');el.className='card';const face=N===52?'<span class="'+(c.red?'red':'blk')+'">'+c.e+'</span>':c.e;el.innerHTML='<div class="back">?</div><div class="face">'+face+'</div>';el.addEventListener('click',()=>tap(i));bd.appendChild(el);});

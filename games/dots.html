@@ -43,12 +43,14 @@ svg{display:block;width:min(94vw,420px);height:auto}
 <div class="score"><span class="me">あなた <span id="s0">0</span></span><span class="turn" id="turn">あなたの番</span><span class="cpu" id="cpulabel">CPU <span id="s1">0</span></span></div>
 <div class="bwrap"><svg id="bd"></svg></div>
 <div class="msg" id="msg">線をタップして箱を作ろう。箱を取ると続けて打てます。</div>
-<div class="foot"><button id="new">最初から</button></div>
+<div class="foot" style="display:flex;gap:8px;justify-content:center"><button id="undo" style="background:transparent;border:1px solid #352C20;color:#EDE6D6;font-weight:700;padding:7px 16px;border-radius:6px;font-size:12.5px;cursor:pointer;font-family:inherit">待った</button><button id="new">最初から</button></div>
 <div class="over" id="over"><div class="c"><div class="t" id="ov-t">勝利</div><div class="s" id="ov-s"></div><button id="again">もう一度</button></div></div>
 <script>
 const NS='http://www.w3.org/2000/svg';
 let SZ=4,mode='cpu';            // SZ = 箱の数(縦横)
-let h,v,owner,turn,score,over,busy; // h[r][c] 横線(SZ+1行 × SZ列), v[r][c] 縦線(SZ行 × SZ+1列)
+let h,v,owner,turn,score,over,busy,hist=[]; // h[r][c] 横線(SZ+1行 × SZ列), v[r][c] 縦線(SZ行 × SZ+1列)
+function snapDots(){return JSON.stringify({h,v,owner,turn,score,over});}
+function restoreDots(s){const o=JSON.parse(s);h=o.h;v=o.v;owner=o.owner;turn=o.turn;score=o.score;over=o.over;}
 const svg=document.getElementById('bd');
 let GAP,PAD,DOT;
 function init(){

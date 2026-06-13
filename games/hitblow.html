@@ -107,7 +107,7 @@ function genSecret(){
   else{const pool=syms.slice();for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}return pool.slice(0,N);}
   return out;
 }
-function init(){MAX=maxTries();secret=genSecret();guess=[];tries=0;over=false;winner=-1;curPlayer=0;mHist=[];hist.innerHTML='';
+function init(){MAX=maxTries();secret=genSecret();guess=[];tries=0;over=false;winner=-1;curPlayer=(pmode==='multi')?Math.floor(Math.random()*np):0;mHist=[];hist.innerHTML='';
   document.getElementById('over').classList.remove('show');buildPad();renderDisp();renderRule();updatePad();updateTurnMsg();}
 function turnLabel(){return ONLINE?(curPlayer===MYSEAT?'★あなた(P'+(curPlayer+1)+')':'相手(P'+(curPlayer+1)+')'):'プレイヤー'+(curPlayer+1);}
 function updateTurnMsg(){

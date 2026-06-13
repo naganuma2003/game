@@ -104,7 +104,7 @@ function init(){
   board=Array.from({length:4},()=>new Array(13).fill(false));
   passes=new Array(np).fill(0);outCnt=new Array(np).fill(false);finished=[];gameOver=false;busy=false;
   for(let s=0;s<4;s++){board[s][6]=true;for(let o=0;o<np;o++){const idx=hands[o].findIndex(c=>!c.joker&&c.r===6);if(idx>=0)hands[o].splice(idx,1);}}
-  turn=0;localView=0;
+  turn=Math.floor(Math.random()*np);localView=0; // 先手ランダム
   document.getElementById('winov').classList.remove('show');
   document.getElementById('handoff').classList.remove('show');
   beginTurn(true);

@@ -76,7 +76,7 @@ const svg=document.getElementById('bd');
 function init(){
   board=Array.from({length:3},()=>Array.from({length:3},()=>[-1,-1,-1]));
   stock=Array.from({length:np},()=>[3,3,3]);
-  turn=0;over=false;winner=null;winInfo=null;
+  turn=Math.floor(Math.random()*np);over=false;winner=null;winInfo=null; // 先手ランダム
   document.getElementById('over').classList.remove('show');
   document.getElementById('msg').textContent='';
   render();updateTurn();updateStock();

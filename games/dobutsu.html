@@ -58,7 +58,15 @@ const MOVES={
   C:[[-1,0]],
   H:[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,0]]
 };
-let board,hands,turn,sel,mode='cpu',over,busy;
+let board,hands,turn,sel,mode='cpu',over,busy,posCount;
+function posKey(){
+  let k='';
+  for(let r=0;r<4;r++)for(let c=0;c<3;c++){const p=board[r][c];k+=p?(p.t+p.o):'-';}
+  k+='|'+hands[0].slice().sort().join('')+'/'+hands[1].slice().sort().join('');
+  k+='|'+turn;
+  return k;
+}
+function recordPos(){const k=posKey();posCount[k]=(posCount[k]||0)+1;return posCount[k];}
 const bdEl=document.getElementById('bd'),sqs=[];
 for(let i=0;i<12;i++){const d=document.createElement('div');d.className='sq';const r=Math.floor(i/3),c=i%3;d.addEventListener('click',()=>onSq(r,c));bdEl.appendChild(d);sqs.push(d);}
 function init(){
@@ -68,7 +76,8 @@ function init(){
     [null,{t:'C',o:ME},null],
     [{t:'E',o:ME},{t:'L',o:ME},{t:'G',o:ME}]
   ];
-  hands={0:[],1:[]};turn=ME;sel=null;over=false;busy=false;
+  hands={0:[],1:[]};turn=ME;sel=null;over=false;busy=false;posCount={};
+  recordPos();
   document.getElementById('winov').classList.remove('show');render();
   if(mode==='cpu'&&Math.random()<0.5){turn=YOU;busy=true;render();setTimeout(cpuMove,500);}
 }
@@ -111,7 +120,10 @@ function doMove(fr,fc,tr,tc){const p=board[fr][fc];const cap=board[tr][tc];
   next();
 }
 function doDrop(t,r,c){board[r][c]={t,o:turn};const idx=hands[turn].indexOf(t);if(idx>=0)hands[turn].splice(idx,1);sel=null;next();}
-function next(){turn=1-turn;render();checkNoMove();if(!over&&mode==='cpu'&&turn===YOU){busy=true;render();setTimeout(cpuMove,420);}}
+function next(){turn=1-turn;
+  const c=recordPos();
+  if(c>=3){over=true;render();const t=document.getElementById('wint');t.textContent='千日手（引き分け）';document.getElementById('winov').classList.add('show');return;}
+  render();checkNoMove();if(!over&&mode==='cpu'&&turn===YOU){busy=true;render();setTimeout(cpuMove,420);}}
 function allMoves(o){const list=[];for(let r=0;r<4;r++)for(let c=0;c<3;c++){const p=board[r][c];if(p&&p.o===o)for(const m of legalMovesFrom(r,c))list.push({k:'b',fr:r,fc:c,tr:m[0],tc:m[1]});}const seen=new Set();hands[o].forEach(t=>{if(seen.has(t))return;seen.add(t);for(const d of legalDrops(o,t))list.push({k:'h',t,tr:d[0],tc:d[1]});});return list;}
 function checkNoMove(){if(allMoves(turn).length===0){finish(1-turn);}}
 const VAL={L:1000,H:6,G:5,E:5,C:1};

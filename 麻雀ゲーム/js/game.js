@@ -9,6 +9,22 @@
   const maxKyoku = () => (config.length === 'hanchan' ? 8 : 4);
   const AUTO_NEXT_SEC = 10;
 
+  // ---------- オンライン対戦 ----------
+  let ONLINE = false, MYSEAT = 0;
+  const _pending = {}; // key 'kind:seat' -> resolver
+  function _waitNet(key) { return new Promise(r => { _pending[key] = r; }); }
+  function _net(msg) {
+    const k = msg.k + ':' + msg.seat;
+    if (_pending[k]) { const r = _pending[k]; delete _pending[k]; r(msg.payload); }
+  }
+  function _emit(kind, seat, payload) {
+    if (ONLINE && window.OnlineRoom && OnlineRoom.send) OnlineRoom.send({ k: kind, seat, payload });
+  }
+  function isMySeat(p) { return ONLINE ? p === MYSEAT : p === 0; }
+  function domSeat(p) { return ONLINE ? ((p - MYSEAT + 4) % 4) : p; }
+  function isOnlineCpu(p) { return ONLINE && window.OnlineRoom && OnlineRoom.isCpu && OnlineRoom.isCpu(p); }
+  function isOnlineHost() { return ONLINE && window.OnlineRoom && OnlineRoom.isHost && OnlineRoom.isHost(); }
+
   // ---------- 初期化 ----------
   function playerName(i, isCpu) {
     if (!isCpu) return i === 0 ? 'あなた' : 'プレイヤー' + (i + 1);
@@ -174,7 +190,14 @@
 
     const full = pl.hand.concat(pl.drawn !== null ? [pl.drawn] : []);
     let decision;
-    if (pl.isCpu) { await delay(cpuDelay()); decision = cpuTurn(p, pl.drawn, full, haitei); }
+    if (ONLINE) {
+      if (isOnlineCpu(p)) {
+        if (isOnlineHost()) setTimeout(() => _emit('turn', p, cpuTurn(p, pl.drawn, full, haitei)), cpuDelay());
+      } else if (isMySeat(p)) {
+        humanTurn(p, pl.drawn, full, haitei).then(d => _emit('turn', p, d));
+      }
+      decision = await _waitNet('turn:' + p);
+    } else if (pl.isCpu) { await delay(cpuDelay()); decision = cpuTurn(p, pl.drawn, full, haitei); }
     else if (p === 0) decision = await humanTurn(p, pl.drawn, full, haitei);
     else decision = await opponentHumanTurn(p, pl.drawn, full, haitei);
 
@@ -274,14 +297,20 @@
       if (isFuriten(q)) continue;
       const res = canAgari(q, full, tile, false, { houtei });
       if (!res) continue;
-      if (!pl.isCpu) {
-        const ok = q === 0 ? await humanRonChoice(res, tile)
-                           : await opponentHumanRon(q, res, tile);
-        if (ok) return { q, res };
-        pl.tempFuriten = true; // 見逃し → 同巡フリテン
-        continue;
-      }
-      return { q, res };
+      let ok;
+      if (ONLINE) {
+        if (isOnlineCpu(q)) {
+          if (isOnlineHost()) _emit('ron', q, true); // CPUは常にロン
+        } else if (isMySeat(q)) {
+          humanRonChoice(res, tile).then(d => _emit('ron', q, !!d));
+        }
+        ok = await _waitNet('ron:' + q);
+      } else if (!pl.isCpu) {
+        ok = q === 0 ? await humanRonChoice(res, tile) : await opponentHumanRon(q, res, tile);
+      } else { ok = true; }
+      if (ok) return { q, res };
+      pl.tempFuriten = true;
+      continue;
     }
     return null;
   }
@@ -481,8 +510,16 @@
     const declared = [];
     for (const c of cands) {
       const pl = state.players[c.q];
-      let dec = pl.isCpu ? cpuCallDecision(c.q, tile, c.opts)
-                         : await humanCallDecision(c.q, tile, c.opts);
+      let dec;
+      if (ONLINE) {
+        if (isOnlineCpu(c.q)) {
+          if (isOnlineHost()) _emit('call', c.q, cpuCallDecision(c.q, tile, c.opts));
+        } else if (isMySeat(c.q)) {
+          humanCallDecision(c.q, tile, c.opts).then(d => _emit('call', c.q, d || null));
+        }
+        dec = await _waitNet('call:' + c.q);
+      } else if (pl.isCpu) dec = cpuCallDecision(c.q, tile, c.opts);
+      else dec = await humanCallDecision(c.q, tile, c.opts);
       if (dec) declared.push({ q: c.q, call: dec });
     }
     if (!declared.length) return null;
@@ -764,7 +801,7 @@
 
   function renderSeat(p) {
     const pl = state.players[p];
-    const seat = el('seat-' + p);
+    const seat = el('seat-' + domSeat(p));
     const info = seat.querySelector('.pinfo');
     info.querySelector('.pname').textContent = pl.name + (p === state.dealer ? '（親）' : '');
     info.querySelector('.pscore').textContent = pl.score;
@@ -774,8 +811,8 @@
     renderPond(p, pl.discards);
     renderMelds(p);
 
-    if (p === 0) {
-      renderPlayerHand();
+    if (isMySeat(p)) {
+      renderPlayerHand(p);
     } else {
       const back = seat.querySelector('.hand-back');
       const n = pl.hand.length + (pl.drawn !== null ? 1 : 0);
@@ -784,7 +821,7 @@
   }
 
   function renderMelds(p) {
-    const cont = el('melds-' + p);
+    const cont = el('melds-' + domSeat(p));
     if (!cont) return;
     const pl = state.players[p];
     cont.innerHTML = pl.melds.map(m => {
@@ -801,7 +838,7 @@
   }
 
   function renderPond(p, discards) {
-    const pond = el('pond-' + p);
+    const pond = el('pond-' + domSeat(p));
     let html = '';
     for (let i = 0; i < discards.length; i += 6) {
       const row = discards.slice(i, i + 6);
@@ -813,8 +850,8 @@
   }
 
   let handClickHandler = null;
-  function renderPlayerHand() {
-    const pl = state.players[0];
+  function renderPlayerHand(absSeat) {
+    const pl = state.players[absSeat === undefined ? (ONLINE ? MYSEAT : 0) : absSeat];
     const hand = el('player-hand');
     let html = pl.hand.map(t =>
       `<button class="tile-btn${redCls(t)}" data-tile="${t}">${tileInner(t)}</button>`).join('');
@@ -1044,4 +1081,17 @@
     document.addEventListener('DOMContentLoaded', bindStart);
   else
     bindStart();
+
+  // オンライン開始 (OnlineRoom から呼ばれる)
+  window.MahjongGame = {
+    startOnline(seat, n) {
+      ONLINE = true; MYSEAT = seat;
+      config = { seatTypes: ['cpu','cpu','cpu','cpu'].map((_,i)=>isOnlineCpu(i)?'cpu':'human'), cpuLevel: 5, speed: 60, length: 'tonpuu' };
+      el('start-screen').classList.add('hidden');
+      el('result-next').textContent = '次へ';
+      newGame();
+      playKyoku();
+    },
+    onMessage(from, msg) { _net(msg); }
+  };
 })();

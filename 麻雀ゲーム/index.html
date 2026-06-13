@@ -1306,6 +1306,22 @@ const AI = (() => {
   let config = { seatTypes: ['cpu', 'cpu', 'cpu', 'cpu'], cpuLevel: 5, speed: 60, length: 'hanchan' };
   const cpuDelay = () => config.speed;
   const maxKyoku = () => (config.length === 'hanchan' ? 8 : 4);
+
+  // ---------- オンライン対戦 ----------
+  let ONLINE = false, MYSEAT = 0;
+  const _pending = {};
+  function _waitNet(key) { return new Promise(r => { _pending[key] = r; }); }
+  function _net(msg) {
+    const k = msg.k + ':' + msg.seat;
+    if (_pending[k]) { const r = _pending[k]; delete _pending[k]; r(msg.payload); }
+  }
+  function _emit(kind, seat, payload) {
+    if (ONLINE && window.OnlineRoom && OnlineRoom.send) OnlineRoom.send({ k: kind, seat, payload });
+  }
+  function isMySeat(p) { return ONLINE ? p === MYSEAT : p === 0; }
+  function domSeat(p) { return ONLINE ? ((p - MYSEAT + 4) % 4) : p; }
+  function isOnlineCpu(p) { return ONLINE && window.OnlineRoom && OnlineRoom.isCpu && OnlineRoom.isCpu(p); }
+  function isOnlineHost() { return ONLINE && window.OnlineRoom && OnlineRoom.isHost && OnlineRoom.isHost(); }
   const AUTO_NEXT_SEC = 10;
 
   // ---------- 初期化 ----------
@@ -1473,7 +1489,14 @@ const AI = (() => {
 
     const full = pl.hand.concat(pl.drawn !== null ? [pl.drawn] : []);
     let decision;
-    if (pl.isCpu) { await delay(cpuDelay()); decision = cpuTurn(p, pl.drawn, full, haitei); }
+    if (ONLINE) {
+      if (isOnlineCpu(p)) {
+        if (isOnlineHost()) setTimeout(() => _emit('turn', p, cpuTurn(p, pl.drawn, full, haitei)), cpuDelay());
+      } else if (isMySeat(p)) {
+        humanTurn(p, pl.drawn, full, haitei).then(d => _emit('turn', p, d));
+      }
+      decision = await _waitNet('turn:' + p);
+    } else if (pl.isCpu) { await delay(cpuDelay()); decision = cpuTurn(p, pl.drawn, full, haitei); }
     else if (p === 0) decision = await humanTurn(p, pl.drawn, full, haitei);
     else decision = await opponentHumanTurn(p, pl.drawn, full, haitei);
 
@@ -1573,14 +1596,20 @@ const AI = (() => {
       if (isFuriten(q)) continue;
       const res = canAgari(q, full, tile, false, { houtei });
       if (!res) continue;
-      if (!pl.isCpu) {
-        const ok = q === 0 ? await humanRonChoice(res, tile)
-                           : await opponentHumanRon(q, res, tile);
-        if (ok) return { q, res };
-        pl.tempFuriten = true; // 見逃し → 同巡フリテン
-        continue;
-      }
-      return { q, res };
+      let ok;
+      if (ONLINE) {
+        if (isOnlineCpu(q)) {
+          if (isOnlineHost()) _emit('ron', q, true);
+        } else if (isMySeat(q)) {
+          humanRonChoice(res, tile).then(d => _emit('ron', q, !!d));
+        }
+        ok = await _waitNet('ron:' + q);
+      } else if (!pl.isCpu) {
+        ok = q === 0 ? await humanRonChoice(res, tile) : await opponentHumanRon(q, res, tile);
+      } else { ok = true; }
+      if (ok) return { q, res };
+      pl.tempFuriten = true;
+      continue;
     }
     return null;
   }
@@ -1780,8 +1809,16 @@ const AI = (() => {
     const declared = [];
     for (const c of cands) {
       const pl = state.players[c.q];
-      let dec = pl.isCpu ? cpuCallDecision(c.q, tile, c.opts)
-                         : await humanCallDecision(c.q, tile, c.opts);
+      let dec;
+      if (ONLINE) {
+        if (isOnlineCpu(c.q)) {
+          if (isOnlineHost()) _emit('call', c.q, cpuCallDecision(c.q, tile, c.opts));
+        } else if (isMySeat(c.q)) {
+          humanCallDecision(c.q, tile, c.opts).then(d => _emit('call', c.q, d || null));
+        }
+        dec = await _waitNet('call:' + c.q);
+      } else if (pl.isCpu) dec = cpuCallDecision(c.q, tile, c.opts);
+      else dec = await humanCallDecision(c.q, tile, c.opts);
       if (dec) declared.push({ q: c.q, call: dec });
     }
     if (!declared.length) return null;
@@ -2063,7 +2100,7 @@ const AI = (() => {
 
   function renderSeat(p) {
     const pl = state.players[p];
-    const seat = el('seat-' + p);
+    const seat = el('seat-' + domSeat(p));
     const info = seat.querySelector('.pinfo');
     info.querySelector('.pname').textContent = pl.name + (p === state.dealer ? '（親）' : '');
     info.querySelector('.pscore').textContent = pl.score;
@@ -2073,8 +2110,8 @@ const AI = (() => {
     renderPond(p, pl.discards);
     renderMelds(p);
 
-    if (p === 0) {
-      renderPlayerHand();
+    if (isMySeat(p)) {
+      renderPlayerHand(p);
     } else {
       const back = seat.querySelector('.hand-back');
       const n = pl.hand.length + (pl.drawn !== null ? 1 : 0);
@@ -2083,7 +2120,7 @@ const AI = (() => {
   }
 
   function renderMelds(p) {
-    const cont = el('melds-' + p);
+    const cont = el('melds-' + domSeat(p));
     if (!cont) return;
     const pl = state.players[p];
     cont.innerHTML = pl.melds.map(m => {
@@ -2100,7 +2137,7 @@ const AI = (() => {
   }
 
   function renderPond(p, discards) {
-    const pond = el('pond-' + p);
+    const pond = el('pond-' + domSeat(p));
     let html = '';
     for (let i = 0; i < discards.length; i += 6) {
       const row = discards.slice(i, i + 6);
@@ -2112,8 +2149,8 @@ const AI = (() => {
   }
 
   let handClickHandler = null;
-  function renderPlayerHand() {
-    const pl = state.players[0];
+  function renderPlayerHand(absSeat) {
+    const pl = state.players[absSeat === undefined ? (ONLINE ? MYSEAT : 0) : absSeat];
     const hand = el('player-hand');
     let html = pl.hand.map(t =>
       `<button class="tile-btn${redCls(t)}" data-tile="${t}">${tileInner(t)}</button>`).join('');
@@ -2343,8 +2380,37 @@ const AI = (() => {
     document.addEventListener('DOMContentLoaded', bindStart);
   else
     bindStart();
-})();
 
+  // ---------- オンライン開始 ----------
+  window.MahjongGame = {
+    startOnline(seat, n) {
+      ONLINE = true; MYSEAT = seat;
+      const seatTypes = [];
+      for (let i = 0; i < 4; i++) seatTypes.push(isOnlineCpu(i) ? 'cpu' : 'human');
+      config = { seatTypes, cpuLevel: 5, speed: 60, length: 'tonpuu' };
+      el('start-screen').classList.add('hidden');
+      el('result-next').textContent = '次へ';
+      newGame();
+      playKyoku();
+    },
+    onMessage(from, msg) { _net(msg); }
+  };
+})();
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js?v=3"></script>
+<script src="../shared/online-room.js?v=2"></script>
+<script>
+OnlineRoom.init({
+  gameId: 'mahjong',
+  minPlayers: 2, maxPlayers: 4,
+  note: '4麻オンライン対戦。人数を4人にしてください（CPU補填可）。',
+  onStart: (seat, n, send) => {
+    if (n !== 4) { alert('4人ちょうどでないと開始できません（CPUで補ってください）'); return; }
+    window.MahjongGame.startOnline(seat, n);
+  },
+  onMessage: (from, msg) => window.MahjongGame.onMessage(from, msg)
+});
 </script>
 </body>
 </html>

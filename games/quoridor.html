@@ -36,6 +36,7 @@ svg{display:block;width:min(95vw,440px);height:auto}
 .over .c{background:#123040;border:1px solid var(--gold);border-radius:10px;padding:24px 36px;text-align:center}
 .over .t{font-size:22px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:14px}
 .over button{background:var(--gold);border:none;color:#123040;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.hidden{display:none!important}
 </style></head>
 <body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
@@ -66,6 +67,8 @@ const SETUPS={
 };
 let np=2, mode='cpu';
 let pawns, walls, turn, over, winners, wallsLeft, action='move';
+let ONLINE=false,MYSEAT=0,roomSend=null;
+function myTurn(){return !ONLINE||turn===MYSEAT;}
 const svg=document.getElementById('bd');
 
 function init(){
@@ -80,7 +83,7 @@ function init(){
   render(); updateTurn(); updateStock();
   if(!isHuman()) setTimeout(cpuMove, 600);
 }
-function isHuman(){return mode==='pvp' || turn===0;}
+function isHuman(){return ONLINE?myTurn():(mode==='pvp'||turn===0);}
 function setActionUI(){
   document.getElementById('abMove').classList.toggle('on',action==='move');
   document.getElementById('abWall').classList.toggle('on',action==='wall');
@@ -90,7 +93,8 @@ function updateTurn(){
   const t=document.getElementById('turn');
   if(over){t.textContent='対局終了';return;}
   const nm=COLORS[turn].nm;
-  t.textContent = mode==='pvp' ? (nm+'の番') : (turn===0 ? 'あなた('+nm+')の番' : 'CPU('+nm+')の番');
+  if(ONLINE)t.textContent=(turn===MYSEAT?'★ あなた':'相手')+'('+nm+')の番';
+  else t.textContent = mode==='pvp' ? (nm+'の番') : (turn===0 ? 'あなた('+nm+')の番' : 'CPU('+nm+')の番');
 }
 function updateStock(){
   const s=document.getElementById('stock'); s.innerHTML='';
@@ -221,17 +225,26 @@ function render(){
 function onCellClick(r,c){
   if(over||!isHuman()||action!=='move') return;
   const moves=pawnMoves(turn);
-  if(moves.some(m=>m[0]===r&&m[1]===c)){
-    pawns[turn]={r,c};
-    finishTurn();
-  }
+  if(moves.some(m=>m[0]===r&&m[1]===c))emit({k:'move',r,c});
 }
 function onWallClick(r,c,d){
   if(over||!isHuman()||action!=='wall') return;
   if(wallsLeft[turn]<=0) return;
   if(!canPlaceWall(r,c,d)) return;
-  walls.push({r,c,d}); wallsLeft[turn]--;
-  finishTurn();
+  emit({k:'wall',r,c,d});
+}
+function emit(a){if(ONLINE)roomSend(a);else doAction(a);}
+function doAction(a){
+  if(over)return;
+  if(a.k==='move'){
+    const moves=pawnMoves(turn);
+    if(!moves.some(m=>m[0]===a.r&&m[1]===a.c))return;
+    pawns[turn]={r:a.r,c:a.c};finishTurn();
+  } else if(a.k==='wall'){
+    if(wallsLeft[turn]<=0)return;
+    if(!canPlaceWall(a.r,a.c,a.d))return;
+    walls.push({r:a.r,c:a.c,d:a.d});wallsLeft[turn]--;finishTurn();
+  }
 }
 function finishTurn(){
   if(isGoal(turn, pawns[turn].r, pawns[turn].c)){
@@ -241,15 +254,15 @@ function finishTurn(){
   action='move';
   setActionUI();
   render(); updateTurn(); updateStock();
-  if(!over && !isHuman()) setTimeout(cpuMove, 600);
+  if(!ONLINE && !over && !isHuman()) setTimeout(cpuMove, 600);
 }
 function nextTurn(){let n=turn;for(let k=0;k<np;k++){n=(n+1)%np;if(!winners.includes(n)){turn=n;return;}}}
 
 function cpuMove(){
-  if(over) return;
+  if(over||ONLINE) return;
   const p=turn;
   const myMoves=pawnMoves(p);
-  for(const [r,c] of myMoves){if(isGoal(p,r,c)){pawns[p]={r,c};finishTurn();return;}}
+  for(const [r,c] of myMoves){if(isGoal(p,r,c)){doAction({k:'move',r,c});return;}}
   const myDist=distFrom(p,pawns[p].r,pawns[p].c);
   let bestMove=null, bestMoveDist=Infinity;
   for(const [r,c] of myMoves){
@@ -275,12 +288,10 @@ function cpuMove(){
       }
     }
   }
-  if(bestWall && bestWallScore>=3){
-    walls.push(bestWall); wallsLeft[p]--; finishTurn(); return;
-  }
-  if(bestMove){pawns[p]={r:bestMove[0],c:bestMove[1]};finishTurn();return;}
-  if(myMoves.length){const[r,c]=myMoves[0];pawns[p]={r,c};finishTurn();return;}
-  nextTurn(); render(); updateTurn(); if(!over && !isHuman())setTimeout(cpuMove,600);
+  if(bestWall && bestWallScore>=3){doAction({k:'wall',r:bestWall.r,c:bestWall.c,d:bestWall.d});return;}
+  if(bestMove){doAction({k:'move',r:bestMove[0],c:bestMove[1]});return;}
+  if(myMoves.length){const[r,c]=myMoves[0];doAction({k:'move',r,c});return;}
+  nextTurn(); render(); updateTurn(); if(!ONLINE&&!over && !isHuman())setTimeout(cpuMove,600);
 }
 
 function finish(){
@@ -295,4 +306,18 @@ document.getElementById('mode').addEventListener('click',e=>{const b=e.target.cl
 document.querySelector('.actbar').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;action=b.dataset.a;setActionUI();render();});
 document.getElementById('again').addEventListener('click',init);
 init();
-</script></body></html>
+
+function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
+  document.getElementById('np').classList.add('hidden');
+  document.getElementById('mode').classList.add('hidden');
+  init();}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js?v=2"></script>
+<script src="../shared/online-room.js?v=1"></script>
+<script>
+OnlineRoom.init({gameId:'quoridor',minPlayers:2,maxPlayers:4,note:'駒を進めるか壁を置く。先に対面の辺へ。',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>doAction(msg)});
+</script>
+</body></html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>インベーダー</title>
+<style>
+:root{--bg:#0b0f0a;--panel:#11160f;--txt:#d9f5d0;--sub:#6f8a66;--gold:#9ee86a;--line:#243018;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+body{background:radial-gradient(ellipse at top,#101a10,#070a06);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:12px 8px 22px;overflow:hidden}
+h1{font-family:"Courier New",monospace;font-size:22px;letter-spacing:.28em;text-indent:.28em;margin:2px 0;color:var(--gold);text-shadow:0 0 10px rgba(158,232,106,.5)}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.32em;margin-bottom:8px}
+.hud{display:flex;gap:18px;width:min(94vw,360px);justify-content:space-between;font-family:"Courier New",monospace;font-size:14px;margin-bottom:6px;letter-spacing:.05em}
+.hud .v{color:var(--gold);font-weight:700}
+.hud .lives{letter-spacing:1px}
+.stage{position:relative;width:min(94vw,360px)}
+canvas{display:block;width:100%;height:auto;background:#060906;border:1px solid var(--line);border-radius:8px;image-rendering:pixelated;box-shadow:0 0 24px rgba(0,0,0,.6),inset 0 0 40px rgba(20,40,10,.25)}
+.ovl{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,8,4,.82);border-radius:8px;text-align:center;padding:16px}
+.ovl.show{display:flex}
+.ovl .t{font-family:"Courier New",monospace;font-size:24px;color:var(--gold);letter-spacing:.12em;margin-bottom:8px;text-shadow:0 0 12px rgba(158,232,106,.5)}
+.ovl .d{font-size:13px;color:var(--txt);line-height:1.7;margin-bottom:16px}
+.ovl button{background:var(--gold);border:none;color:#08120a;font-weight:800;padding:11px 26px;border-radius:8px;cursor:pointer;font-size:15px;font-family:inherit;letter-spacing:.06em}
+.pad{display:flex;gap:10px;width:min(94vw,360px);margin-top:12px;align-items:stretch}
+.pad .move{display:flex;gap:10px;flex:1}
+.pad button{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--txt);font-size:24px;padding:16px 0;border-radius:12px;cursor:pointer;touch-action:none}
+.pad button:active{border-color:var(--gold);background:#16210f}
+.pad .fire{flex:1.1;background:#1a2a10;border-color:#3a5a22;color:var(--gold);font-weight:800;font-size:18px}
+.hint{font-size:10.5px;color:var(--sub);margin-top:10px;letter-spacing:.04em;text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.5);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.22)">← 一覧に戻る</a>
+<h1>INVADER</h1><div class="sub">SPACE INVADER</div>
+<div class="hud">
+  <div>SCORE <span class="v" id="score">0</span></div>
+  <div>WAVE <span class="v" id="level">1</span></div>
+  <div>残機 <span class="v lives" id="lives">▲▲▲</span></div>
+</div>
+<div class="stage">
+  <canvas id="cv" width="360" height="480"></canvas>
+  <div class="ovl" id="ovl"><div class="t" id="ovl-t">INVADER</div><div class="d" id="ovl-d"></div><button id="ovl-b">スタート</button></div>
+</div>
+<div class="pad">
+  <div class="move">
+    <button id="bl" aria-label="左">◀</button>
+    <button id="br" aria-label="右">▶</button>
+  </div>
+  <button id="bf" class="fire" aria-label="発射">🔥 撃つ</button>
+</div>
+<div class="hint">PC: ← → で移動 / スペースで発射　　スマホ: 下のボタン</div>
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const W=cv.width,H=cv.height;
+const $=id=>document.getElementById(id);
+
+// クラシックなインベーダーのドット絵（11x8, 2フレーム）
+const SPR_A=["00100000100","00010001000","00111111100","01101110110","11111111111","10111111101","10100000101","00011011000"];
+const SPR_B=["00100000100","10010001001","10111111101","11101110111","11111111111","01111111110","00100000100","01000000010"];
+const ROW_COLORS=["#ff6b6b","#ffd166","#9ee86a","#62d0ff"]; // 上の行ほど高得点
+const ROW_SCORE=[40,30,20,10];
+
+const COLS=8,ROWS=4,PIX=2;                 // スプライト1ドット=PIX*?  → セル幅 11*PIX*?
+const SPR_W=11,SPR_H=8;
+const SCALE=2;                              // ドット拡大
+const INV_W=SPR_W*SCALE, INV_H=SPR_H*SCALE; // 22x16
+const CELL_X=36, CELL_Y=28;                 // 並び間隔
+const GRID_W=(COLS-1)*CELL_X+INV_W;
+
+let player,bullet,bombs,invaders,shields,ufo;
+let dir,stepMs,stepAcc,frame,aliveCount,bombAcc,ufoAcc;
+let score,lives,level,best=0,state='ready';
+const keys={left:false,right:false,fire:false};
+
+function reset(full){
+  if(full){score=0;lives=3;level=1;}
+  player={x:W/2-15,y:H-34,w:30,h:14,speed:3.2,cool:0,flash:0};
+  bullet={x:0,y:0,active:false};
+  bombs=[];
+  ufo={active:false,x:0,dir:1,timer:0};
+  buildInvaders();
+  buildShields();
+  updateHud();
+}
+function buildInvaders(){
+  invaders=[];
+  const startX=(W-GRID_W)/2, startY=58;
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    invaders.push({c,r,alive:true,x:startX+c*CELL_X,y:startY+r*CELL_Y});
+  }
+  aliveCount=COLS*ROWS;
+  dir=1; frame=0; stepAcc=0; bombAcc=0; ufoAcc=0;
+  stepMs=baseStep();
+}
+function baseStep(){return Math.max(120,560-(level-1)*60);}
+function curStep(){ // 残りが減るほど速く
+  const f=aliveCount/(COLS*ROWS);
+  return Math.max(70, (baseStep())*(0.25+0.75*f));
+}
+function buildShields(){
+  shields=[];
+  const pat=["011110","111111","111111","110011"]; // 6x4 ブロック
+  const cw=7,ch=7, sw=pat[0].length*cw;
+  const gap=(W-3*sw)/4;
+  for(let s=0;s<3;s++){
+    const ox=gap+s*(sw+gap), oy=H-118;
+    const cells=[];
+    for(let y=0;y<pat.length;y++)for(let x=0;x<pat[0].length;x++){
+      if(pat[y][x]==='1')cells.push({x:ox+x*cw,y:oy+y*ch,w:cw,h:ch,hp:2});
+    }
+    shields.push(cells);
+  }
+}
+
+/* ---------- input ---------- */
+function fire(){if(state!=='play')return;if(player.cool>0)return;if(bullet.active)return;
+  bullet.x=player.x+player.w/2-1.5;bullet.y=player.y-6;bullet.active=true;player.cool=8;}
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a')keys.left=true;
+  else if(e.key==='ArrowRight'||e.key==='d')keys.right=true;
+  else if(e.key===' '||e.key==='ArrowUp'){keys.fire=true;e.preventDefault();if(state!=='play')startOrRestart();}
+  else if(e.key==='Enter'&&state!=='play')startOrRestart();
+});
+addEventListener('keyup',e=>{
+  if(e.key==='ArrowLeft'||e.key==='a')keys.left=false;
+  else if(e.key==='ArrowRight'||e.key==='d')keys.right=false;
+  else if(e.key===' '||e.key==='ArrowUp')keys.fire=false;
+});
+function hold(btn,on){
+  const set=v=>e=>{e.preventDefault();
+    if(on==='left')keys.left=v; else if(on==='right')keys.right=v; else if(on==='fire'){keys.fire=v; if(v&&state==='play')fire(); if(v&&state!=='play')startOrRestart();}
+  };
+  btn.addEventListener('pointerdown',set(true));
+  btn.addEventListener('pointerup',set(false));
+  btn.addEventListener('pointerleave',set(false));
+  btn.addEventListener('pointercancel',set(false));
+}
+hold($('bl'),'left');hold($('br'),'right');hold($('bf'),'fire');
+
+/* ---------- game loop ---------- */
+let last=0;
+function loop(t){
+  const dt=Math.min(50,t-last||16);last=t;
+  if(state==='play')update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+function update(dt){
+  // プレイヤー移動
+  if(keys.left)player.x-=player.speed*dt/16;
+  if(keys.right)player.x+=player.speed*dt/16;
+  player.x=Math.max(6,Math.min(W-player.w-6,player.x));
+  if(player.cool>0)player.cool-=dt/16;
+  if(player.flash>0)player.flash-=dt;
+  if(keys.fire)fire();
+  // 自弾
+  if(bullet.active){bullet.y-=6.2*dt/16;if(bullet.y<-8)bullet.active=false;}
+  // インベーダー行進（ステップ移動）
+  stepAcc+=dt;
+  if(stepAcc>=curStep()){
+    stepAcc=0;frame^=1;
+    let hitEdge=false;
+    for(const v of invaders){if(!v.alive)continue;const nx=v.x+dir*8;if(nx<6||nx+INV_W>W-6){hitEdge=true;break;}}
+    if(hitEdge){dir*=-1;for(const v of invaders)if(v.alive)v.y+=14;}
+    else for(const v of invaders)if(v.alive)v.x+=dir*8;
+    // 最下段まで来たらゲームオーバー
+    for(const v of invaders)if(v.alive&&v.y+INV_H>=player.y-2){return gameOver();}
+  }
+  // 爆弾投下
+  bombAcc+=dt;
+  const bombEvery=Math.max(420,1100-(level-1)*120);
+  if(bombAcc>=bombEvery&&bombs.length<2+level){bombAcc=0;dropBomb();}
+  for(const b of bombs)b.y+=(2.6+level*0.25)*dt/16;
+  bombs=bombs.filter(b=>b.y<H+10);
+  // UFO
+  ufoAcc+=dt;
+  if(!ufo.active&&ufoAcc>9000){ufoAcc=0;ufo.active=true;ufo.dir=Math.random()<.5?1:-1;ufo.x=ufo.dir>0?-24:W+24;}
+  if(ufo.active){ufo.x+=ufo.dir*1.4*dt/16;if(ufo.x<-30||ufo.x>W+30)ufo.active=false;}
+  collisions();
+}
+function dropBomb(){
+  // 各列の最下段の生存インベーダーから1つ選ぶ
+  const bottom={};
+  for(const v of invaders){if(!v.alive)continue;if(!bottom[v.c]||v.y>bottom[v.c].y)bottom[v.c]=v;}
+  const list=Object.values(bottom);if(!list.length)return;
+  const v=list[Math.floor(Math.random()*list.length)];
+  bombs.push({x:v.x+INV_W/2-1.5,y:v.y+INV_H,w:3,h:9});
+}
+function rectHit(ax,ay,aw,ah,bx,by,bw,bh){return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by;}
+function collisions(){
+  // 自弾 vs インベーダー
+  if(bullet.active){
+    for(const v of invaders){if(!v.alive)continue;
+      if(rectHit(bullet.x,bullet.y,3,7,v.x,v.y,INV_W,INV_H)){
+        v.alive=false;aliveCount--;bullet.active=false;score+=ROW_SCORE[v.r];updateHud();
+        if(aliveCount<=0)return levelClear();
+        break;
+      }}
+  }
+  // 自弾 vs UFO
+  if(bullet.active&&ufo.active&&rectHit(bullet.x,bullet.y,3,7,ufo.x-14,38,28,11)){
+    bullet.active=false;ufo.active=false;score+=150;player.flash=0;updateHud();
+  }
+  // 自弾 / 爆弾 vs シールド
+  for(const cells of shields){
+    for(const cell of cells){
+      if(cell.hp<=0)continue;
+      if(bullet.active&&rectHit(bullet.x,bullet.y,3,7,cell.x,cell.y,cell.w,cell.h)){cell.hp--;bullet.active=false;}
+      for(const b of bombs){if(b.hit)continue;if(rectHit(b.x,b.y,b.w,b.h,cell.x,cell.y,cell.w,cell.h)){cell.hp--;b.hit=true;}}
+    }
+  }
+  bombs=bombs.filter(b=>!b.hit);
+  // 爆弾 vs プレイヤー
+  for(const b of bombs){
+    if(rectHit(b.x,b.y,b.w,b.h,player.x,player.y,player.w,player.h)){
+      b.hit=true;loseLife();break;
+    }
+  }
+  bombs=bombs.filter(b=>!b.hit);
+}
+function loseLife(){
+  lives--;updateHud();player.flash=600;bombs=[];bullet.active=false;
+  if(lives<=0)return gameOver();
+  player.x=W/2-15;
+}
+function levelClear(){state='clear';best=Math.max(best,score);
+  overlay('WAVE '+level+' CLEAR','スコア '+score+'　　次の編隊はもっと速い！','次のウェーブ');}
+function nextLevel(){level++;reset(false);state='play';hideOverlay();}
+function gameOver(){state='over';best=Math.max(best,score);
+  overlay('GAME OVER','スコア '+score+'　/　ベスト '+best,'もう一度');}
+
+/* ---------- draw ---------- */
+function drawSprite(rows,x,y,col){ctx.fillStyle=col;
+  for(let r=0;r<rows.length;r++)for(let c=0;c<rows[r].length;c++)if(rows[r][c]==='1')ctx.fillRect(x+c*SCALE,y+r*SCALE,SCALE,SCALE);}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // 星
+  ctx.fillStyle='rgba(120,180,110,.18)';
+  for(let i=0;i<40;i++){const sx=(i*97+ (frame?3:0))%W,sy=(i*53)%H;ctx.fillRect(sx,sy,1,1);}
+  // インベーダー
+  const spr=frame?SPR_B:SPR_A;
+  for(const v of invaders){if(!v.alive)continue;drawSprite(spr,v.x,v.y,ROW_COLORS[v.r]);}
+  // UFO
+  if(ufo.active){ctx.fillStyle='#ff79c6';ctx.beginPath();ctx.ellipse(ufo.x,44,15,6,0,0,7);ctx.fill();
+    ctx.fillStyle='#ffd1ec';ctx.beginPath();ctx.ellipse(ufo.x,41,7,4,0,0,7);ctx.fill();}
+  // シールド
+  for(const cells of shields)for(const cell of cells){if(cell.hp<=0)continue;
+    ctx.fillStyle=cell.hp>=2?'#5fd06a':'#2f7a36';ctx.fillRect(cell.x,cell.y,cell.w,cell.h);}
+  // 自弾
+  if(bullet.active){ctx.fillStyle='#eafff0';ctx.fillRect(bullet.x,bullet.y,3,7);}
+  // 爆弾
+  ctx.fillStyle='#ff9a5a';for(const b of bombs)ctx.fillRect(b.x,b.y,b.w,b.h);
+  // プレイヤー（点滅中は被弾演出）
+  if(!(player.flash>0&&Math.floor(player.flash/80)%2)){
+    ctx.fillStyle=player.flash>0?'#ff6b6b':'#9ee86a';
+    const x=player.x,y=player.y,w=player.w,h=player.h;
+    ctx.fillRect(x,y+h-5,w,5);
+    ctx.fillRect(x+w/2-7,y+3,14,h-7);
+    ctx.fillRect(x+w/2-2,y-4,4,7);
+  }
+  // 地面ライン
+  ctx.fillStyle='#243018';ctx.fillRect(0,player.y+player.h+3,W,1);
+}
+
+/* ---------- ui ---------- */
+function updateHud(){$('score').textContent=score;$('level').textContent=level;$('lives').textContent='▲'.repeat(Math.max(0,lives))||'—';}
+function overlay(t,d,btn){$('ovl-t').textContent=t;$('ovl-d').textContent=d;$('ovl-b').textContent=btn;$('ovl').classList.add('show');}
+function hideOverlay(){$('ovl').classList.remove('show');}
+function startOrRestart(){
+  if(state==='ready'||state==='over'){reset(true);state='play';hideOverlay();}
+  else if(state==='clear'){nextLevel();}
+}
+$('ovl-b').addEventListener('click',startOrRestart);
+
+// 初期表示
+reset(true);state='ready';
+overlay('INVADER','編隊を全滅させろ！シールドに隠れて反撃。','スタート');
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

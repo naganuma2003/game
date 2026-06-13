@@ -92,7 +92,8 @@ svg{display:block;width:min(96vw,420px);height:auto}
 
 <div class="modes" id="modes">
   <button data-m="cpu1" class="on">CPU 弱</button>
-  <button data-m="cpu2">CPU 強</button>
+  <button data-m="cpu2">CPU 普通</button>
+  <button data-m="cpu3">CPU 強</button>
   <button data-m="pvp">2人対戦</button>
 </div>
 
@@ -469,9 +470,11 @@ function cpuTurn(){
     const pool=maxCap>0?seqs.filter(s=>s.overs.length===maxCap):seqs;
     pick=pool[Math.floor(Math.random()*pool.length)];
   }else{
+    const depth=mode==='cpu2'?3:7;
+    const noise=mode==='cpu2'?10:4;
     let bs=-Infinity;
     for(const s of seqs){
-      const v=-negamax(s.bd,1-turn,7,-Infinity,Infinity)+Math.random()*4;
+      const v=-negamax(s.bd,1-turn,depth,-Infinity,Infinity)+Math.random()*noise;
       if(v>bs){bs=v;pick=s;}
     }
   }

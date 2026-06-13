@@ -95,7 +95,8 @@ text.coord{font-size:9px;fill:rgba(255,255,255,.45);pointer-events:none;font-fam
 
 <div class="modes" id="modes">
   <button data-m="cpu1" class="on">CPU 弱</button>
-  <button data-m="cpu2">CPU 強</button>
+  <button data-m="cpu2">CPU 普通</button>
+  <button data-m="cpu3">CPU 強</button>
   <button data-m="pvp">2人対戦</button>
 </div>
 
@@ -513,12 +514,14 @@ function cpuMove(legal){
     }
     return legal[Math.floor(Math.random()*legal.length)];
   }
+  const depth=mode==='cpu3'?3:1;
+  const noise=mode==='cpu3'?2:8;
   let best=legal[0],bs=-Infinity;
   for(const m of orderM(board,legal)){
     const ns=cloneSt({bd:board,cs:castle,ep});
     applyMove(ns,m);
-    let v=-search(ns,0,2,-Infinity,Infinity);
-    v+=Math.random()*6;
+    let v=-search(ns,0,depth,-Infinity,Infinity);
+    v+=Math.random()*noise;
     if(v>bs){bs=v;best=m;}
   }
   return best;

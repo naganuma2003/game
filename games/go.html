@@ -89,7 +89,8 @@ svg{display:block;width:min(96vw,440px);height:auto}
 
 <div class="row" id="modes">
   <button data-m="cpu1" class="on">CPU 弱</button>
-  <button data-m="cpu2">CPU 強</button>
+  <button data-m="cpu2">CPU 普通</button>
+  <button data-m="cpu3">CPU 強</button>
   <button data-m="pvp">2人対戦</button>
 </div>
 <div class="row" id="sizes">
@@ -518,6 +519,10 @@ function cpuMove(){
   if(moveCount>N*N*.55&&cands[0][0]<6)return -1;
   if(mode==='cpu1'){
     const top=cands.slice(0,Math.min(8,cands.length));
+    return top[Math.floor(Math.random()*top.length)][1];
+  }
+  if(mode==='cpu2'){
+    const top=cands.slice(0,Math.min(3,cands.length));
     return top[Math.floor(Math.random()*top.length)][1];
   }
   return cands[0][1];

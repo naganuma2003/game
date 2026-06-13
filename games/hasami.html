@@ -105,7 +105,8 @@ text.kanji.promo{fill:var(--red)}
 
 <div class="modes" id="modes">
   <button data-m="cpu1" class="on">CPU 弱</button>
-  <button data-m="cpu2">CPU 強</button>
+  <button data-m="cpu2">CPU 普通</button>
+  <button data-m="cpu3">CPU 強</button>
   <button data-m="pvp">2人対戦</button>
 </div>
 
@@ -351,7 +352,9 @@ function cpuMove(){
     const p=top[Math.floor(Math.random()*top.length)];
     return[p[1],p[2]];
   }
-  // 強: 自分の取り − 相手の最善反撃 + 前進
+  // 普通=反撃は浅めに考慮 / 強=反撃まで読む
+  const replyWeight=mode==='cpu2'?40:95;
+  const noise=mode==='cpu2'?12:3;
   let best=ms[0],bs=-Infinity;
   for(const[f,t]of ms){
     const nb=board.slice();
@@ -359,10 +362,10 @@ function cpuMove(){
     let s=g*100;
     if(caps[2]+g>=WIN_CAPS)s+=10000;
     const rep=bestReply(nb,1);
-    s-=rep*95;
+    s-=rep*replyWeight;
     if(caps[1]+rep>=WIN_CAPS)s-=9000;
     s+=Math.floor(t/9)*1.2;
-    s+=Math.random()*3;
+    s+=Math.random()*noise;
     if(s>bs){bs=s;best=[f,t];}
   }
   return best;

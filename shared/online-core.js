@@ -83,8 +83,13 @@
     function updateBadge(msg) {
       if (!online) return;
       updateSticky();
-      badge.textContent = msg || ('🌐 ' + (sticky === mySeat ? 'あなたの番' : '相手の番'));
-      badge.style.background = sticky === mySeat ? 'rgba(37,99,201,.85)' : 'rgba(0,0,0,.65)';
+      const mine = sticky === mySeat;
+      badge.textContent = msg || ('🌐 ' + (mine ? 'あなたの番' : '相手の番'));
+      // あなたの番を緑＋強調で目立たせる
+      badge.style.background = mine ? '#16a34a' : 'rgba(40,40,46,.85)';
+      badge.style.boxShadow = mine ? '0 0 0 4px rgba(34,197,94,.35)' : 'none';
+      badge.style.fontWeight = mine ? '800' : '600';
+      badge.style.fontSize = mine ? '15px' : '13px';
     }
     setInterval(() => updateBadge(), 700);
 

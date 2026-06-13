@@ -112,6 +112,7 @@ function render(){
   const act=canAct();
   const mh=document.getElementById('myhand');mh.innerHTML='';hands[vs].forEach((c,i)=>{const w=document.createElement('div');w.innerHTML=cardHtml(c,(act&&sel.includes(i))?' sel':'');const el=w.firstChild;if(act)el.addEventListener('click',()=>toggle(i));mh.appendChild(el);});
   document.getElementById('play').disabled=!act;document.getElementById('pass').disabled=!act||field.length===0;
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(turn===MYSEAT&&!gameOver);
 }
 function rankTitles(n){if(n<=2)return['大富豪','大貧民'];if(n===3)return['大富豪','平民','大貧民'];return['大富豪','富豪','貧民','大貧民'];}
 function finishedRank(p){const i=finished.indexOf(p);if(i<0)return null;const t=rankTitles(np);return t[i]||'上がり';}
@@ -264,7 +265,7 @@ function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;
 </script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=3"></script>
-<script src="../shared/online-room.js?v=5"></script>
+<script src="../shared/online-room.js?v=6"></script>
 <script>
 OnlineRoom.init({gameId:'daifugo',minPlayers:2,maxPlayers:4,note:'8切り・革命ありの大富豪をオンライン対戦。',
   onStart:(seat,n,send)=>startOnline(seat,n,send),

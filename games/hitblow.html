@@ -111,6 +111,7 @@ function init(){MAX=maxTries();secret=genSecret();guess=[];tries=0;over=false;wi
   document.getElementById('over').classList.remove('show');buildPad();renderDisp();renderRule();updatePad();updateTurnMsg();}
 function turnLabel(){return ONLINE?(curPlayer===MYSEAT?'★あなた(P'+(curPlayer+1)+')':'相手(P'+(curPlayer+1)+')'):'プレイヤー'+(curPlayer+1);}
 function updateTurnMsg(){
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(curPlayer===MYSEAT&&!over);
   if(pmode==='solo')msg(mode==='num'?'数字を選んで「判定」':'色を選んで「判定」');
   else msg(turnLabel()+'の番：'+(mode==='num'?'数字':'色')+'を入力して「判定」');}
 function updatePad(){const off=(pmode==='multi'&&!myTurn());pad.style.opacity=off?'.4':'1';pad.style.pointerEvents=off?'none':'auto';}
@@ -232,7 +233,7 @@ function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;pmode='m
 </script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=3"></script>
-<script src="../shared/online-room.js?v=5"></script>
+<script src="../shared/online-room.js?v=6"></script>
 <script>
 OnlineRoom.init({gameId:'hitblow',minPlayers:2,maxPlayers:4,note:'同じ秘密の番号を全員で当て、最速正解者が勝ち。',
   onStart:(seat,n,send)=>startOnline(seat,n,send),

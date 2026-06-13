@@ -53,7 +53,8 @@ const cols=N<=16?4:N<=20?5:8;bd.style.gridTemplateColumns='repeat('+cols+',1fr)'
 bd.classList.toggle('trump',N===52);
 bd.innerHTML='';deck.forEach((c,i)=>{const el=document.createElement('div');el.className='card';const face=N===52?'<span class="'+(c.red?'red':'blk')+'">'+c.e+'</span>':c.e;el.innerHTML='<div class="back">?</div><div class="face">'+face+'</div>';el.addEventListener('click',()=>tap(i));bd.appendChild(el);});
 setStatus();}
-function setStatus(){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='めくった回数: <b>'+moves+'</b>　そろえた: <b>'+matched.size/2+'/'+(N/2)+'</b>';else{let sc=score.map((v,i)=>'P'+(i+1)+': '+v).join(' / ');const who=ONLINE?(turn===MYSEAT?'★あなた(P'+(turn+1)+')':'相手(P'+(turn+1)+')'):'プレイヤー'+(turn+1);s.innerHTML='<b>'+who+'</b>の番　（'+sc+'）';}}
+function setStatus(){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='めくった回数: <b>'+moves+'</b>　そろえた: <b>'+matched.size/2+'/'+(N/2)+'</b>';else{let sc=score.map((v,i)=>'P'+(i+1)+': '+v).join(' / ');const who=ONLINE?(turn===MYSEAT?'★あなた(P'+(turn+1)+')':'相手(P'+(turn+1)+')'):'プレイヤー'+(turn+1);s.innerHTML='<b>'+who+'</b>の番　（'+sc+'）';}
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(turn===MYSEAT&&matched.size<N);}
 function cardEl(i){return bd.children[i];}
 function tap(i){if(busy||matched.has(i)||flipped.includes(i))return;
   if(ONLINE){if(turn!==MYSEAT)return;roomSend({k:'tap',i});return;}
@@ -93,7 +94,7 @@ function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;mode='pv
 </script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=3"></script>
-<script src="../shared/online-room.js?v=5"></script>
+<script src="../shared/online-room.js?v=6"></script>
 <script>
 OnlineRoom.init({gameId:'memory',minPlayers:2,maxPlayers:4,note:'全員でペアを取り合います（最大4人）。',
   onStart:(seat,n,send)=>startOnline(seat,n,send),

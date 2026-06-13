@@ -95,6 +95,9 @@
 #start-room[hidden]{display:none}
 #online-status{min-height:18px;margin:12px 0 0;font-size:12px;font-weight:600;color:#ffd34d;line-height:1.5}
 #oc-badge{position:fixed;top:10px;right:10px;z-index:99998;background:rgba(0,0,0,.65);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:9px 14px;font:600 13px/1 'Segoe UI',sans-serif;display:none}
+#oc-badge.oc-myturn{background:#16a34a;color:#fff;border-color:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.35);font-size:15px;font-weight:800;animation:ocpulse .9s ease-in-out infinite alternate}
+#oc-badge.oc-wait{background:rgba(40,40,46,.85);color:#cfd6e4;border-color:rgba(255,255,255,.18)}
+@keyframes ocpulse{from{box-shadow:0 0 0 3px rgba(34,197,94,.30)}to{box-shadow:0 0 0 7px rgba(34,197,94,.0)}}
 </style>
 <button id="online-btn">🌐 オンライン</button>
 <div id="online-lobby" hidden>
@@ -126,6 +129,13 @@
     function openLobby() { $('online-lobby').hidden = false; }
     function hideLobby() { $('online-lobby').hidden = true; }
     function showBadge(m) { badge.style.display = 'block'; if (m != null) badge.textContent = m; }
+    // ゲームが「今あなたの番か」を渡すと、バッジで目立たせる
+    function setTurn(mine, label) {
+      if (!started) return;
+      badge.style.display = 'block';
+      if (mine) { badge.classList.add('oc-myturn'); badge.classList.remove('oc-wait'); badge.textContent = label || '🟢 あなたの番'; }
+      else { badge.classList.remove('oc-myturn'); badge.classList.add('oc-wait'); badge.textContent = label || '⏳ 相手の番'; }
+    }
 
     /* ---------- send / receive ---------- */
     // send(msg): broadcast to all seats. Host stamps & fans out; guest forwards
@@ -492,6 +502,7 @@
       isAuto: (s) => gone.has(s) || (started && nCpus > 0 && s >= (nPlayers - nCpus)),
       isHost: () => isHost,
       cpuCount: () => nCpus,
+      setTurn,
     };
     Object.assign(window.OnlineRoom, api);
     return api;

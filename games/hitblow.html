@@ -40,7 +40,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:24px;letter-spacing:.12em;
 .foot button{background:transparent;border:1px solid var(--line);color:var(--txt);padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit}
 .over{position:fixed;inset:0;background:rgba(10,8,5,.85);display:none;align-items:center;justify-content:center;z-index:30}
 .over.show{display:flex}
-.over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:26px 38px;text-align:center}
+.over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:26px 38px;text-align:center;max-width:90vw}
 .over .t{font-size:24px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:8px}
 .over .s{font-size:14px;color:var(--txt);margin-bottom:16px;letter-spacing:.06em;display:flex;flex-direction:column;gap:8px;align-items:center}
 .over .s .answer{display:flex;gap:6px}
@@ -57,7 +57,8 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:24px;letter-spacing:.12em;
 <div class="opts">
   <div class="row" id="pmode"><span class="lbl">対戦:</span>
     <button data-p="solo" class="on">1人</button>
-    <button data-p="multi">複数人（早解き）</button>
+    <button data-p="race">交互に同じ番号</button>
+    <button data-p="duel">攻め合い</button>
   </div>
   <div class="row hidden" id="nprow"><span class="lbl">人数:</span>
     <button data-np="2" class="on">2人</button>
@@ -85,15 +86,24 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:24px;letter-spacing:.12em;
 <div class="foot"><button id="new">この設定で開始</button></div>
 <div class="rule" id="rule"></div>
 <div class="over" id="over"><div class="c"><div class="t" id="ov-t">正解！</div><div class="s" id="ov-s"></div><button id="again">もう一度</button></div></div>
+<div class="over" id="ho"><div class="c"><div class="t" id="ho-t">交代</div><div class="s">端末を次の人に渡してください</div><button id="ho-ok">準備OK</button></div></div>
 <script>
 // 色版の定義（遊びの大全のボール風）
 const COLORS=[
   {id:0,name:'赤',css:'#e0473a'},{id:1,name:'青',css:'#3e87d6'},
   {id:2,name:'黄',css:'#e8c244'},{id:3,name:'白',css:'#f0ece0'},
-  {id:4,name:'緑',css:'#5cb568'},{id:5,name:'紫',css:'#a濃'.replace('a濃','9a6dd0')}
+  {id:4,name:'緑',css:'#5cb568'},{id:5,name:'紫',css:'#9a6dd0'}
 ];
-let mode='num',N=4,DUP=false,MAX=10,secret,guess,tries,over;
-let pmode='solo',np=2,curPlayer=0,winner=-1,mHist=[];
+let mode='num',N=4,DUP=false,MAX=10;
+let pmode='solo',np=2,curPlayer=0,winner=-1;
+let secret;            // solo/race: 全員で当てる共通の秘密
+let secrets=[];        // duel: 各プレイヤーが守る秘密 secrets[p]
+let guess=[],tries=0,over=false;
+let mHist=[];          // race/duel の履歴 {player,g,hit,blow}
+let phase='play';      // duel: 'set'（番号決め）| 'play'（攻め合い）
+let setStage=0;        // ローカルduel: いま番号を入力している人
+let setDone=[];        // duel: 番号を決め終わった席
+let mySecretSet=false; // オンラインduel: 自分の番号を決めたか
 let ONLINE=false,MYSEAT=0,roomSend=null;
 const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a']; // P1赤 P2青 P3緑 P4黄
 function myTurn(){return !ONLINE||curPlayer===MYSEAT;}
@@ -103,19 +113,56 @@ function symbols(){return mode==='num'?[0,1,2,3,4,5,6,7,8,9]:COLORS.map(c=>c.id)
 function maxTries(){return mode==='col'?(N+6):(N===3?8:N===4?10:12);}
 function genSecret(){
   const syms=symbols();const out=[];
-  if(DUP){for(let i=0;i<N;i++)out.push(syms[Math.floor(Math.random()*syms.length)]);}
-  else{const pool=syms.slice();for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}return pool.slice(0,N);}
-  return out;
+  if(DUP){for(let i=0;i<N;i++)out.push(syms[Math.floor(Math.random()*syms.length)]);return out;}
+  const pool=syms.slice();for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}return pool.slice(0,N);
 }
-function init(){MAX=maxTries();secret=genSecret();guess=[];tries=0;over=false;winner=-1;curPlayer=(pmode==='multi')?Math.floor(Math.random()*np):0;mHist=[];hist.innerHTML='';
-  document.getElementById('over').classList.remove('show');buildPad();renderDisp();renderRule();updatePad();updateTurnMsg();}
+// duel は 2 人用
+function effNp(){return pmode==='duel'?2:(pmode==='solo'?1:np);}
+function init(){
+  MAX=maxTries();guess=[];tries=0;over=false;winner=-1;mHist=[];hist.innerHTML='';
+  secrets=[];setDone=[];mySecretSet=false;
+  document.getElementById('over').classList.remove('show');
+  document.getElementById('ho').classList.remove('show');
+  if(pmode==='duel'){
+    np=2;phase='set';setStage=0;
+    // CPU/退出席の番号はホストが代理で決める（オンライン）
+    autoKick();
+  }else{
+    phase='play';
+    secret=genSecret();
+    curPlayer=(pmode==='race')?Math.floor(Math.random()*np):0;
+  }
+  buildPad();renderDisp();renderRule();updatePad();updateTurnMsg();
+}
 function turnLabel(){return ONLINE?(curPlayer===MYSEAT?'★あなた(P'+(curPlayer+1)+')':'相手(P'+(curPlayer+1)+')'):'プレイヤー'+(curPlayer+1);}
+// いま自分が操作してよいか（パッドの有効/無効・ターンバッジ用）
+function canActNow(){
+  if(over)return false;
+  if(pmode==='solo')return true;
+  if(pmode==='duel'&&phase==='set'){
+    if(ONLINE)return !mySecretSet;
+    return true; // ローカルは画面の前の人が入力
+  }
+  return myTurn();
+}
 function updateTurnMsg(){
-  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(curPlayer===MYSEAT&&!over);
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(canActNow()&&!over);
   const mEl=document.getElementById('msg');
-  if(pmode==='solo'){mEl.style.color='var(--gold)';msg(mode==='num'?'数字を選んで「判定」':'色を選んで「判定」');}
-  else{mEl.style.color=PCOL[curPlayer];mEl.style.fontWeight='700';msg(turnLabel()+'の番：'+(mode==='num'?'数字':'色')+'を入力して「判定」');}}
-function updatePad(){const off=(pmode==='multi'&&!myTurn());pad.style.opacity=off?'.4':'1';pad.style.pointerEvents=off?'none':'auto';}
+  if(over)return;
+  mEl.style.fontWeight='700';
+  if(pmode==='duel'&&phase==='set'){
+    mEl.style.color='var(--gold)';
+    if(ONLINE)msg(mySecretSet?'相手が番号を決めるのを待っています…':'あなたが守る番号を入力して「決定」');
+    else msg('プレイヤー'+(setStage+1)+'：守る番号を入力して「決定」（相手に見られないように）');
+    return;
+  }
+  if(pmode==='solo'){mEl.style.color='var(--gold)';msg(mode==='num'?'数字を選んで「判定」':'色を選んで「判定」');return;}
+  mEl.style.color=PCOL[curPlayer];
+  if(pmode==='duel')msg(turnLabel()+'の番：相手の番号を当てよう');
+  else msg(turnLabel()+'の番：'+(mode==='num'?'数字':'色')+'を入力して「判定」');
+}
+function updatePad(){const off=!canActNow();pad.style.opacity=off?'.4':'1';pad.style.pointerEvents=off?'none':'auto';
+  const go=document.getElementById('go');if(go)go.textContent=(pmode==='duel'&&phase==='set')?'決定':'判定';}
 function msg(s){document.getElementById('msg').textContent=s;}
 function symHtml(v){return mode==='num'?String(v):`<span class="ball" style="background:${COLORS[v].css}"></span>`;}
 function renderDisp(){disp.innerHTML='';for(let i=0;i<N;i++){const d=document.createElement('div');d.className='slot'+(i===guess.length?' active':'');
@@ -126,14 +173,13 @@ function buildPad(){pad.className='pad '+(mode==='num'?'num':'col');pad.innerHTM
     else{b.innerHTML=`<span class="ball" style="background:${COLORS[v].css}"></span>`;b.title=COLORS[v].name;}
     b.addEventListener('click',()=>push(v));pad.appendChild(b);}
   const del=document.createElement('button');del.className='wide';del.textContent='⌫ 消す';del.addEventListener('click',pop);pad.appendChild(del);
-  const go=document.createElement('button');go.className='wide go';go.id='go';go.textContent='判定';go.addEventListener('click',submit);pad.appendChild(go);}
-function push(v){if(over||guess.length>=N)return;if(pmode==='multi'&&!myTurn())return;if(!DUP&&guess.includes(v)){msg(mode==='num'?'同じ数字は使えません':'同じ色は使えません');return;}guess.push(v);renderDisp();}
-function pop(){if(over||!guess.length)return;if(pmode==='multi'&&!myTurn())return;guess.pop();renderDisp();}
+  const go=document.createElement('button');go.className='wide go';go.id='go';go.textContent=(pmode==='duel'&&phase==='set')?'決定':'判定';go.addEventListener('click',submit);pad.appendChild(go);}
+function push(v){if(over||guess.length>=N)return;if(!canActNow())return;if(!DUP&&guess.includes(v)){msg(mode==='num'?'同じ数字は使えません':'同じ色は使えません');return;}guess.push(v);renderDisp();}
+function pop(){if(over||!guess.length)return;if(!canActNow())return;guess.pop();renderDisp();}
 // 正確なヒット/ブロー計算（重複対応）
 function evaluate(g,s){
   let hit=0;const restG=[],restS=[];
   for(let i=0;i<N;i++){if(g[i]===s[i])hit++;else{restG.push(g[i]);restS.push(s[i]);}}
-  // 残りで一致する個数（値ごとのmin合計）
   const cnt={};for(const v of restS)cnt[v]=(cnt[v]||0)+1;
   let blow=0;for(const v of restG){if(cnt[v]>0){blow++;cnt[v]--;}}
   return{hit,blow};
@@ -147,36 +193,88 @@ function submit(){if(over)return;if(guess.length!==N){msg(N+'個すべて入力�
     msg(`${hit} ヒット / ${blow} ブロー　（残り${MAX-tries}回）`);
     guess=[];renderDisp();return;
   }
-  // multi（早解きレース）
+  if(pmode==='duel'&&phase==='set'){
+    const s=guess.slice();guess=[];renderDisp();
+    if(ONLINE){
+      if(mySecretSet)return;mySecretSet=true;
+      roomSend({k:'setsecret',seat:MYSEAT,s});
+      updatePad();updateTurnMsg();
+    }else{
+      secrets[setStage]=s;setDone.push(setStage);
+      if(setStage===0){setStage=1;showHandoff('プレイヤー2 の番号決め',()=>{renderDisp();updatePad();updateTurnMsg();});}
+      else{phase='play';curPlayer=Math.floor(Math.random()*2);startDuelPlay();}
+    }
+    return;
+  }
+  // race / duel(play) → 着手を中継
   emit({k:'guess',g:guess.slice()});guess=[];renderDisp();}
 function emit(a){if(ONLINE){if(!myTurn())return;roomSend(a);}else doAction(a);}
-function doAction(a){if(a.k==='guess')applyGuess(curPlayer,a.g);else if(a.k==='setup')applySetup(a);else if(a.k==='skip')applySkip();}
-function applyGuess(player,g){
+function doAction(a){
+  if(a.k==='setup')applySetup(a);
+  else if(a.k==='setsecret')applySetSecret(a.seat,a.s);
+  else if(a.k==='guess'){if(pmode==='duel')applyGuessDuel(curPlayer,a.g);else applyGuessRace(curPlayer,a.g);}
+  else if(a.k==='skip')applySkip();
+}
+function applySetSecret(seat,s){
+  secrets[seat]=s;if(!setDone.includes(seat))setDone.push(seat);
+  if(phase==='set'&&setDone.includes(0)&&setDone.includes(1)){
+    phase='play';curPlayer=0; // オンラインは席0から（決定論的）
+    startDuelPlay();
+  }else{updateTurnMsg();updatePad();autoKick();}
+}
+function startDuelPlay(){
+  tries=0;mHist=[];hist.innerHTML='';guess=[];
+  buildPad();renderDisp();updatePad();updateTurnMsg();autoKick();
+}
+function applyGuessRace(player,g){
   const{hit,blow}=evaluate(g,secret);tries++;
   mHist.push({player,g:g.slice(),hit,blow});
   addHistoryMulti(player,g,hit,blow);
   if(hit===N){finishMulti(player);return;}
   curPlayer=(curPlayer+1)%np;guess=[];renderDisp();updateTurnMsg();updatePad();autoKick();}
-function applySkip(){if(over)return;curPlayer=(curPlayer+1)%np;guess=[];renderDisp();updateTurnMsg();updatePad();autoKick();}
-// CPU席・退出席の代理（ホストが送信）: CPUは履歴と矛盾しない候補を推理, 退出席はスキップ
+function applyGuessDuel(attacker,g){
+  const target=1-attacker;
+  if(!secrets[target]){return;}
+  const{hit,blow}=evaluate(g,secrets[target]);tries++;
+  mHist.push({player:attacker,g:g.slice(),hit,blow});
+  addHistoryMulti(attacker,g,hit,blow);
+  if(hit===N){finishDuel(attacker);return;}
+  curPlayer=1-attacker;guess=[];renderDisp();updateTurnMsg();updatePad();autoKick();}
+function applySkip(){if(over)return;curPlayer=(curPlayer+1)%effNp();guess=[];renderDisp();updateTurnMsg();updatePad();autoKick();}
+// CPU席・退出席の代理（ホストが送信）
 function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&((OnlineRoom.isCpu&&OnlineRoom.isCpu(s))||(OnlineRoom.isGone&&OnlineRoom.isGone(s)));}
-function cpuGuess(){
+function cpuGuess(histEntries){
+  const hs=histEntries||mHist;
   const syms=symbols();
   let cands=[[]];
   for(let pos=0;pos<N;pos++){const next=[];for(const c of cands)for(const s of syms){if(!DUP&&c.includes(s))continue;next.push(c.concat(s));}cands=next;if(cands.length>120000)break;}
-  for(const h of mHist){cands=cands.filter(c=>{const r=evaluate(h.g,c);return r.hit===h.hit&&r.blow===h.blow;});if(cands.length<=1)break;}
+  for(const h of hs){cands=cands.filter(c=>{const r=evaluate(h.g,c);return r.hit===h.hit&&r.blow===h.blow;});if(cands.length<=1)break;}
   if(cands.length)return cands[Math.floor(Math.random()*cands.length)];
-  // フォールバック: ランダムな有効推理
   if(DUP){const g=[];for(let i=0;i<N;i++)g.push(syms[Math.floor(Math.random()*syms.length)]);return g;}
   const pool=syms.slice();for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}return pool.slice(0,N);
 }
-function autoKick(){if(!ONLINE||!OnlineRoom.isHost()||over||pmode!=='multi')return;const a=curPlayer;if(!isAutoSeat(a))return;
+function autoKick(){
+  if(!ONLINE||!OnlineRoom.isHost()||over)return;
+  if(pmode==='duel'){
+    if(phase==='set'){
+      // まだ番号を決めていない CPU/退出席の番号をホストが代理で決める
+      for(let s=0;s<2;s++){if(isAutoSeat(s)&&!setDone.includes(s)){const sec=genSecret();
+        setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&phase==='set'&&!setDone.includes(s))OnlineRoom.send({k:'setsecret',seat:s,s:sec});},700);}}
+      return;
+    }
+    const a=curPlayer;if(!isAutoSeat(a))return;
+    if(OnlineRoom.isCpu&&OnlineRoom.isCpu(a)){
+      setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!over&&curPlayer===a&&isAutoSeat(a))OnlineRoom.send({k:'guess',g:cpuGuess(mHist.filter(h=>h.player===a))});},800);
+    }else{setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!over&&curPlayer===a&&isAutoSeat(a))OnlineRoom.send({k:'skip'});},800);}
+    return;
+  }
+  if(pmode!=='race')return;
+  const a=curPlayer;if(!isAutoSeat(a))return;
   if(OnlineRoom.isCpu&&OnlineRoom.isCpu(a)){
-    setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!over&&curPlayer===a&&isAutoSeat(a))OnlineRoom.send({k:'guess',g:cpuGuess()});},800);
-  }else{
-    setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!over&&curPlayer===a&&isAutoSeat(a))OnlineRoom.send({k:'skip'});},800);
-  }}
-function applySetup(a){mode=a.mode;N=a.N;DUP=a.DUP;np=a.np;init();}
+    setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!over&&curPlayer===a&&isAutoSeat(a))OnlineRoom.send({k:'guess',g:cpuGuess(mHist)});},800);
+  }else{setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!over&&curPlayer===a&&isAutoSeat(a))OnlineRoom.send({k:'skip'});},800);}
+}
+function applySetup(a){mode=a.mode;N=a.N;DUP=a.DUP;np=a.np;pmode=a.pmode||'race';init();}
 function addHistory(g,hit,blow){const r=document.createElement('div');r.className='h-row';
   r.innerHTML=`<span class="h-no">${tries}</span><span class="h-guess">${g.map(symHtml).join(mode==='num'?' ':'')}</span>`+
     `<span class="h-res"><span class="hit">${hit} H</span><span class="blow">${blow} B</span></span>`;
@@ -191,27 +289,43 @@ function finishMulti(player){over=true;winner=player;
   const t=document.getElementById('ov-t'),s=document.getElementById('ov-s');
   const win=ONLINE?(player===MYSEAT?'あなたの勝ち！ 🎉':'プレイヤー'+(player+1)+'の勝ち'):'プレイヤー'+(player+1)+'の勝ち！ 🎉';
   t.textContent=win;t.style.color='var(--gold)';
-  s.innerHTML=tries+'手で決着<div class="answer">'+answerHtml()+'</div>';
-  document.getElementById('over').classList.add('show');}
-function answerHtml(){return secret.map(symHtml).join(mode==='num'?' ':'');}
+  s.innerHTML=tries+'手で決着<div class="answer">'+secret.map(symHtml).join(mode==='num'?' ':'')+'</div>';
+  document.getElementById('over').classList.add('show');
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(false);}
+function finishDuel(wseat){over=true;winner=wseat;
+  const t=document.getElementById('ov-t'),s=document.getElementById('ov-s');
+  const win=ONLINE?(wseat===MYSEAT?'あなたの勝ち！ 🎉':'プレイヤー'+(wseat+1)+'の勝ち'):'プレイヤー'+(wseat+1)+'の勝ち！ 🎉';
+  t.textContent=win;t.style.color='var(--gold)';
+  const sec=(p)=>(secrets[p]||[]).map(symHtml).join(mode==='num'?' ':'');
+  s.innerHTML=tries+'手で決着<div style="font-size:12px;color:var(--sub)">P1の番号</div><div class="answer">'+sec(0)+'</div>'+
+    '<div style="font-size:12px;color:var(--sub)">P2の番号</div><div class="answer">'+sec(1)+'</div>';
+  document.getElementById('over').classList.add('show');
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(false);}
 function finish(win){over=true;const t=document.getElementById('ov-t'),s=document.getElementById('ov-s');
   if(win){t.textContent='正解！ 🎉';t.style.color='var(--gold)';
-    s.innerHTML=tries+'回で当てました<div class="answer">'+answerHtml()+'</div>';}
+    s.innerHTML=tries+'回で当てました<div class="answer">'+secret.map(symHtml).join(mode==='num'?' ':'')+'</div>';}
   else{t.textContent='ゲームオーバー';t.style.color='#e0533e';
-    s.innerHTML='正解は<div class="answer">'+answerHtml()+'</div>でした';}
+    s.innerHTML='正解は<div class="answer">'+secret.map(symHtml).join(mode==='num'?' ':'')+'</div>でした';}
   document.getElementById('over').classList.add('show');}
 function renderRule(){
   const r=document.getElementById('rule');
-  if(mode==='num'){r.innerHTML=`0〜9の数字を${DUP?'<b>重複ありで</b>':'重複なしで'}並べた秘密の番号を当てます。<b style="color:var(--hit)">ヒット</b>＝数字も位置も一致。<b style="color:var(--blow)">ブロー</b>＝数字はあるが位置違い。`;}
-  else{r.innerHTML=`6色（赤・青・黄・白・緑・紫）のボールを${DUP?'<b>重複ありで</b>':'重複なしで'}並べた秘密の列を当てます。<b style="color:var(--hit)">ヒット</b>＝色も位置も一致。<b style="color:var(--blow)">ブロー</b>＝色はあるが位置違い。（マスターマインド風）`;}
+  const kind=mode==='num'?'0〜9の数字':'6色（赤・青・黄・白・緑・紫）のボール';
+  const d=DUP?'<b>重複ありで</b>':'重複なしで';
+  let head;
+  if(pmode==='duel')head=`<b>攻め合い</b>：おたがいに守る秘密の列を最初に決め、交互に相手の列を当てます。先に相手をすべて当てた人の勝ち。`;
+  else if(pmode==='race')head=`<b>交互に同じ番号</b>：全員で同じ秘密の列を交互に当て、最初に当てた人の勝ち。`;
+  else head=`秘密の列を当てます。`;
+  r.innerHTML=`${head}<br>${kind}を${d}並べます。<b style="color:var(--hit)">ヒット</b>＝${mode==='num'?'数字':'色'}も位置も一致。<b style="color:var(--blow)">ブロー</b>＝${mode==='num'?'数字':'色'}はあるが位置違い。`;
 }
+function showHandoff(title,cb){const ho=document.getElementById('ho');document.getElementById('ho-t').textContent=title;ho.classList.add('show');
+  document.getElementById('ho-ok').onclick=()=>{ho.classList.remove('show');cb&&cb();};}
 window.addEventListener('keydown',e=>{if(mode==='num'&&e.key>='0'&&e.key<='9')push(+e.key);else if(e.key==='Backspace'){e.preventDefault();pop();}else if(e.key==='Enter')submit();});
 function newGame(){if(ONLINE)return;init();}
 document.getElementById('new').addEventListener('click',newGame);
 document.getElementById('again').addEventListener('click',newGame);
 document.getElementById('pmode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;pmode=b.dataset.p;
   document.querySelectorAll('#pmode button').forEach(x=>x.classList.toggle('on',x===b));
-  document.getElementById('nprow').classList.toggle('hidden',pmode!=='multi');init();});
+  document.getElementById('nprow').classList.toggle('hidden',pmode!=='race');init();});
 document.getElementById('nprow').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;np=+b.dataset.np;
   document.querySelectorAll('#nprow button').forEach(x=>x.classList.toggle('on',x===b));init();});
 document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;mode=b.dataset.m;
@@ -222,28 +336,24 @@ document.getElementById('dup').addEventListener('click',e=>{const b=e.target.clo
   document.querySelectorAll('#dup button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 init();
 
-function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;pmode='multi';
+function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
+  if(pmode==='solo')pmode='race'; // オンラインは2人以上
   document.querySelectorAll('#pmode,#nprow,#mode,#len,#dup').forEach(el=>el.classList.add('hidden'));
   document.getElementById('new').parentElement.classList.add('hidden');
-  if(seat===0){roomSend({k:'setup',mode,N,DUP,np:n});msg('開始しています…');}
+  if(seat===0){roomSend({k:'setup',mode,N,DUP,np:n,pmode});} // setup適用→init が正しい案内を表示
   else msg('ホストの設定を待っています…');}
 // 再接続: 現在状態の書き出し/復元
-function getState(){return {secret,curPlayer,mode,N,DUP,tries,over,winner,mHist};}
-function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;pmode='multi';
+function getState(){return {pmode,phase,secret,secrets,setDone,curPlayer,mode,N,DUP,tries,over,winner,mHist};}
+function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;
   document.querySelectorAll('#pmode,#nprow,#mode,#len,#dup').forEach(el=>el.classList.add('hidden'));
   document.getElementById('new').parentElement.classList.add('hidden');
-  const s=o.state;secret=s.secret;curPlayer=s.curPlayer;mode=s.mode;N=s.N;DUP=s.DUP;tries=s.tries;over=s.over;winner=s.winner;mHist=s.mHist||[];
+  const s=o.state;pmode=s.pmode||'race';phase=s.phase||'play';secret=s.secret;secrets=s.secrets||[];setDone=s.setDone||[];
+  curPlayer=s.curPlayer;mode=s.mode;N=s.N;DUP=s.DUP;tries=s.tries;over=s.over;winner=s.winner;mHist=s.mHist||[];
+  mySecretSet=Array.isArray(setDone)&&setDone.includes(MYSEAT);
   MAX=maxTries();guess=[];
-  buildPad();renderDisp();renderRule();
-  hist.innerHTML='';
-  // 履歴を再構築（新しい順に表示されるよう先頭挿入）
-  mHist.forEach(h=>{const r=document.createElement('div');r.className='h-row';
-    const nm=ONLINE&&h.player===MYSEAT?'あなた':'P'+(h.player+1);
-    r.innerHTML=`<span class="h-pl" style="color:${PCOL[h.player]};border-color:${PCOL[h.player]}">${nm}</span>`+
-      `<span class="h-guess">${h.g.map(symHtml).join(mode==='num'?' ':'')}</span>`+
-      `<span class="h-res"><span class="hit">${h.hit} H</span><span class="blow">${h.blow} B</span></span>`;
-    hist.insertBefore(r,hist.firstChild);});
-  if(over&&winner>=0)finishMulti(winner);
+  buildPad();renderDisp();renderRule();hist.innerHTML='';
+  mHist.forEach(h=>addHistoryMulti(h.player,h.g,h.hit,h.blow));
+  if(over&&winner>=0){pmode==='duel'?finishDuel(winner):finishMulti(winner);}
   else{updateTurnMsg();updatePad();}
   autoKick();}
 </script>
@@ -251,7 +361,7 @@ function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;pmode='m
 <script src="../shared/lobby.js?v=4"></script>
 <script src="../shared/online-room.js?v=8"></script>
 <script>
-OnlineRoom.init({gameId:'hitblow',minPlayers:2,maxPlayers:4,note:'同じ秘密の番号を全員で当て、最速正解者が勝ち。',
+OnlineRoom.init({gameId:'hitblow',minPlayers:2,maxPlayers:4,note:'「交互に同じ番号」or「攻め合い(2人)」。種類・桁数・重複は開始前に選んでね。',
   onStart:(seat,n,send)=>startOnline(seat,n,send),
   onMessage:(from,msg)=>doAction(msg),
   onLeft:(seat)=>autoKick(),

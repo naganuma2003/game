@@ -44,6 +44,7 @@
     otrio: "games/otrio.html",
     quoridor: "games/quoridor.html",
     tetrisvs: "games/tetris-vs.html",
+    morris: "games/morris.html",
   };
 
   function randomCode() {

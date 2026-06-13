@@ -32,6 +32,8 @@ canvas.bd{background:#0E0C09;border:2px solid var(--line);border-radius:5px;disp
 .foot{display:flex;gap:8px}
 .foot button{background:var(--gold);border:none;color:#14110E;font-weight:700;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit}
 .foot .alt{background:transparent;border:1px solid var(--line);color:var(--txt)}
+.lvbtn{padding:7px 14px!important;font-size:12px!important}
+.lvbtn.on{border-color:var(--gold)!important;color:var(--gold)!important}
 .hint{font-size:10px;color:var(--sub);text-align:center;line-height:1.7;margin-top:4px}
 .hint b{color:var(--txt)}
 .msg{min-height:18px;font-size:12px;color:var(--gold);text-align:center}
@@ -87,11 +89,16 @@ canvas.bd{background:#0E0C09;border:2px solid var(--line);border-radius:5px;disp
 </div>
 
 <div class="center">
-  <div class="msg" id="msg">「スタート」で対戦開始</div>
+  <div class="foot" id="lvrow" style="gap:6px">
+    <span style="font-size:11px;color:var(--sub);align-self:center">CPUの強さ:</span>
+    <button class="lvbtn alt" data-lv="1">弱</button>
+    <button class="lvbtn alt on" data-lv="2">普通</button>
+    <button class="lvbtn alt" data-lv="3">強</button>
+  </div>
+  <div class="msg" id="msg">「スタート」でCPUと対戦</div>
   <div class="foot"><button id="start">スタート</button><button id="pause" class="alt">一時停止</button></div>
   <div class="hint">
-    <b>P1(左)</b>: A/D 移動 ・ W 回転 ・ S 下げる ・ 左Shift 落下 ・ Q ホールド<br>
-    <b>P2(右)</b>: ←/→ 移動 ・ ↑ 回転 ・ ↓ 下げる ・ Enter 落下 ・ 右Shift ホールド<br>
+    <b>操作</b>: ←/→ 移動 ・ ↓ 下げる ・ <b>↑ 落下</b> ・ Space/Z 回転 ・ Shift ホールド（WASDも可）<br>
     ラインを消すと相手にせり上がりブロックを送る（1→1 / 2→2 / 3→3 / テトリス→4）。受け中に消すと相殺。
   </div>
 </div>
@@ -115,6 +122,12 @@ const KEY2COL={I:'#4FC3E8',O:'#E8C84F',T:'#B07ACF',S:'#6CC56C',Z:'#E0533E',J:'#5
 const COL2KEY={};for(const k in KEY2COL)COL2KEY[KEY2COL[k]]=k;
 let running=false,paused=false,raf=null,lastT=0,gameOver=false;
 let ONLINE=false,MYSEAT=0,roomSend=null,lastSnap=0;
+let cpuLevel=2; // オフライン: 1=弱 2=普通 3=強
+// 各ミノの4回転状態（[y,-x+2] 変換を0〜3回適用）
+const ROT={};
+(function(){for(const k of KEYS){const states=[];let cur=SHAPES[k].map(c=>c.slice());for(let r=0;r<4;r++){states.push(cur.map(c=>c.slice()));cur=cur.map(([x,y])=>[y,-x+2]);}ROT[k]=states;}})();
+function humanSeat(){return ONLINE?MYSEAT:0;}
+function isCPU(p){return !ONLINE&&p.idx===1;}
 
 function rnd(n){return Math.floor(Math.random()*n);}
 
@@ -127,6 +140,7 @@ function makePlayer(idx){
     pending:0,           // 受け中のせり上がり
     lines:0,attack:0,level:1,
     dropT:0,dead:false,
+    plan:null,aiAcc:0,
     cv:document.getElementById('bd'+idx),
     hv:document.getElementById('hold'+idx),
     nv:document.getElementById('next'+idx),
@@ -139,14 +153,14 @@ const other=p=>P[1-p.idx];
 function bagNext(p){
   if(p.bag.length===0){p.bag=KEYS.slice();for(let i=p.bag.length-1;i>0;i--){const j=rnd(i+1);[p.bag[i],p.bag[j]]=[p.bag[j],p.bag[i]];}}
   const k=p.bag.pop();
-  return{k,cells:SHAPES[k].map(c=>c.slice()),x:3,y:k==='I'?-1:0};
+  return{k,cells:SHAPES[k].map(c=>c.slice()),x:3,y:k==='I'?-1:0,rot:0};
 }
 function spawn(p){p.cur=p.next||bagNext(p);p.next=bagNext(p);p.canHold=true;
   if(!fits(p,p.cur)){p.dead=true;}}
 
 function cellsOf(pc){return pc.cells.map(([dx,dy])=>[pc.x+dx,pc.y+dy]);}
 function fits(p,pc){return cellsOf(pc).every(([x,y])=>x>=0&&x<COLS&&y<ROWS&&(y<0||!p.grid[y][x]));}
-function rotate(p,pc){if(pc.k==='O')return pc;const c=pc.cells.map(([x,y])=>[y,-x+2]);const np={...pc,cells:c};
+function rotate(p,pc){if(pc.k==='O')return pc;const c=pc.cells.map(([x,y])=>[y,-x+2]);const np={...pc,cells:c,rot:((pc.rot||0)+1)%4};
   for(const dx of[0,-1,1,-2,2]){const t={...np,x:np.x+dx};if(fits(p,t))return t;}return pc;}
 
 function move(p,dx){const t={...p.cur,x:p.cur.x+dx};if(fits(p,t)){p.cur=t;draw(p);}}
@@ -157,7 +171,7 @@ function hard(p){let t={...p.cur};while(fits(p,{...t,y:t.y+1}))t.y++;p.cur=t;loc
 function holdSwap(p){
   if(!p.canHold)return;
   const curK=p.cur.k;
-  if(p.hold){const hk=p.hold;p.hold=curK;p.cur={k:hk,cells:SHAPES[hk].map(c=>c.slice()),x:3,y:hk==='I'?-1:0};
+  if(p.hold){const hk=p.hold;p.hold=curK;p.cur={k:hk,cells:SHAPES[hk].map(c=>c.slice()),x:3,y:hk==='I'?-1:0,rot:0};
     if(!fits(p,p.cur)){p.dead=true;}}
   else{p.hold=curK;spawn(p);}
   p.canHold=false;draw(p);
@@ -201,6 +215,49 @@ function dumpGarbage(p,n){
 function updateGauge(p){const h=Math.min(100,p.pending/ROWS*100);p.gauge.style.height=h+'%';}
 function updateStats(p){document.getElementById('ln'+p.idx).textContent=p.lines;document.getElementById('atk'+p.idx).textContent=p.attack;}
 
+/* ===== CPU AI ===== */
+function fitsGrid(grid,k,cells,x,y){return cells.every(([dx,dy])=>{const cx=x+dx,cy=y+dy;return cx>=0&&cx<COLS&&cy<ROWS&&(cy<0||!grid[cy][cx]);});}
+function evalGrid(g){
+  const heights=new Array(COLS).fill(0);
+  for(let x=0;x<COLS;x++){for(let y=0;y<ROWS;y++){if(g[y][x]){heights[x]=ROWS-y;break;}}}
+  let agg=0;for(const h of heights)agg+=h;
+  let holes=0;for(let x=0;x<COLS;x++){let seen=false;for(let y=0;y<ROWS;y++){if(g[y][x])seen=true;else if(seen)holes++;}}
+  let bump=0;for(let x=0;x<COLS-1;x++)bump+=Math.abs(heights[x]-heights[x+1]);
+  let lines=0;for(let y=0;y<ROWS;y++)if(g[y].every(c=>c))lines++;
+  return -0.510066*agg + 0.760666*lines - 0.35663*holes - 0.184483*bump;
+}
+function aiBestPlan(p){
+  let best=null,bestScore=-1e9;
+  const states=ROT[p.cur.k];
+  for(let r=0;r<states.length;r++){
+    const cells=states[r];
+    for(let x=-3;x<COLS;x++){
+      // 上から下ろせる初期yを探す
+      let y=-2;
+      if(!fitsGrid(p.grid,p.cur.k,cells,x,y))continue;
+      while(fitsGrid(p.grid,p.cur.k,cells,x,y+1))y++;
+      // 仮置き
+      const g=p.grid.map(row=>row.slice());let bad=false;
+      for(const[dx,dy]of cells){const cx=x+dx,cy=y+dy;if(cy<0){bad=true;break;}g[cy][cx]='x';}
+      if(bad)continue;
+      let sc=evalGrid(g);
+      if(cpuLevel===1)sc+=Math.random()*3;      // 弱: 評価をぶらす
+      else if(cpuLevel===2)sc+=Math.random()*0.6;
+      if(sc>bestScore){bestScore=sc;best={x,rot:r};}
+    }
+  }
+  return best;
+}
+function aiInterval(){return cpuLevel===1?340:cpuLevel===2?180:90;}
+function stepCPU(p){
+  if(p.dead)return;
+  if(!p.plan){p.plan=aiBestPlan(p);if(!p.plan){hard(p);return;}}
+  const pl=p.plan;
+  if((p.cur.rot||0)!==pl.rot){const before=p.cur.rot||0;rot(p);if((p.cur.rot||0)===before){p.plan=null;hard(p);}return;} // 回転できない→落下
+  if(p.cur.x!==pl.x){const dir=p.cur.x<pl.x?1:-1;const bx=p.cur.x;move(p,dir);if(p.cur.x===bx){p.plan=null;hard(p);}return;} // 横移動できない→落下
+  p.plan=null;hard(p); // 位置確定 → 落下
+}
+
 function draw(p){
   const cx=p.cv.getContext('2d');cx.clearRect(0,0,p.cv.width,p.cv.height);
   cx.strokeStyle='#1c1812';
@@ -232,6 +289,10 @@ function startMatch(){
     const me=P[MYSEAT];me.next=bagNext(me);spawn(me);updateStats(me);updateGauge(me);draw(me);
     draw(P[1-MYSEAT]);
   }else{
+    // オフライン = あなた(P0) vs CPU(P1)
+    document.getElementById('t0').textContent='あなた';
+    document.getElementById('t1').textContent='CPU('+(['','弱','普通','強'][cpuLevel])+')';
+    document.getElementById('pads1').style.display='none';
     for(const p of P){p.next=bagNext(p);spawn(p);updateStats(p);updateGauge(p);draw(p);}
   }
   running=true;paused=false;gameOver=false;lastT=performance.now();
@@ -287,50 +348,44 @@ function loop(t){raf=requestAnimationFrame(loop);if(!running||paused||gameOver)r
   const dt=t-lastT;lastT=t;
   for(const p of P){if(p.dead)continue;
     if(ONLINE&&p.idx!==MYSEAT)continue; // 相手盤面はスナップショットで描画するだけ
+    // CPUの思考ステップ
+    if(isCPU(p)){p.aiAcc+=dt;if(p.aiAcc>=aiInterval()){p.aiAcc=0;stepCPU(p);}}
     const speed=Math.max(120,700-(p.level-1)*55);
     p.dropT+=dt;if(p.dropT>speed){p.dropT=0;soft(p);if(ONLINE)sendBoard(false);}
   }
 }
 function endGame(loser){
   if(gameOver)return;gameOver=true;running=false;
-  const winner=1-loser.idx;
-  document.getElementById('ovt').textContent='PLAYER '+(winner+1)+' の勝ち！';
-  document.getElementById('ovt').style.color=winner===0?'var(--p1)':'var(--p2)';
-  document.getElementById('msg').textContent='PLAYER '+(winner+1)+' WIN';
+  const youWin=loser.idx===1; // CPU(P1)が負け=あなたの勝ち
+  document.getElementById('ovt').textContent=youWin?'あなたの勝ち！🎉':'CPUの勝ち';
+  document.getElementById('ovt').style.color=youWin?'var(--p1)':'var(--p2)';
+  document.getElementById('msg').textContent=youWin?'WIN':'LOSE';
   document.getElementById('over').classList.add('show');
 }
 
-// ===== 入力 =====
-function act(p,a){
-  if(ONLINE)p=P[MYSEAT]; // オンラインでは常に自分の盤面を操作
+// ===== 入力（人間プレイヤー1人。↑=落下） =====
+function act(a){
+  const p=P[humanSeat()];
   if(!running||paused||gameOver||p.dead)return;
   if(a==='left')move(p,-1);else if(a==='right')move(p,1);else if(a==='rot')rot(p);
   else if(a==='soft'){soft(p);p.dropT=0;}else if(a==='drop')hard(p);else if(a==='hold')holdSwap(p);
   if(ONLINE&&a!=='drop')sendBoard(false); // dropはlockでforce送信される
 }
-window.addEventListener('keydown',e=>{
-  const c=e.code;
-  // P1
-  if(c==='KeyA'){e.preventDefault();act(P[0],'left');}
-  else if(c==='KeyD'){e.preventDefault();act(P[0],'right');}
-  else if(c==='KeyW'){e.preventDefault();act(P[0],'rot');}
-  else if(c==='KeyS'){e.preventDefault();act(P[0],'soft');}
-  else if(c==='ShiftLeft'){e.preventDefault();act(P[0],'drop');}
-  else if(c==='KeyQ'){e.preventDefault();act(P[0],'hold');}
-  // P2
-  else if(c==='ArrowLeft'){e.preventDefault();act(P[1],'left');}
-  else if(c==='ArrowRight'){e.preventDefault();act(P[1],'right');}
-  else if(c==='ArrowUp'){e.preventDefault();act(P[1],'rot');}
-  else if(c==='ArrowDown'){e.preventDefault();act(P[1],'soft');}
-  else if(c==='Enter'){e.preventDefault();act(P[1],'drop');}
-  else if(c==='ShiftRight'){e.preventDefault();act(P[1],'hold');}
-});
+const KEYMAP={
+  ArrowLeft:'left',KeyA:'left', ArrowRight:'right',KeyD:'right',
+  ArrowDown:'soft',KeyS:'soft', ArrowUp:'drop',KeyW:'drop',
+  Space:'rot',KeyZ:'rot',KeyX:'rot',KeyQ:'rot',
+  ShiftLeft:'hold',ShiftRight:'hold',KeyC:'hold',KeyE:'hold'
+};
+window.addEventListener('keydown',e=>{const a=KEYMAP[e.code];if(a){e.preventDefault();act(a);}});
 for(let i=0;i<2;i++){
   document.getElementById('pads'+i).addEventListener('click',e=>{
     const b=e.target.closest('button');if(!b||!b.dataset.a||b.dataset.a==='up')return;
-    act(P[i],b.dataset.a);
+    act(b.dataset.a);
   });
 }
+document.getElementById('lvrow').addEventListener('click',e=>{const b=e.target.closest('.lvbtn');if(!b)return;
+  cpuLevel=+b.dataset.lv;document.querySelectorAll('.lvbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
 document.getElementById('start').addEventListener('click',startMatch);
 document.getElementById('pause').addEventListener('click',()=>{if(!running||gameOver)return;paused=!paused;lastT=performance.now();document.getElementById('msg').textContent=paused?'一時停止中':'対戦中！';});
 document.getElementById('again').addEventListener('click',()=>{if(ONLINE){if(MYSEAT===0){roomSend&&roomSend({k:'start'});startMatch();}}else startMatch();});

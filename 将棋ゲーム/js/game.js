@@ -453,6 +453,15 @@
     // myColor: 0 (host=sente) or 1 (guest=gote).
     startOnline(myColor, sendFn) {
       online = { myColor, send: sendFn };
+      // Guest (後手) sees the board from their own side: rotate 180°. Shogi
+      // pieces already encode owner facing, so they end up correctly oriented;
+      // only the small hint numbers need counter-rotating to stay readable.
+      if (myColor === 1) {
+        boardEl.classList.add("flip-board");
+        const st = document.createElement("style");
+        st.textContent = "#board.flip-board{transform:rotate(180deg)}#board.flip-board .hint-score{display:inline-block;transform:rotate(180deg)}";
+        document.head.appendChild(st);
+      }
       enterGameScreen();
     },
     remoteMove(move) {

@@ -128,6 +128,19 @@
       document.getElementById('online-btn').style.display = 'none';
       updateBadge(cfg.startNote ? ('🌐 ' + cfg.startNote) : undefined);
       if (cfg.afterStart) cfg.afterStart(mySeat);
+      applyFlip();
+    }
+
+    /* ---- guest sees the board from their own side (rotate 180°), keeping
+       piece labels upright. cfg.flip = { board: '<sel>', upright: '<sel>' } ---- */
+    function applyFlip() {
+      if (mySeat !== 1 || !cfg.flip) return;
+      const b = cfg.flip.board, u = cfg.flip.upright;
+      const st = document.createElement('style');
+      st.textContent =
+        `${b}{transform:rotate(180deg)}` +
+        (u ? `${b} ${u}{transform:rotate(180deg);transform-box:fill-box;transform-origin:center}` : '');
+      document.head.appendChild(st);
     }
 
     /* ---- wire into the shared lobby (same room namespace as other games) ---- */

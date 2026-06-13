@@ -252,3 +252,75 @@ html, body {
 #btn-start:hover { background: #e2584a; }
 .rules-note { font-size: 13px; color: #cfe9dc; text-align: left; margin-top: 8px; }
 .rules-note p { margin: 4px 0; }
+
+/* ===== スマホ対応 (≤600px) ===== */
+@media (max-width: 600px) {
+  html, body { overflow: hidden; }
+  #table { padding: 2px; gap: 1px; grid-template-columns: 0.7fr 2.4fr 0.7fr; grid-template-rows: 0.7fr 2.6fr 1.1fr; }
+  #board { gap: 1px; }
+  .pinfo { font-size: 10px; padding: 2px 6px; gap: 5px; margin: 1px; border-radius: 4px; }
+  /* 河を縮小: ディスク 16px幅 × 6 + gap = 101px / 縦 20px × 6 + gap = 125px */
+  .pond-bottom .prow, .pond-top .prow { min-width: 101px; }
+  .pond-left .prow, .pond-right .prow { min-height: 125px; }
+  .tile-glyph { font-size: 18px; }
+  .tile-glyph.disc { font-size: 14px; width: 16px; height: 20px; }
+  .tile-glyph.back { font-size: 16px; }
+  .meld-t { font-size: 14px; }
+  /* 自分の手牌: 14牌 + 1ツモ = 横にスクロールせず収まるサイズ */
+  .hand { gap: 1px; padding: 2px; }
+  .tile-btn { font-size: 22px; padding: 1px 2px 3px; border-radius: 4px; }
+  .tile-btn.drawn { margin-left: 8px; }
+  .seat-left .hand-back .tile-glyph, .seat-right .hand-back .tile-glyph { font-size: 12px; }
+  .seat-left .melds, .seat-right .melds { max-width: 60px; }
+  .melds { gap: 2px; margin: 1px; }
+  /* 中央情報 */
+  #center { padding: 4px 6px; min-width: 80px; gap: 2px; border-radius: 6px; }
+  #center-round { font-size: 13px; }
+  #center-wall { font-size: 10px; }
+  #center-dora .tile-glyph { font-size: 16px; }
+  #center-dora .label { font-size: 10px; }
+  #center-dora { gap: 4px; }
+  /* アクションバー */
+  #action-bar { bottom: 2px; right: 4px; gap: 5px; }
+  .action { font-size: 13px; padding: 7px 11px; border-radius: 6px; }
+  /* ログ */
+  #log-toggle { font-size: 11px; padding: 4px 8px; }
+  #log-content { width: min(80vw, 240px); font-size: 11px; max-height: 50vh; padding: 6px 8px; }
+  /* メッセージ・結果 */
+  #message { font-size: 16px; padding: 10px 18px; }
+  .result-box, .start-box { min-width: 0; width: 96vw; padding: 16px 18px; }
+  .result-box h2 { font-size: 18px; margin: 0 0 8px; }
+  .result-tiles .tile-glyph { font-size: 22px; }
+  .dora-line { font-size: 11px; }
+  .dora-line .tile-glyph { font-size: 14px; }
+  .yaku-row, .rank-row, .ten-row { gap: 12px; font-size: 13px; }
+  #result-yaku { max-width: none; }
+  #result-score { font-size: 18px; margin-bottom: 12px; }
+  #result-next { font-size: 15px; padding: 8px 22px; }
+  /* 開始画面 */
+  .start-box h1 { font-size: 22px; }
+  .start-box .subtitle { font-size: 13px; margin: 0 0 10px; }
+  .config { padding: 8px 10px; margin: 10px 0; gap: 7px; }
+  .cfg-row { gap: 8px; }
+  .cfg-label { font-size: 13px; }
+  .seg button { font-size: 12px; padding: 5px 9px; }
+  .seg-lv button { padding: 5px 8px; min-width: 28px; }
+  #btn-start { font-size: 17px; padding: 10px 28px; margin: 10px 0; }
+  .rules-note { font-size: 11px; }
+  /* 手渡しオーバーレイ */
+  #handover-banner { font-size: 17px; margin-bottom: 12px; }
+  #handover-reveal { font-size: 16px; padding: 10px 24px; }
+  #handover-hand .tile-glyph { font-size: 18px; }
+}
+
+/* ===== さらに狭い画面 (≤380px) ===== */
+@media (max-width: 380px) {
+  .tile-btn { font-size: 19px; }
+  .tile-glyph.disc { font-size: 12px; width: 14px; height: 18px; }
+  .pond-bottom .prow, .pond-top .prow { min-width: 89px; }
+  .pond-left .prow, .pond-right .prow { min-height: 113px; }
+  .action { font-size: 12px; padding: 6px 9px; }
+  .tile-glyph { font-size: 15px; }
+  .meld-t { font-size: 12px; }
+  .seat-left .hand-back .tile-glyph, .seat-right .hand-back .tile-glyph { font-size: 10px; }
+}

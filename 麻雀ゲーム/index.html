@@ -150,9 +150,11 @@ html, body {
 
 /* アクションバー */
 #action-bar {
-  position: absolute; bottom: 8px; right: 16px;
-  display: flex; gap: 10px; z-index: 20;
+  position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 10px; z-index: 40; justify-content: center;
+  pointer-events: none; /* 中身のボタンだけ操作可（空のときは下を邪魔しない） */
 }
+#action-bar .action { pointer-events: auto; box-shadow: 0 4px 14px rgba(0,0,0,.5); }
 .action {
   font-size: 18px; font-weight: bold; padding: 12px 22px;
   border: none; border-radius: 8px; cursor: pointer;
@@ -285,7 +287,7 @@ html, body {
   #center-dora .tile-glyph { font-size: 16px; }
   #center-dora .label { font-size: 10px; }
   #center-dora { gap: 4px; }
-  #action-bar { bottom: 2px; right: 4px; gap: 5px; }
+  #action-bar { bottom: 92px; gap: 5px; }
   .action { font-size: 13px; padding: 7px 11px; border-radius: 6px; }
   #log-toggle { font-size: 11px; padding: 4px 8px; }
   #log-content { width: min(80vw, 240px); font-size: 11px; max-height: 50vh; padding: 6px 8px; }

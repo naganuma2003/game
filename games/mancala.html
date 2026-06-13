@@ -261,7 +261,9 @@ function init(){
   turn=0;history=[];over=false;busy=false;
   document.getElementById('gov').classList.remove('show');
   render();
-  msg('あなたの番です');
+  // pvp(オンライン含む)では「下側/上側」表記にする。online-core はこの語で
+  // 手番を判定するため、開始時から正しく出さないとゲストが動かせない。
+  msg(mode==='pvp'?'下側の番です':'あなたの番です');
   if(mode!=='pvp'&&Math.random()<.5){turn=1;busy=true;render();msg('CPUの番です');setTimeout(()=>{const m=cpuMove();busy=false;history.push({p:pits.slice(),turn});playAnimated(m);},650);}
 }
 function msg(s){document.getElementById('msg').textContent=s;}

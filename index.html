@@ -287,12 +287,11 @@
           <span class="tag">プレイする →</span>
         </a>
 
-        <a class="card" href="games/hitblow.html">
+        <div class="card">
           <div class="icon">🔎</div>
           <div class="name">ヒットアンドブロー</div>
-          <div class="desc">秘密の数字をヒント頼りに当てる推理パズル。</div>
-          <span class="tag">プレイする →</span>
-        </a>
+          <div class="desc">秘密の数字を当てる推理。1人／複数人の早解き対戦。</div>
+          <div class="tagrow"><a class="tag" href="games/hitblow.html">プレイする →</a><a class="tag tag-online" href="games/hitblow.html?online=1">🌐 オンライン</a></div></div>
 
         <div class="card">
           <div class="icon">🎴</div>
@@ -300,40 +299,35 @@
           <div class="desc">ペアを揃える記憶ゲーム。1〜2人・絵文字3サイズ＋トランプ52枚。</div>
           <div class="tagrow"><a class="tag" href="games/memory.html">プレイする →</a><a class="tag tag-online" href="games/memory.html?online=1">🌐 オンライン</a></div></div>
 
-        <a class="card" href="games/blackjack.html">
+        <div class="card">
           <div class="icon">🂡</div>
           <div class="name">ブラックジャック</div>
-          <div class="desc">21に近づけてディーラーに勝つ。チップ制。</div>
-          <span class="tag">プレイする →</span>
-        </a>
+          <div class="desc">21を目指す。1人／複数人でディーラーと勝負。チップ制。</div>
+          <div class="tagrow"><a class="tag" href="games/blackjack.html">プレイする →</a><a class="tag tag-online" href="games/blackjack.html?online=1">🌐 オンライン</a></div></div>
 
-        <a class="card" href="games/daifugo.html">
+        <div class="card">
           <div class="icon">👑</div>
           <div class="name">大富豪</div>
-          <div class="desc">CPU3人と対戦。8切り・革命あり。</div>
-          <span class="tag">プレイする →</span>
-        </a>
+          <div class="desc">8切り・革命あり。CPU／みんなで／オンライン対戦。</div>
+          <div class="tagrow"><a class="tag" href="games/daifugo.html">プレイする →</a><a class="tag tag-online" href="games/daifugo.html?online=1">🌐 オンライン</a></div></div>
 
-        <a class="card" href="games/sevens.html">
+        <div class="card">
           <div class="icon">🃖</div>
           <div class="name">七並べ</div>
-          <div class="desc">7から並べてカードを早く出し切る。CPU3人と対戦。</div>
-          <span class="tag">プレイする →</span>
-        </a>
+          <div class="desc">7から並べて早く出し切る。CPU／みんなで／オンライン。</div>
+          <div class="tagrow"><a class="tag" href="games/sevens.html">プレイする →</a><a class="tag tag-online" href="games/sevens.html?online=1">🌐 オンライン</a></div></div>
 
-        <a class="card" href="games/chinchiro.html">
+        <div class="card">
           <div class="icon">🎲</div>
           <div class="name">チンチロ</div>
-          <div class="desc">サイコロ3個の出目で親(CPU)と勝負。チップ制。</div>
-          <span class="tag">プレイする →</span>
-        </a>
+          <div class="desc">サイコロ3個の出目勝負。1人／複数人で役を競う。</div>
+          <div class="tagrow"><a class="tag" href="games/chinchiro.html">プレイする →</a><a class="tag tag-online" href="games/chinchiro.html?online=1">🌐 オンライン</a></div></div>
 
-        <a class="card" href="games/yacht.html">
+        <div class="card">
           <div class="icon">🎰</div>
           <div class="name">ヨット</div>
-          <div class="desc">サイコロ5個で役を作るヤッツィー。ハイスコアを狙え。</div>
-          <span class="tag">プレイする →</span>
-        </a>
+          <div class="desc">サイコロ5個で役作り。1〜4人でスコアを競う。</div>
+          <div class="tagrow"><a class="tag" href="games/yacht.html">プレイする →</a><a class="tag tag-online" href="games/yacht.html?online=1">🌐 オンライン</a></div></div>
 
         <div class="card">
           <div class="icon">☗</div>
@@ -429,6 +423,12 @@
         <a href="games/dots.html?online=1&create=1">&#x2B1A;<span>ドットアンドボックス</span></a>
         <a href="games/chinese.html?online=1&create=1">&#x2727;<span>チャイニーズチェッカー</span></a>
         <a href="games/geister.html?online=1&create=1">👻<span>ガイスター</span></a>
+        <a href="games/daifugo.html?online=1&create=1">👑<span>大富豪</span></a>
+        <a href="games/sevens.html?online=1&create=1">🃖<span>七並べ</span></a>
+        <a href="games/blackjack.html?online=1&create=1">🂡<span>ブラックジャック</span></a>
+        <a href="games/chinchiro.html?online=1&create=1">🎲<span>チンチロ</span></a>
+        <a href="games/yacht.html?online=1&create=1">🎰<span>ヨット</span></a>
+        <a href="games/hitblow.html?online=1&create=1">🔎<span>ヒットアンドブロー</span></a>
       </div>
     </div>
   </div>
@@ -439,15 +439,19 @@
     (function () {
       var TAGS = {
         "2048": ["solo"], "テトリス": ["solo"], "ソリティア": ["solo"],
-        "マインスイーパー": ["solo"], "ヒットアンドブロー": ["solo"],
-        "ブラックジャック": ["solo"], "数独": ["solo"], "ヨット": ["solo"],
-        "神経衰弱": ["solo", "duo"],
+        "マインスイーパー": ["solo"], "数独": ["solo"],
+        "ヒットアンドブロー": ["solo", "duo", "multi"],
+        "ブラックジャック": ["solo", "duo", "multi"],
+        "ヨット": ["solo", "duo", "multi"],
+        "チンチロ": ["solo", "duo", "multi"],
+        "神経衰弱": ["solo", "duo", "multi"],
         "オセロ": ["duo"], "五目並べ": ["duo"], "チェッカー": ["duo"], "マンカラ": ["duo"],
         "ヘックス": ["duo"], "コネクトフォー": ["duo"], "将棋": ["duo"], "囲碁": ["duo"],
         "チェス": ["duo"], "三目並べ": ["duo"], "ガイスター": ["duo"],
         "どうぶつしょうぎ": ["duo"], "バックギャモン": ["duo"], "ハサミ将棋": ["duo"],
-        "チンチロ": ["duo"], "ドットアンドボックス": ["duo"], "チャイニーズチェッカー": ["duo"],
-        "カタン": ["multi"], "麻雀": ["multi"], "大富豪": ["multi"], "七並べ": ["multi"],
+        "ドットアンドボックス": ["duo"], "チャイニーズチェッカー": ["duo"],
+        "カタン": ["multi"], "麻雀": ["multi"],
+        "大富豪": ["duo", "multi"], "七並べ": ["duo", "multi"],
         "カルカソンヌ": ["duo", "multi"]
       };
       var cards = [].slice.call(document.querySelectorAll(".col-games .grid .card"));

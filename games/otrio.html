@@ -152,6 +152,10 @@ function render(){
       const sw=isEmpty?2:5;
       html+=`<circle cx="${cx}" cy="${cy}" r="${r2}" fill="${fill}" fill-opacity="0" stroke="${stroke}" stroke-width="${sw}" class="ring${isEmpty?' empty':''}${interactive?'':' disabled'}" ${interactive?`data-p="${r},${c},${s}"`:''}/>`;
     }
+    // 中央の棒（写真のポスト風）— クリックは奥のリングに通す
+    html+=`<circle cx="${cx}" cy="${cy}" r="7" fill="#d7cfba" stroke="rgba(0,0,0,.5)" stroke-width="1" pointer-events="none"/>`;
+    html+=`<circle cx="${cx-1.8}" cy="${cy-1.8}" r="2" fill="rgba(255,255,255,.5)" pointer-events="none"/>`;
+    html+=`<circle cx="${cx}" cy="${cy}" r="2.3" fill="rgba(0,0,0,.42)" pointer-events="none"/>`;
   }
   if(winInfo){
     if(winInfo.kind==='concentric'){

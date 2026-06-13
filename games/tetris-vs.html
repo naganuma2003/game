@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>テトリスVS</title>
+<style>
+:root{--bg:#14110E;--panel:#1F1A14;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#352C20;--p1:#5B9BD5;--p2:#E0533E;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:10px 4px 22px;user-select:none;touch-action:manipulation}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:20px;letter-spacing:.2em;text-indent:.2em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:8px}
+.arena{display:flex;gap:10px;align-items:flex-start;justify-content:center;width:100%}
+.player{display:flex;flex-direction:column;align-items:center;gap:5px}
+.ptitle{font-size:12px;font-weight:800;letter-spacing:.08em;min-height:16px}
+.p1 .ptitle{color:var(--p1)}.p2 .ptitle{color:var(--p2)}
+.top{display:flex;gap:5px;align-items:flex-start}
+.mini{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px;text-align:center}
+.mini .l{font-size:8px;color:var(--sub);letter-spacing:.1em;margin-bottom:2px}
+.boardwrap{position:relative;display:flex;align-items:stretch;gap:3px}
+canvas.bd{background:#0E0C09;border:2px solid var(--line);border-radius:5px;display:block}
+.p1 canvas.bd{border-color:#2a4a6a}.p2 canvas.bd{border-color:#5a2a22}
+.gauge{width:10px;background:#0E0C09;border:1px solid var(--line);border-radius:4px;position:relative;overflow:hidden}
+.gauge .fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#e0533e,#c01818);transition:height .15s}
+.stat{display:flex;gap:8px;font-size:10px;color:var(--sub)}
+.stat b{color:var(--gold);font-variant-numeric:tabular-nums}
+.pads{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:160px;margin-top:2px}
+.pads button{background:var(--panel);border:1px solid var(--line);color:var(--txt);font-size:16px;padding:9px 0;border-radius:8px;cursor:pointer}
+.pads button:active{border-color:var(--gold)}
+.pads button.hold{font-size:11px;font-weight:700}
+.center{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:6px}
+.foot{display:flex;gap:8px}
+.foot button{background:var(--gold);border:none;color:#14110E;font-weight:700;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit}
+.foot .alt{background:transparent;border:1px solid var(--line);color:var(--txt)}
+.hint{font-size:10px;color:var(--sub);text-align:center;line-height:1.7;margin-top:4px}
+.hint b{color:var(--txt)}
+.msg{min-height:18px;font-size:12px;color:var(--gold);text-align:center}
+.over{position:fixed;inset:0;background:rgba(10,8,5,.86);display:none;align-items:center;justify-content:center;z-index:30}
+.over.show{display:flex}
+.over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:24px 34px;text-align:center}
+.over .t{font-size:24px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:14px}
+.over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
+<h1>テトリスVS</h1><div class="sub">TETRIS VS — ライン消去で相手を攻撃</div>
+
+<div class="arena">
+  <!-- Player 1 -->
+  <div class="player p1" id="pl0">
+    <div class="ptitle" id="t0">PLAYER 1</div>
+    <div class="top">
+      <div class="mini"><div class="l">HOLD</div><canvas id="hold0" width="52" height="40"></canvas></div>
+      <div class="mini"><div class="l">NEXT</div><canvas id="next0" width="52" height="40"></canvas></div>
+    </div>
+    <div class="boardwrap">
+      <div class="gauge"><div class="fill" id="gauge0" style="height:0%"></div></div>
+      <canvas class="bd" id="bd0" width="160" height="320"></canvas>
+    </div>
+    <div class="stat">Lines <b id="ln0">0</b> · 送り <b id="atk0">0</b></div>
+    <div class="pads" id="pads0">
+      <button data-a="rot">⟳</button><button data-a="up" style="visibility:hidden"></button><button data-a="hold" class="hold">HOLD</button>
+      <button data-a="left">◀</button><button data-a="soft">▼</button><button data-a="right">▶</button>
+      <button data-a="drop" style="grid-column:1/4">⤓ 落下</button>
+    </div>
+  </div>
+
+  <!-- Player 2 -->
+  <div class="player p2" id="pl1">
+    <div class="ptitle" id="t1">PLAYER 2</div>
+    <div class="top">
+      <div class="mini"><div class="l">HOLD</div><canvas id="hold1" width="52" height="40"></canvas></div>
+      <div class="mini"><div class="l">NEXT</div><canvas id="next1" width="52" height="40"></canvas></div>
+    </div>
+    <div class="boardwrap">
+      <canvas class="bd" id="bd1" width="160" height="320"></canvas>
+      <div class="gauge"><div class="fill" id="gauge1" style="height:0%"></div></div>
+    </div>
+    <div class="stat">Lines <b id="ln1">0</b> · 送り <b id="atk1">0</b></div>
+    <div class="pads" id="pads1">
+      <button data-a="rot">⟳</button><button data-a="up" style="visibility:hidden"></button><button data-a="hold" class="hold">HOLD</button>
+      <button data-a="left">◀</button><button data-a="soft">▼</button><button data-a="right">▶</button>
+      <button data-a="drop" style="grid-column:1/4">⤓ 落下</button>
+    </div>
+  </div>
+</div>
+
+<div class="center">
+  <div class="msg" id="msg">「スタート」で対戦開始</div>
+  <div class="foot"><button id="start">スタート</button><button id="pause" class="alt">一時停止</button></div>
+  <div class="hint">
+    <b>P1(左)</b>: A/D 移動 ・ W 回転 ・ S 下げる ・ 左Shift 落下 ・ Q ホールド<br>
+    <b>P2(右)</b>: ←/→ 移動 ・ ↑ 回転 ・ ↓ 下げる ・ Enter 落下 ・ 右Shift ホールド<br>
+    ラインを消すと相手にせり上がりブロックを送る（1→1 / 2→2 / 3→3 / テトリス→4）。受け中に消すと相殺。
+  </div>
+</div>
+
+<div class="over" id="over"><div class="c"><div class="t" id="ovt">勝敗</div><button id="again">もう一度</button></div></div>
+
+<script>
+const COLS=10,ROWS=20,CELL=16;
+const SHAPES={
+  I:[[0,1],[1,1],[2,1],[3,1]], O:[[1,0],[2,0],[1,1],[2,1]],
+  T:[[0,1],[1,1],[2,1],[1,0]], S:[[1,0],[2,0],[0,1],[1,1]],
+  Z:[[0,0],[1,0],[1,1],[2,1]], J:[[0,0],[0,1],[1,1],[2,1]],
+  L:[[2,0],[0,1],[1,1],[2,1]]
+};
+const COLORS={I:'#4FC3E8',O:'#E8C84F',T:'#B07ACF',S:'#6CC56C',Z:'#E0533E',J:'#5B7BD5',L:'#E0913E'};
+const GARB='#6b6b6b';
+const KEYS=Object.keys(SHAPES);
+const ATTACK=[0,1,2,3,4]; // ライン数 → 送るせり上がり数
+let running=false,paused=false,raf=null,lastT=0,gameOver=false;
+
+function rnd(n){return Math.floor(Math.random()*n);}
+
+function makePlayer(idx){
+  return {
+    idx,
+    grid:Array.from({length:ROWS},()=>new Array(COLS).fill(null)),
+    cur:null,next:null,hold:null,canHold:true,
+    bag:[],
+    pending:0,           // 受け中のせり上がり
+    lines:0,attack:0,level:1,
+    dropT:0,dead:false,
+    cv:document.getElementById('bd'+idx),
+    hv:document.getElementById('hold'+idx),
+    nv:document.getElementById('next'+idx),
+    gauge:document.getElementById('gauge'+idx)
+  };
+}
+let P=[makePlayer(0),makePlayer(1)];
+const other=p=>P[1-p.idx];
+
+function bagNext(p){
+  if(p.bag.length===0){p.bag=KEYS.slice();for(let i=p.bag.length-1;i>0;i--){const j=rnd(i+1);[p.bag[i],p.bag[j]]=[p.bag[j],p.bag[i]];}}
+  const k=p.bag.pop();
+  return{k,cells:SHAPES[k].map(c=>c.slice()),x:3,y:k==='I'?-1:0};
+}
+function spawn(p){p.cur=p.next||bagNext(p);p.next=bagNext(p);p.canHold=true;
+  if(!fits(p,p.cur)){p.dead=true;}}
+
+function cellsOf(pc){return pc.cells.map(([dx,dy])=>[pc.x+dx,pc.y+dy]);}
+function fits(p,pc){return cellsOf(pc).every(([x,y])=>x>=0&&x<COLS&&y<ROWS&&(y<0||!p.grid[y][x]));}
+function rotate(p,pc){if(pc.k==='O')return pc;const c=pc.cells.map(([x,y])=>[y,-x+2]);const np={...pc,cells:c};
+  for(const dx of[0,-1,1,-2,2]){const t={...np,x:np.x+dx};if(fits(p,t))return t;}return pc;}
+
+function move(p,dx){const t={...p.cur,x:p.cur.x+dx};if(fits(p,t)){p.cur=t;draw(p);}}
+function rot(p){p.cur=rotate(p,p.cur);draw(p);}
+function soft(p){const t={...p.cur,y:p.cur.y+1};if(fits(p,t)){p.cur=t;draw(p);}else lock(p);}
+function hard(p){let t={...p.cur};while(fits(p,{...t,y:t.y+1}))t.y++;p.cur=t;lock(p);}
+
+function holdSwap(p){
+  if(!p.canHold)return;
+  const curK=p.cur.k;
+  if(p.hold){const hk=p.hold;p.hold=curK;p.cur={k:hk,cells:SHAPES[hk].map(c=>c.slice()),x:3,y:hk==='I'?-1:0};
+    if(!fits(p,p.cur)){p.dead=true;}}
+  else{p.hold=curK;spawn(p);}
+  p.canHold=false;draw(p);
+}
+
+function lock(p){
+  for(const[x,y]of cellsOf(p.cur)){if(y<0){p.dead=true;return;}p.grid[y][x]=COLORS[p.cur.k];}
+  // ライン消去
+  let cleared=0;
+  for(let y=ROWS-1;y>=0;y--){if(p.grid[y].every(c=>c)){p.grid.splice(y,1);p.grid.unshift(new Array(COLS).fill(null));cleared++;y++;}}
+  if(cleared>0){
+    p.lines+=cleared;p.level=1+Math.floor(p.lines/10);
+    let atk=ATTACK[cleared];
+    // 相殺: 自分の受け待ちを先に削る
+    if(p.pending>0){const c=Math.min(p.pending,atk);p.pending-=c;atk-=c;updateGauge(p);}
+    if(atk>0){other(p).pending+=atk;p.attack+=atk;updateGauge(other(p));}
+  } else {
+    // ラインを消さずに着地 → 受け待ちのせり上がりを盤面に追加
+    if(p.pending>0){dumpGarbage(p,p.pending);p.pending=0;updateGauge(p);}
+  }
+  spawn(p);
+  updateStats(p);draw(p);
+  if(p.dead){endGame(p);return;}
+}
+
+function dumpGarbage(p,n){
+  const hole=rnd(COLS);
+  for(let i=0;i<n;i++){
+    const top=p.grid.shift();
+    if(top.some(c=>c)){p.dead=true;}
+    const row=new Array(COLS).fill(GARB);row[hole]=null;
+    p.grid.push(row);
+  }
+}
+
+function updateGauge(p){const h=Math.min(100,p.pending/ROWS*100);p.gauge.style.height=h+'%';}
+function updateStats(p){document.getElementById('ln'+p.idx).textContent=p.lines;document.getElementById('atk'+p.idx).textContent=p.attack;}
+
+function draw(p){
+  const cx=p.cv.getContext('2d');cx.clearRect(0,0,p.cv.width,p.cv.height);
+  cx.strokeStyle='#1c1812';
+  for(let x=0;x<=COLS;x++){cx.beginPath();cx.moveTo(x*CELL,0);cx.lineTo(x*CELL,ROWS*CELL);cx.stroke();}
+  for(let y=0;y<=ROWS;y++){cx.beginPath();cx.moveTo(0,y*CELL);cx.lineTo(COLS*CELL,y*CELL);cx.stroke();}
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(p.grid[y][x])cell(cx,x,y,p.grid[y][x],CELL);
+  if(p.cur){
+    let g={...p.cur};while(fits(p,{...g,y:g.y+1}))g.y++;
+    for(const[x,y]of cellsOf(g))if(y>=0){cx.fillStyle='rgba(255,255,255,.08)';cx.fillRect(x*CELL+1,y*CELL+1,CELL-2,CELL-2);}
+    for(const[x,y]of cellsOf(p.cur))if(y>=0)cell(cx,x,y,COLORS[p.cur.k],CELL);
+  }
+  // hold
+  const hx=p.hv.getContext('2d');hx.clearRect(0,0,p.hv.width,p.hv.height);
+  if(p.hold)drawMini(hx,p.hold,p.canHold?1:.4);
+  // next
+  const nx=p.nv.getContext('2d');nx.clearRect(0,0,p.nv.width,p.nv.height);
+  if(p.next)drawMini(nx,p.next.k,1);
+}
+function drawMini(ctx,k,alpha){ctx.globalAlpha=alpha;const s=11;
+  const cells=SHAPES[k];const ox=k==='O'?0.5:k==='I'?0:0.5,oy=k==='I'?0.2:0.2;
+  for(const[dx,dy]of cells)cell(ctx,dx+ox,dy+oy,COLORS[k],s);ctx.globalAlpha=1;}
+function cell(ctx,x,y,col,s){ctx.fillStyle=col;ctx.fillRect(x*s+1,y*s+1,s-2,s-2);
+  ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(x*s+1,y*s+1,s-2,2);}
+
+function startMatch(){
+  P=[makePlayer(0),makePlayer(1)];
+  for(const p of P){p.next=bagNext(p);spawn(p);updateStats(p);updateGauge(p);draw(p);}
+  running=true;paused=false;gameOver=false;lastT=performance.now();
+  document.getElementById('over').classList.remove('show');
+  document.getElementById('msg').textContent='対戦中！';
+  if(!raf)raf=requestAnimationFrame(loop);
+}
+function loop(t){raf=requestAnimationFrame(loop);if(!running||paused||gameOver)return;
+  const dt=t-lastT;lastT=t;
+  for(const p of P){if(p.dead)continue;
+    const speed=Math.max(120,700-(p.level-1)*55);
+    p.dropT+=dt;if(p.dropT>speed){p.dropT=0;soft(p);}
+  }
+}
+function endGame(loser){
+  if(gameOver)return;gameOver=true;running=false;
+  const winner=1-loser.idx;
+  document.getElementById('ovt').textContent='PLAYER '+(winner+1)+' の勝ち！';
+  document.getElementById('ovt').style.color=winner===0?'var(--p1)':'var(--p2)';
+  document.getElementById('msg').textContent='PLAYER '+(winner+1)+' WIN';
+  document.getElementById('over').classList.add('show');
+}
+
+// ===== 入力 =====
+function act(p,a){
+  if(!running||paused||gameOver||p.dead)return;
+  if(a==='left')move(p,-1);else if(a==='right')move(p,1);else if(a==='rot')rot(p);
+  else if(a==='soft'){soft(p);p.dropT=0;}else if(a==='drop')hard(p);else if(a==='hold')holdSwap(p);
+}
+window.addEventListener('keydown',e=>{
+  const c=e.code;
+  // P1
+  if(c==='KeyA'){e.preventDefault();act(P[0],'left');}
+  else if(c==='KeyD'){e.preventDefault();act(P[0],'right');}
+  else if(c==='KeyW'){e.preventDefault();act(P[0],'rot');}
+  else if(c==='KeyS'){e.preventDefault();act(P[0],'soft');}
+  else if(c==='ShiftLeft'){e.preventDefault();act(P[0],'drop');}
+  else if(c==='KeyQ'){e.preventDefault();act(P[0],'hold');}
+  // P2
+  else if(c==='ArrowLeft'){e.preventDefault();act(P[1],'left');}
+  else if(c==='ArrowRight'){e.preventDefault();act(P[1],'right');}
+  else if(c==='ArrowUp'){e.preventDefault();act(P[1],'rot');}
+  else if(c==='ArrowDown'){e.preventDefault();act(P[1],'soft');}
+  else if(c==='Enter'){e.preventDefault();act(P[1],'drop');}
+  else if(c==='ShiftRight'){e.preventDefault();act(P[1],'hold');}
+});
+for(let i=0;i<2;i++){
+  document.getElementById('pads'+i).addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b||!b.dataset.a||b.dataset.a==='up')return;
+    act(P[i],b.dataset.a);
+  });
+}
+document.getElementById('start').addEventListener('click',startMatch);
+document.getElementById('pause').addEventListener('click',()=>{if(!running||gameOver)return;paused=!paused;lastT=performance.now();document.getElementById('msg').textContent=paused?'一時停止中':'対戦中！';});
+document.getElementById('again').addEventListener('click',startMatch);
+// 初期描画
+for(const p of P)draw(p);
+</script>
+</body>
+</html>

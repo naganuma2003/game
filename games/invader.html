@@ -10,8 +10,10 @@
 body{background:radial-gradient(ellipse at top,#101a10,#070a06);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:12px 8px 22px;overflow:hidden}
 h1{font-family:"Courier New",monospace;font-size:22px;letter-spacing:.28em;text-indent:.28em;margin:2px 0;color:var(--gold);text-shadow:0 0 10px rgba(158,232,106,.5)}
 .sub{font-size:10px;color:var(--sub);letter-spacing:.32em;margin-bottom:8px}
-.hud{display:flex;gap:18px;width:min(94vw,360px);justify-content:space-between;font-family:"Courier New",monospace;font-size:14px;margin-bottom:6px;letter-spacing:.05em}
+.hud{display:flex;gap:9px;width:min(94vw,360px);justify-content:space-between;font-family:"Courier New",monospace;font-size:12.5px;margin-bottom:6px;letter-spacing:.03em}
+.hud>div{white-space:nowrap}
 .hud .v{color:var(--gold);font-weight:700}
+.hud .hi{color:#ffd166}
 .hud .lives{letter-spacing:1px}
 .stage{position:relative;width:min(94vw,360px)}
 canvas{display:block;width:100%;height:auto;background:#060906;border:1px solid var(--line);border-radius:8px;image-rendering:pixelated;box-shadow:0 0 24px rgba(0,0,0,.6),inset 0 0 40px rgba(20,40,10,.25)}
@@ -33,6 +35,7 @@ canvas{display:block;width:100%;height:auto;background:#060906;border:1px solid 
 <h1>INVADER</h1><div class="sub">SPACE INVADER</div>
 <div class="hud">
   <div>SCORE <span class="v" id="score">0</span></div>
+  <div>HI <span class="v hi" id="hi">0</span></div>
   <div>WAVE <span class="v" id="level">1</span></div>
   <div>残機 <span class="v lives" id="lives">▲▲▲</span></div>
 </div>
@@ -68,7 +71,8 @@ const GRID_W=(COLS-1)*CELL_X+INV_W;
 
 let player,bullet,bombs,invaders,shields,ufo;
 let dir,stepMs,stepAcc,frame,aliveCount,bombAcc,ufoAcc;
-let score,lives,level,best=0,state='ready';
+let score,lives,level,state='ready';
+let best=(()=>{try{return +(localStorage.getItem('invaderBest')||0)||0;}catch(e){return 0;}})(); // 最高スコア（保存）
 const keys={left:false,right:false,fire:false};
 
 function reset(full){
@@ -262,7 +266,10 @@ function draw(){
 }
 
 /* ---------- ui ---------- */
-function updateHud(){$('score').textContent=score;$('level').textContent=level;$('lives').textContent='▲'.repeat(Math.max(0,lives))||'—';}
+function updateHud(){
+  if(score>best){best=score;try{localStorage.setItem('invaderBest',best);}catch(e){}} // 更新したら即保存
+  $('score').textContent=score;$('hi').textContent=best;$('level').textContent=level;$('lives').textContent='▲'.repeat(Math.max(0,lives))||'—';
+}
 function overlay(t,d,btn){$('ovl-t').textContent=t;$('ovl-d').textContent=d;$('ovl-b').textContent=btn;$('ovl').classList.add('show');}
 function hideOverlay(){$('ovl').classList.remove('show');}
 function startOrRestart(){
@@ -273,7 +280,7 @@ $('ovl-b').addEventListener('click',startOrRestart);
 
 // 初期表示
 reset(true);state='ready';
-overlay('INVADER','編隊を全滅させろ！シールドに隠れて反撃。','スタート');
+overlay('INVADER','編隊を全滅させろ！シールドに隠れて反撃。'+(best>0?'　／　ハイスコア '+best:''),'スタート');
 requestAnimationFrame(loop);
 </script>
 </body>

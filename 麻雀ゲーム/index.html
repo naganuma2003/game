@@ -331,6 +331,7 @@ html, body {
 <body>
 <a href="../index.html" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 14px/1 'Segoe UI',sans-serif;padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);">← 一覧に戻る</a>
 <button id="autowin-toggle" style="position:fixed;top:12px;left:150px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;border:1px solid rgba(255,255,255,0.25);font:600 13px/1 'Segoe UI',sans-serif;padding:9px 12px;border-radius:999px;cursor:pointer">自動和了: OFF</button>
+<button id="naki-toggle" style="position:fixed;top:12px;left:288px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;border:1px solid rgba(255,255,255,0.25);font:600 13px/1 'Segoe UI',sans-serif;padding:9px 12px;border-radius:999px;cursor:pointer">鳴き: ON</button>
 <div id="app">
   <div id="table">
     <!-- 対面(CPU2) -->
@@ -2448,6 +2449,24 @@ const AI = (() => {
       const sync = () => { at.textContent = '自動和了: ' + (autoWin ? 'ON' : 'OFF'); at.style.background = autoWin ? 'rgba(201,162,39,.85)' : 'rgba(0,0,0,0.55)'; at.style.color = autoWin ? '#1a140c' : '#fff'; };
       sync();
       at.onclick = () => { autoWin = !autoWin; try { localStorage.setItem('mjAutoWin', autoWin ? '1' : '0'); } catch (e) {} sync(); };
+    }
+    // 鳴き ON/OFF（スタート画面の あり/なし と config.noCall を同期）
+    const nt = el('naki-toggle');
+    if (nt) {
+      let noCall = (() => { try { return localStorage.getItem('mjNoCall') === '1'; } catch (e) { return false; } })();
+      const sync = () => {
+        const allow = !noCall;
+        nt.textContent = '鳴き: ' + (allow ? 'ON' : 'OFF');
+        nt.style.background = allow ? 'rgba(0,0,0,0.55)' : 'rgba(201,162,39,.85)';
+        nt.style.color = allow ? '#fff' : '#1a140c';
+        // スタート画面の あり/なし ボタンへ反映
+        document.querySelectorAll('.call-opt').forEach(b => b.classList.toggle('active', (b.dataset.call === 'off') === noCall));
+        config.noCall = noCall; // 進行中なら次局/次の鳴き判定から反映
+      };
+      sync();
+      nt.onclick = () => { noCall = !noCall; try { localStorage.setItem('mjNoCall', noCall ? '1' : '0'); } catch (e) {} sync(); };
+      // スタート画面の あり/なし を押したら、このボタンにも反映
+      document.querySelectorAll('.call-opt').forEach(b => b.addEventListener('click', () => { noCall = b.dataset.call === 'off'; try { localStorage.setItem('mjNoCall', noCall ? '1' : '0'); } catch (e) {} sync(); }));
     }
   }
   if (document.readyState === 'loading')

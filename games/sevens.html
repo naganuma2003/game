@@ -184,9 +184,18 @@ function _joker(o,s,r){if(gameOver||board[s][r])return;const idx=hands[o].findIn
   board[s][r]='J';hands[o].splice(idx,1);jokerPending=null;
   if(hands[o].length===0&&!finished.includes(o))finished.push(o);next();}
 function _pass(o){passes[o]++;if(passes[o]>=3){forceOut(o);return;}next();}
-// 退出席の代理: ホストがパスを送信（3回でアウト→場に出して進行）
-function autoKick(){if(!ONLINE||!OnlineRoom.isHost()||gameOver)return;const a=turn;if(!OnlineRoom.isGone(a))return;
-  setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!gameOver&&turn===a&&OnlineRoom.isGone(a))OnlineRoom.send({k:'pass'});},800);}
+// CPU席・退出席の代理（ホストが送信）: CPUは出せる札を端優先、退出席はパス
+function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&((OnlineRoom.isCpu&&OnlineRoom.isCpu(s))||(OnlineRoom.isGone&&OnlineRoom.isGone(s)));}
+function autoKick(){if(!ONLINE||!OnlineRoom.isHost()||gameOver)return;const a=turn;if(!isAutoSeat(a))return;
+  setTimeout(()=>{
+    if(!(ONLINE&&OnlineRoom.isHost()&&!gameOver&&turn===a&&isAutoSeat(a)))return;
+    if(OnlineRoom.isCpu&&OnlineRoom.isCpu(a)){
+      const legal=legalCards(a);const reg=legal.filter(c=>!c.joker);const jk=legal.filter(c=>c.joker);
+      if(reg.length){reg.sort((x,y)=>Math.min(x.r,12-x.r)-Math.min(y.r,12-y.r));OnlineRoom.send({k:'play',ci:hands[a].indexOf(reg[0])});}
+      else if(jk.length){const pos=bestJokerPos(a);if(pos)OnlineRoom.send({k:'joker',s:pos.s,r:pos.r});else OnlineRoom.send({k:'pass'});}
+      else OnlineRoom.send({k:'pass'});
+    }else OnlineRoom.send({k:'pass'});
+  },650);}
 function forceOut(o){outCnt[o]=true;
   for(const c of hands[o].slice()){if(c.joker){const pos=bestJokerPos(o);if(pos)board[pos.s][pos.r]='J';hands[o].splice(hands[o].indexOf(c),1);}}
   let changed=true;while(changed){changed=false;for(const c of hands[o].slice()){if(canPlace(c)){board[c.s][c.r]=true;hands[o].splice(hands[o].indexOf(c),1);changed=true;}}}

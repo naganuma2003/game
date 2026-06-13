@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+﻿<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>数独</title><style>
 :root{--bg:#15120E;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#4A4030;--given:#C9A227;--cellbg:#221E17;--cellbg2:#2A251C;--sel:#46402d;--peer:#26221a;}
@@ -81,4 +81,4 @@ document.getElementById('new').addEventListener('click',newGame);
 document.getElementById('undo').addEventListener('click',()=>{if(!sHist.length||solved)return;const h=sHist.pop();puzzle[h.i]=h.prev;sel=h.i;render();});
 document.getElementById('diff').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;blanks=+b.dataset.d;document.querySelectorAll('#diff button').forEach(x=>x.classList.remove('on'));b.classList.add('on');newGame();});
 build();newGame();
-</script></body></html>
+</script><script src="../shared/firebase-counter.js"></script></body></html>

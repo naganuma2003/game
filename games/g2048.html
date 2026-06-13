@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+﻿<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>2048</title><style>
 :root{--bg:#15120E;--board:#2C261D;--cell:#3A3225;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;}
@@ -68,4 +68,4 @@ document.getElementById('again').addEventListener('click',init);
 document.getElementById('undobtn').addEventListener('click',()=>{if(!hist.length)return;const p=hist.pop();board=p.board;score=p.score;won=p.won;over=false;document.getElementById('over').classList.remove('show');render();updateScore();});
 window.addEventListener('resize',()=>render());
 init();
-</script></body></html>
+</script><script src="../shared/firebase-counter.js"></script></body></html>

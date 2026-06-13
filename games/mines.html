@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+﻿<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>マインスイーパー</title><style>
 :root{--bg:#15120E;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#352C20;--closed:#3A3326;--closed2:#43392b;--open:#221E17;}
@@ -78,4 +78,4 @@ document.getElementById('new').addEventListener('click',init);
 document.getElementById('diff').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;W=+b.dataset.w;H=+b.dataset.h;M=+b.dataset.m;document.querySelectorAll('#diff button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 window.addEventListener('resize',()=>{setSize();});
 init();
-</script></body></html>
+</script><script src="../shared/firebase-counter.js"></script></body></html>

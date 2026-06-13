@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+﻿<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>大富豪</title><style>
 :root{--bg:#0E1E2A;--felt:#123040;--txt:#EDE6D6;--sub:#8FA6B2;--gold:#C9A227;--cardbg:#F4EFE3;--cardline:#C9BFA8;--red:#C23B26;--blk:#1C1C1C;}
@@ -281,4 +281,4 @@ OnlineRoom.init({gameId:'daifugo',minPlayers:2,maxPlayers:4,note:'8切り・革�
   onMessage:(from,msg)=>{ if(msg.k==='setup')applySetup(msg); else doAction(msg); },
   onLeft:(seat)=>autoKick(),
   getState,applyState});
-</script></body></html>
+</script><script src="../shared/firebase-counter.js"></script></body></html>

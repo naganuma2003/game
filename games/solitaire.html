@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+﻿<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>ソリティア</title><style>
 :root{--bg:#0E2A1C;--felt:#13402A;--txt:#EDE6D6;--sub:#8FB29C;--gold:#C9A227;--cardbg:#F4EFE3;--cardline:#C9BFA8;--red:#C23B26;--blk:#1C1C1C;}
@@ -178,4 +178,4 @@ document.getElementById('again').addEventListener('click',deal);
 document.getElementById('draw3').addEventListener('click',e=>{drawN=drawN===1?3:1;e.target.textContent='めくり: '+drawN+'枚';deal();});
 window.addEventListener('resize',()=>render());
 deal();
-</script></body></html>
+</script><script src="../shared/firebase-counter.js"></script></body></html>

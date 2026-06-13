@@ -151,6 +151,7 @@
     .jb-or::before, .jb-or::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.18); }
 
     footer { text-align: center; margin-top: 40px; font-size: 12px; opacity: 0.5; }
+    .play-count { display: block; font-size: 11px; color: rgba(140,210,170,0.75); margin-top: 5px; }
 
     @media (max-width: 760px) {
       .layout { flex-direction: column; }
@@ -640,6 +641,43 @@
           location.href = best.path + sep + "reconnect=1";
         });
       }
+    })();
+  </script>
+
+  <script src="shared/firebase-counter.js"></script>
+  <script>
+    // Display play counts on hub cards
+    (function () {
+      var GID = {
+        'カタン':'カタン','麻雀':'mahjong','オセロ':'othello','五目並べ':'gomoku',
+        'チェッカー':'checkers','ドットアンドボックス':'dots',
+        'チャイニーズチェッカー':'chinese','オートリオ':'otrio',
+        'コリドール':'quoridor','マンカラ':'mancala','ヘックス':'hex',
+        '2048':'g2048','テトリス':'tetris','インベーダー':'invader',
+        'コネクトフォー':'connect4','ソリティア':'solitaire',
+        'マインスイーパー':'mines','ヒットアンドブロー':'hitblow',
+        '神経衰弱':'memory','ブラックジャック':'blackjack','大富豪':'daifugo',
+        '七並べ':'sevens','チンチロ':'chinchiro','ヨット':'yacht',
+        '将棋':'shogi','囲碁':'go','チェス':'chess','三目並べ':'tictactoe',
+        '数独':'sudoku','カルカソンヌ':'カルカソンヌ','ガイスター':'geister',
+        'どうぶつしょうぎ':'dobutsu','バックギャモン':'backgammon',
+        'はさみ将棋':'hasami','ナインメンズモリス':'morris','花札こいこい':'hanafuda'
+      };
+      FirebaseCounter.loadAll(function (counts) {
+        document.querySelectorAll('.col-games .grid .card').forEach(function (card) {
+          var nameEl = card.querySelector('.name');
+          if (!nameEl) return;
+          var gid = GID[nameEl.textContent.trim()];
+          if (!gid) return;
+          var n = counts[gid];
+          if (!n) return;
+          var el = document.createElement('span');
+          el.className = 'play-count';
+          el.textContent = Number(n).toLocaleString('ja-JP') + '回プレイ';
+          var desc = card.querySelector('.desc');
+          if (desc) desc.after(el);
+        });
+      });
     })();
   </script>
 </body>

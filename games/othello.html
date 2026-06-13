@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>オセロ / Reversi</title>
+<style>
+:root {
+  --board-bg: #1f7a4d;
+  --board-line: #0f5235;
+  --cell-size: 56px;
+  --gap: 2px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: #14201a;
+  color: #eef5f0;
+  font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+}
+
+.app {
+  width: 100%;
+  max-width: 520px;
+  padding: 24px 16px 48px;
+  text-align: center;
+}
+
+h1 {
+  margin: 8px 0 20px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+/* Setup screen */
+.setup {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  padding: 22px 18px 26px;
+  margin: 0 auto;
+}
+.setup h2 {
+  margin: 0 0 18px;
+  font-size: 18px;
+  letter-spacing: 0.1em;
+}
+.setup-players {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+}
+.player-config {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px 12px;
+}
+.player-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.type-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  width: fit-content;
+  margin: 0 auto 14px;
+}
+.type-options label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 15px;
+}
+.type-options input { accent-color: #2f9d6a; cursor: pointer; }
+.level-row {
+  font-size: 13px;
+  opacity: 0.9;
+}
+.level-row select { margin-left: 6px; }
+.btn-primary {
+  margin-top: 22px;
+  background: #ffb02e;
+  color: #14201a;
+  font-size: 16px;
+  padding: 12px 36px;
+}
+.btn-primary:hover { background: #ffc14d; }
+
+/* Scoreboard */
+.scoreboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.score.active {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 2px #ffd34d inset;
+}
+
+.score .label { font-size: 13px; opacity: 0.85; }
+.score .count { font-size: 26px; font-weight: 700; }
+
+.disc {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.disc-black { background: radial-gradient(circle at 35% 30%, #555, #000); }
+.disc-white { background: radial-gradient(circle at 35% 30%, #fff, #c8c8c8); }
+
+.turn {
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 10px;
+  min-width: 96px;
+}
+
+/* Board */
+.board-wrap { display: flex; justify-content: center; }
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(8, var(--cell-size));
+  grid-template-rows: repeat(8, var(--cell-size));
+  gap: var(--gap);
+  padding: var(--gap);
+  background: var(--board-line);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.cell {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  background: var(--board-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  position: relative;
+}
+
+.cell.playable { cursor: pointer; }
+
+.cell .piece {
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.18s ease;
+}
+.cell .piece.show { transform: scale(1); }
+.cell .piece.black { background: radial-gradient(circle at 35% 30%, #555, #000); }
+.cell .piece.white { background: radial-gradient(circle at 35% 30%, #fff, #c8c8c8); }
+
+/* legal-move hint */
+.cell.playable::after {
+  content: "";
+  position: absolute;
+  width: 28%;
+  height: 28%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+}
+.cell.playable.has-piece::after { display: none; }
+
+/* AI-assistant evaluation overlay */
+.cell .hint-score {
+  position: absolute;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  display: none;
+}
+.cell.assist::after { display: none; } /* hide the plain dot when scores show */
+.cell.assist .hint-score { display: block; }
+
+/* Top-3 ranking by evaluation value: 1st red, 2nd orange, 3rd yellow. */
+.cell.assist.rank1 .hint-score { color: #ff4d4d; }
+.cell.assist.rank2 .hint-score { color: #ff9e2c; }
+.cell.assist.rank3 .hint-score { color: #ffe04d; }
+.cell.assist.rank1 { box-shadow: inset 0 0 0 3px #ff4d4d; }
+.cell.assist.rank2 { box-shadow: inset 0 0 0 3px #ff9e2c; }
+.cell.assist.rank3 { box-shadow: inset 0 0 0 3px #ffe04d; }
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0 8px;
+}
+
+.mode { font-size: 14px; }
+
+select, .btn {
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn {
+  background: #2f9d6a;
+  color: #fff;
+  font-weight: 600;
+  transition: background 0.15s, opacity 0.15s;
+}
+.btn:hover { background: #37b67c; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+select { background: #eef5f0; color: #14201a; }
+
+.assist-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.assist-toggle input { accent-color: #2f9d6a; cursor: pointer; }
+
+.message {
+  min-height: 24px;
+  font-weight: 600;
+  color: #ffd34d;
+}
+
+@media (max-width: 520px) {
+  :root { --cell-size: 40px; }
+  .setup-players { flex-direction: column; }
+}
+
+/* ---- Online play ---- */
+.online-entry { margin-top: 14px; }
+.btn-online {
+  background: #2563c9;
+  font-size: 15px;
+  padding: 11px 22px;
+}
+.btn-online:hover { background: #2f74e0; }
+.btn-small { padding: 6px 12px; font-size: 13px; }
+
+.overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.overlay[hidden] { display: none; }
+
+.lobby-card {
+  position: relative;
+  background: #15321f;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 24px 22px;
+  width: 100%; max-width: 360px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+.lobby-card h2 { margin: 0 0 6px; font-size: 20px; }
+.lobby-note { font-size: 13px; opacity: 0.85; line-height: 1.6; margin: 0 0 18px; }
+.lobby-close {
+  position: absolute; top: 10px; right: 12px;
+  background: none; border: none; color: #eef5f0;
+  font-size: 24px; line-height: 1; cursor: pointer; opacity: 0.7;
+}
+.lobby-close:hover { opacity: 1; }
+
+.lobby-section h3 { font-size: 15px; margin: 0 0 10px; }
+.lobby-divider {
+  margin: 18px 0; font-size: 12px; opacity: 0.6;
+  display: flex; align-items: center; gap: 10px;
+}
+.lobby-divider::before, .lobby-divider::after {
+  content: ""; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.18);
+}
+
+.room-code-box {
+  margin-top: 14px; padding: 12px;
+  background: rgba(255, 255, 255, 0.06); border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.rc-label { font-size: 12px; opacity: 0.7; }
+.room-code {
+  font-size: 34px; font-weight: 800; letter-spacing: 0.25em;
+  color: #ffd34d; font-family: "Consolas", monospace;
+}
+
+.join-row { display: flex; gap: 8px; justify-content: center; }
+.join-input {
+  font-size: 20px; font-weight: 700; letter-spacing: 0.2em;
+  text-align: center; text-transform: uppercase;
+  width: 140px; padding: 8px; border-radius: 8px; border: none;
+  background: #f3ead9; color: #14201a;
+}
+.online-status {
+  min-height: 20px; margin: 16px 0 0; font-size: 13px;
+  font-weight: 600; color: #ffd34d; line-height: 1.5;
+}
+</style>
+</head>
+<body>
+  <a href="../index.html" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 14px/1 'Segoe UI',sans-serif;padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);backdrop-filter:blur(4px);">← 一覧に戻る</a>
+  <div class="app">
+    <h1>オセロ</h1>
+
+    <!-- 対戦設定画面（プレイ前） -->
+    <section id="setup" class="setup">
+      <h2>対戦設定</h2>
+      <div class="setup-players">
+        <div class="player-config">
+          <div class="player-head"><span class="disc disc-black"></span> 黒（先手）</div>
+          <div class="type-options">
+            <label><input type="radio" name="black-type" value="human" checked> 人間</label>
+            <label><input type="radio" name="black-type" value="cpu"> CPU</label>
+          </div>
+          <label class="level-row">
+            強さ:
+            <select id="black-level" disabled>
+              <option value="1">Lv1 入門</option>
+              <option value="2">Lv2 やさしい</option>
+              <option value="3" selected>Lv3 ふつう</option>
+              <option value="4">Lv4 強い</option>
+              <option value="5">Lv5 最強</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="player-config">
+          <div class="player-head"><span class="disc disc-white"></span> 白（後手）</div>
+          <div class="type-options">
+            <label><input type="radio" name="white-type" value="human"> 人間</label>
+            <label><input type="radio" name="white-type" value="cpu" checked> CPU</label>
+          </div>
+          <label class="level-row">
+            強さ:
+            <select id="white-level">
+              <option value="1">Lv1 入門</option>
+              <option value="2">Lv2 やさしい</option>
+              <option value="3" selected>Lv3 ふつう</option>
+              <option value="4">Lv4 強い</option>
+              <option value="5">Lv5 最強</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <button id="start" class="btn btn-primary">対戦開始</button>
+      <div class="online-entry">
+        <button id="online-btn" class="btn btn-online">🌐 オンラインで対戦（部屋番号）</button>
+      </div>
+    </section>
+
+    <!-- オンライン対戦ロビー -->
+    <div id="online-lobby" class="overlay" hidden>
+      <div class="lobby-card">
+        <button id="lobby-close" class="lobby-close" aria-label="閉じる">×</button>
+        <h2>オンライン対戦</h2>
+        <p class="lobby-note">2人で同じ部屋番号を共有して対戦します。<br>あなたが部屋を作る側は<b>黒（先手）</b>、参加する側は<b>白（後手）</b>です。</p>
+
+        <div class="lobby-section">
+          <h3>部屋を作る</h3>
+          <button id="create-room" class="btn btn-primary">部屋を作成</button>
+          <div id="room-code-box" class="room-code-box" hidden>
+            <span class="rc-label">部屋番号</span>
+            <span id="room-code" class="room-code">----</span>
+            <button id="copy-code" class="btn btn-small">コピー</button>
+          </div>
+        </div>
+
+        <div class="lobby-divider">または</div>
+
+        <div class="lobby-section">
+          <h3>部屋に参加する</h3>
+          <div class="join-row">
+            <input id="join-code" class="join-input" maxlength="4" placeholder="4桁の番号" inputmode="numeric" pattern="\d*" autocomplete="off">
+            <button id="join-room" class="btn btn-primary">参加</button>
+          </div>
+        </div>
+
+        <p id="online-status" class="online-status"></p>
+        <a href="../index.html" style="display:inline-block;margin-top:14px;color:#cfd6e4;font-size:13px;text-decoration:none;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:7px 16px">← 一覧に戻る</a>
+      </div>
+    </div>
+
+    <!-- ゲーム画面 -->
+    <section id="game" class="game" hidden>
+      <div class="scoreboard">
+        <div class="score" id="score-black">
+          <span class="disc disc-black"></span>
+          <span class="label" id="label-black">黒</span>
+          <span class="count" id="count-black">2</span>
+        </div>
+        <div class="turn" id="turn-indicator">黒の番</div>
+        <div class="score" id="score-white">
+          <span class="disc disc-white"></span>
+          <span class="label" id="label-white">白</span>
+          <span class="count" id="count-white">2</span>
+        </div>
+      </div>
+
+      <div class="board-wrap">
+        <div id="board" class="board"></div>
+      </div>
+
+      <div class="controls">
+        <button id="undo" class="btn" disabled>一手戻る</button>
+        <button id="pass" class="btn" disabled>パス</button>
+        <button id="reset" class="btn">もう一度</button>
+        <button id="back" class="btn">設定を変える</button>
+      </div>
+
+      <label class="assist-toggle">
+        <input type="checkbox" id="assist"> AIアシスタント（評価値を表示）
+      </label>
+
+      <p id="message" class="message"></p>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="../shared/lobby.js?v=6"></script>
+<script>
+/* Othello AI
+ * Exposes window.OthelloAI with helpers for move generation and CPU choice.
+ * Board is an 8x8 array of 0 (empty), 1 (black), 2 (white).
+ */
+(function () {
+  const SIZE = 8;
+  const DIRS = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1],           [0, 1],
+    [1, -1],  [1, 0],  [1, 1],
+  ];
+
+  // Positional weights — corners are valuable, squares next to corners are risky.
+  const WEIGHTS = [
+    [120, -20, 20, 5, 5, 20, -20, 120],
+    [-20, -40, -5, -5, -5, -5, -40, -20],
+    [20, -5, 15, 3, 3, 15, -5, 20],
+    [5, -5, 3, 3, 3, 3, -5, 5],
+    [5, -5, 3, 3, 3, 3, -5, 5],
+    [20, -5, 15, 3, 3, 15, -5, 20],
+    [-20, -40, -5, -5, -5, -5, -40, -20],
+    [120, -20, 20, 5, 5, 20, -20, 120],
+  ];
+
+  const opponent = (p) => (p === 1 ? 2 : 1);
+  const inside = (r, c) => r >= 0 && r < SIZE && c >= 0 && c < SIZE;
+
+  // Returns array of [r,c] flipped if `player` plays at (row,col); empty if illegal.
+  function flipsFor(board, row, col, player) {
+    if (board[row][col] !== 0) return [];
+    const opp = opponent(player);
+    const flips = [];
+    for (const [dr, dc] of DIRS) {
+      let r = row + dr, c = col + dc;
+      const line = [];
+      while (inside(r, c) && board[r][c] === opp) {
+        line.push([r, c]);
+        r += dr; c += dc;
+      }
+      if (line.length && inside(r, c) && board[r][c] === player) {
+        flips.push(...line);
+      }
+    }
+    return flips;
+  }
+
+  function legalMoves(board, player) {
+    const moves = [];
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const flips = flipsFor(board, r, c, player);
+        if (flips.length) moves.push({ row: r, col: c, flips });
+      }
+    }
+    return moves;
+  }
+
+  function applyMove(board, move, player) {
+    const next = board.map((row) => row.slice());
+    next[move.row][move.col] = player;
+    for (const [r, c] of move.flips) next[r][c] = player;
+    return next;
+  }
+
+  function counts(board) {
+    let black = 0, white = 0;
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (board[r][c] === 1) black++;
+        else if (board[r][c] === 2) white++;
+      }
+    }
+    return { black, white };
+  }
+
+  // Heuristic from the perspective of `player`.
+  function evaluate(board, player) {
+    const opp = opponent(player);
+    let positional = 0, mine = 0, theirs = 0;
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const v = board[r][c];
+        if (v === player) { positional += WEIGHTS[r][c]; mine++; }
+        else if (v === opp) { positional -= WEIGHTS[r][c]; theirs++; }
+      }
+    }
+    const myMoves = legalMoves(board, player).length;
+    const oppMoves = legalMoves(board, opp).length;
+    const mobility = 10 * (myMoves - oppMoves);
+
+    const empties = SIZE * SIZE - mine - theirs;
+    // In the endgame, raw disc count dominates.
+    const discDiff = empties <= 12 ? 10 * (mine - theirs) : (mine - theirs);
+
+    return positional + mobility + discDiff;
+  }
+
+  // Legal moves ordered by positional value (corners first). Good ordering
+  // makes alpha-beta prune far more, which is what lets us search deeper.
+  function orderedMoves(board, player) {
+    const moves = legalMoves(board, player);
+    moves.sort((a, b) => WEIGHTS[b.row][b.col] - WEIGHTS[a.row][a.col]);
+    return moves;
+  }
+
+  // Final disc difference from `player`'s view (used at terminal nodes).
+  function terminalScore(board, player) {
+    const { black, white } = counts(board);
+    const mine = player === 1 ? black : white;
+    return mine - (mine === black ? white : black);
+  }
+
+  // Negamax with alpha-beta pruning.
+  function negamax(board, player, depth, alpha, beta) {
+    if (depth === 0) return evaluate(board, player);
+
+    const moves = orderedMoves(board, player);
+    if (moves.length === 0) {
+      // No move: if opponent also stuck, game over -> final score.
+      if (legalMoves(board, opponent(player)).length === 0) {
+        return evaluate(board, player);
+      }
+      return -negamax(board, opponent(player), depth - 1, -beta, -alpha);
+    }
+
+    let best = -Infinity;
+    for (const move of moves) {
+      const next = applyMove(board, move, player);
+      const score = -negamax(next, opponent(player), depth - 1, -beta, -alpha);
+      if (score > best) best = score;
+      if (best > alpha) alpha = best;
+      if (alpha >= beta) break;
+    }
+    return best;
+  }
+
+  // Exact endgame search: plays to the very end (no depth limit) and scores
+  // by final disc difference, so the result is the perfect line.
+  function endgameSolve(board, player, alpha, beta) {
+    const moves = orderedMoves(board, player);
+    if (moves.length === 0) {
+      if (legalMoves(board, opponent(player)).length === 0) {
+        return terminalScore(board, player);
+      }
+      return -endgameSolve(board, opponent(player), -beta, -alpha);
+    }
+
+    let best = -Infinity;
+    for (const move of moves) {
+      const next = applyMove(board, move, player);
+      const score = -endgameSolve(next, opponent(player), -beta, -alpha);
+      if (score > best) best = score;
+      if (best > alpha) alpha = best;
+      if (alpha >= beta) break;
+    }
+    return best;
+  }
+
+  // Five difficulty levels (1 = easiest ... 5 = strongest).
+  // "search" levels use negamax; mid = depth while the board is open,
+  // end = depth once few empties remain (deeper, since branching is small).
+  const LEVELS = {
+    1: { kind: "random" },
+    2: { kind: "greedy" },
+    3: { kind: "search", mid: 2, end: 4 },
+    4: { kind: "search", mid: 4, end: 6 },
+    5: { kind: "search", mid: 5, end: 8 },
+  };
+
+  function pickRandom(moves) {
+    return moves[Math.floor(Math.random() * moves.length)];
+  }
+
+  // Most flips, with a little corner preference. No lookahead.
+  function pickGreedy(moves) {
+    let best = moves[0], bestScore = -Infinity;
+    for (const m of moves) {
+      const score = m.flips.length + WEIGHTS[m.row][m.col] * 0.2;
+      if (score > bestScore) { bestScore = score; best = m; }
+    }
+    return best;
+  }
+
+  // Search depth for a "search" level config: deeper as the board fills
+  // (fewer branches near the end), capped at the number of empties so the
+  // UI stays responsive.
+  function searchDepth(board, cfg) {
+    const filled = counts(board).black + counts(board).white;
+    const empties = SIZE * SIZE - filled;
+    return empties <= 8 ? Math.min(empties, cfg.end)
+      : empties <= 12 ? cfg.end
+      : cfg.mid;
+  }
+
+  function pickSearch(board, player, moves, cfg) {
+    const depth = searchDepth(board, cfg);
+
+    let best = moves[0], bestScore = -Infinity;
+    let alpha = -Infinity;
+    const beta = Infinity;
+    for (const move of moves) {
+      const next = applyMove(board, move, player);
+      const score = -negamax(next, opponent(player), depth - 1, -beta, -alpha);
+      if (score > bestScore) { bestScore = score; best = move; }
+      if (score > alpha) alpha = score;
+    }
+    return best;
+  }
+
+  // The AI assistant searches deeper than any CPU level: a deep midgame
+  // lookahead, and an exact solve once few empties remain. Following the
+  // top-ranked move should reliably beat the built-in opponents.
+  const ASSIST_MID_DEPTH = 7;
+  const ASSIST_EXACT_EMPTIES = 12;
+
+  // Score every legal move for `player` (higher = better for player).
+  // Used by the AI-assistant overlay.
+  function evaluateMoves(board, player) {
+    const filled = counts(board).black + counts(board).white;
+    const empties = SIZE * SIZE - filled;
+    const exact = empties <= ASSIST_EXACT_EMPTIES;
+    return legalMoves(board, player).map((move) => {
+      const next = applyMove(board, move, player);
+      const score = exact
+        ? -endgameSolve(next, opponent(player), -Infinity, Infinity)
+        : -negamax(next, opponent(player), ASSIST_MID_DEPTH - 1, -Infinity, Infinity);
+      return { row: move.row, col: move.col, score };
+    });
+  }
+
+  // Pick a move for the given difficulty level (1-5).
+  function chooseMove(board, player, level) {
+    const moves = legalMoves(board, player);
+    if (moves.length === 0) return null;
+
+    const cfg = LEVELS[Number(level)] || LEVELS[3];
+    if (cfg.kind === "random") return pickRandom(moves);
+    if (cfg.kind === "greedy") return pickGreedy(moves);
+    return pickSearch(board, player, moves, cfg);
+  }
+
+  window.OthelloAI = {
+    SIZE,
+    legalMoves,
+    flipsFor,
+    applyMove,
+    counts,
+    chooseMove,
+    evaluateMoves,
+    opponent,
+  };
+})();
+</script>
+<script>
+/* Othello game controller — wires the board UI to OthelloAI.
+ * Each color (black/white) is configured before the game as human or CPU,
+ * and a CPU has its own strength level.
+ *
+ * Online play (PeerJS): when an online session is active, both colors are
+ * human, the local player only controls their own color, and each local move
+ * is sent to the peer. See js/online.js, which drives this via window.OthelloGame.
+ */
+(function () {
+  const AI = window.OthelloAI;
+  const SIZE = AI.SIZE;
+  const BLACK = 1, WHITE = 2;
+
+  // Setup screen
+  const setupEl = document.getElementById("setup");
+  const gameEl = document.getElementById("game");
+  const startBtn = document.getElementById("start");
+  const blackLevelSel = document.getElementById("black-level");
+  const whiteLevelSel = document.getElementById("white-level");
+
+  // Game screen
+  const boardEl = document.getElementById("board");
+  const countBlackEl = document.getElementById("count-black");
+  const countWhiteEl = document.getElementById("count-white");
+  const labelBlackEl = document.getElementById("label-black");
+  const labelWhiteEl = document.getElementById("label-white");
+  const turnEl = document.getElementById("turn-indicator");
+  const messageEl = document.getElementById("message");
+  const resetBtn = document.getElementById("reset");
+  const passBtn = document.getElementById("pass");
+  const backBtn = document.getElementById("back");
+  const undoBtn = document.getElementById("undo");
+  const assistEl = document.getElementById("assist");
+  const scoreBlackEl = document.getElementById("score-black");
+  const scoreWhiteEl = document.getElementById("score-white");
+
+  // Display names for the five CPU difficulty levels.
+  const LEVEL_NAMES = { 1: "入門", 2: "やさしい", 3: "ふつう", 4: "強い", 5: "最強" };
+
+  // Per-color settings, filled in from the setup screen on start.
+  // { type: "human" | "cpu", level: "1".."5" }
+  const players = {
+    [BLACK]: { type: "human", level: "3" },
+    [WHITE]: { type: "cpu", level: "3" },
+  };
+
+  // Online session: null for local play, else { myColor, send(msg) }.
+  let online = null;
+
+  let board, current, busy, gameOver;
+  let history = []; // snapshots { board, current } captured before each move
+  const cells = [];
+
+  const colorName = (p) => (p === BLACK ? "黒" : "白");
+  const isCpu = (p) => !online && players[p].type === "cpu";
+  function isCpuTurn() { return !gameOver && isCpu(current); }
+  // Can the local human act right now?
+  function myTurn() {
+    if (gameOver || busy) return false;
+    if (online) return current === online.myColor;
+    return !isCpu(current);
+  }
+
+  function playerLabel(p) {
+    if (online) {
+      const mine = p === online.myColor ? "あなた" : "相手";
+      return `${colorName(p)}（${mine}）`;
+    }
+    if (players[p].type === "human") return `${colorName(p)}（人間）`;
+    const lv = LEVEL_NAMES[players[p].level] || players[p].level;
+    return `${colorName(p)}（CPU・Lv${players[p].level} ${lv}）`;
+  }
+
+  /* ---------- Setup screen ---------- */
+
+  // Enable a color's strength select only when that color is set to CPU.
+  function syncLevelEnabled() {
+    const blackType = document.querySelector('input[name="black-type"]:checked').value;
+    const whiteType = document.querySelector('input[name="white-type"]:checked').value;
+    blackLevelSel.disabled = blackType !== "cpu";
+    whiteLevelSel.disabled = whiteType !== "cpu";
+  }
+
+  document.querySelectorAll('input[name="black-type"], input[name="white-type"]')
+    .forEach((el) => el.addEventListener("change", syncLevelEnabled));
+
+  function readConfig() {
+    players[BLACK].type = document.querySelector('input[name="black-type"]:checked').value;
+    players[WHITE].type = document.querySelector('input[name="white-type"]:checked').value;
+    players[BLACK].level = blackLevelSel.value;
+    players[WHITE].level = whiteLevelSel.value;
+  }
+
+  function showSetup() {
+    gameEl.hidden = true;
+    setupEl.hidden = false;
+  }
+
+  function enterGameScreen() {
+    setupEl.hidden = true;
+    gameEl.hidden = false;
+    labelBlackEl.textContent = playerLabel(BLACK);
+    labelWhiteEl.textContent = playerLabel(WHITE);
+    // Online play hides single-device-only controls.
+    undoBtn.style.display = online ? "none" : "";
+    backBtn.style.display = online ? "none" : "";
+    resetBtn.style.display = online ? "none" : "";
+    assistEl.parentElement.style.display = online ? "none" : "";
+    newGame();
+  }
+
+  // 対人間vsCPUのとき、どちらが黒（先手）かを毎回ランダムに決める（振り駒）。
+  function randomizeFirst() {
+    const b = players[BLACK].type, w = players[WHITE].type;
+    const oneEach = (b === "human" && w === "cpu") || (b === "cpu" && w === "human");
+    if (oneEach && Math.random() < 0.5) {
+      const tmp = players[BLACK];
+      players[BLACK] = players[WHITE];
+      players[WHITE] = tmp;
+    }
+  }
+
+  startBtn.addEventListener("click", () => {
+    online = null;
+    readConfig();
+    randomizeFirst();
+    enterGameScreen();
+  });
+
+  /* ---------- Board ---------- */
+
+  function buildGrid() {
+    boardEl.innerHTML = "";
+    cells.length = 0;
+    for (let r = 0; r < SIZE; r++) {
+      cells.push([]);
+      for (let c = 0; c < SIZE; c++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        const piece = document.createElement("div");
+        piece.className = "piece";
+        cell.appendChild(piece);
+        const score = document.createElement("span");
+        score.className = "hint-score";
+        cell.appendChild(score);
+        cell.addEventListener("click", () => onCellClick(r, c));
+        boardEl.appendChild(cell);
+        cells[r].push(cell);
+      }
+    }
+  }
+
+  function newGame() {
+    board = Array.from({ length: SIZE }, () => new Array(SIZE).fill(0));
+    board[3][3] = WHITE; board[3][4] = BLACK;
+    board[4][3] = BLACK; board[4][4] = WHITE;
+    current = BLACK;
+    busy = false;
+    gameOver = false;
+    history = [];
+    messageEl.textContent = "";
+    render();
+    maybeCpuMove();
+  }
+
+  function render() {
+    const moves = gameOver ? [] : AI.legalMoves(board, current);
+    const moveSet = new Set(moves.map((m) => m.row * SIZE + m.col));
+    const humanToMove = myTurn();
+
+    // AI-assistant evaluation overlay (only for a human's turn, local play).
+    let scoreMap = null, rankOf = null;
+    if (!online && assistEl.checked && humanToMove && moves.length) {
+      scoreMap = new Map();
+      for (const m of AI.evaluateMoves(board, current)) {
+        scoreMap.set(m.row * SIZE + m.col, m.score);
+      }
+      const uniqueDesc = [...new Set(scoreMap.values())].sort((a, b) => b - a);
+      rankOf = (s) => uniqueDesc.indexOf(s); // 0 = best, 1 = 2nd, ...
+    }
+
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const cell = cells[r][c];
+        const piece = cell.querySelector(".piece");
+        const scoreEl = cell.querySelector(".hint-score");
+        const v = board[r][c];
+        piece.classList.toggle("black", v === BLACK);
+        piece.classList.toggle("white", v === WHITE);
+        piece.classList.toggle("show", v !== 0);
+        cell.classList.toggle("has-piece", v !== 0);
+
+        // Only show hints when the local human is on the move.
+        const key = r * SIZE + c;
+        const showHint = humanToMove && moveSet.has(key);
+        cell.classList.toggle("playable", showHint);
+
+        const hasScore = scoreMap && scoreMap.has(key);
+        cell.classList.toggle("assist", !!hasScore);
+        const rank = hasScore ? rankOf(scoreMap.get(key)) : -1;
+        cell.classList.toggle("rank1", rank === 0);
+        cell.classList.toggle("rank2", rank === 1);
+        cell.classList.toggle("rank3", rank === 2);
+        scoreEl.textContent = hasScore ? scoreMap.get(key) : "";
+      }
+    }
+
+    const { black, white } = AI.counts(board);
+    countBlackEl.textContent = black;
+    countWhiteEl.textContent = white;
+
+    scoreBlackEl.classList.toggle("active", !gameOver && current === BLACK);
+    scoreWhiteEl.classList.toggle("active", !gameOver && current === WHITE);
+
+    if (gameOver) {
+      turnEl.textContent = "終了";
+    } else if (online) {
+      turnEl.textContent = current === online.myColor ? "あなたの番" : "相手の番";
+    } else if (isCpuTurn()) {
+      turnEl.textContent = `${colorName(current)}の番（CPU思考中…）`;
+    } else {
+      turnEl.textContent = `${colorName(current)}の番`;
+    }
+
+    // Pass is offered only when the local human is to move and has no legal move.
+    const noMoves = !gameOver && moves.length === 0;
+    passBtn.disabled = !(noMoves && humanToMove);
+
+    undoBtn.disabled = busy || online || history.length === 0;
+  }
+
+  function onCellClick(r, c) {
+    if (!myTurn()) return;
+    const flips = AI.flipsFor(board, r, c, current);
+    if (!flips.length) return;
+    if (online) online.send({ t: "move", row: r, col: c });
+    play({ row: r, col: c, flips });
+  }
+
+  function play(move) {
+    // Snapshot the position before the move so it can be undone.
+    history.push({ board: board.map((row) => row.slice()), current });
+    board = AI.applyMove(board, move, current);
+    current = AI.opponent(current);
+    advanceTurn();
+  }
+
+  // Step back to the most recent position where a human is to move.
+  // In human-vs-CPU this rewinds both the CPU reply and the player's move.
+  function undo() {
+    if (busy || online || history.length === 0) return;
+    let snap = history.pop();
+    while (isCpu(snap.current) && history.length > 0) {
+      snap = history.pop();
+    }
+    board = snap.board.map((row) => row.slice());
+    current = snap.current;
+    gameOver = false;
+    messageEl.textContent = "";
+    render();
+    // If we landed on a CPU's turn (e.g. CPU-vs-CPU), let it resume.
+    maybeCpuMove();
+  }
+
+  // After a move, handle pass / game-over, then trigger CPU if needed.
+  function advanceTurn() {
+    const myMoves = AI.legalMoves(board, current);
+    if (myMoves.length === 0) {
+      const oppMoves = AI.legalMoves(board, AI.opponent(current));
+      if (oppMoves.length === 0) {
+        endGame();
+        return;
+      }
+      messageEl.textContent = `${colorName(current)}は打てる場所がないためパス`;
+      current = AI.opponent(current);
+      render();
+      maybeCpuMove();
+      return;
+    }
+    messageEl.textContent = "";
+    render();
+    maybeCpuMove();
+  }
+
+  function maybeCpuMove() {
+    if (!isCpuTurn()) return;
+    busy = true;
+    render();
+    // Small delay so the move is visible, not instant.
+    setTimeout(() => {
+      const move = AI.chooseMove(board, current, players[current].level);
+      busy = false;
+      if (!move) { advanceTurn(); return; }
+      play(move);
+    }, 450);
+  }
+
+  function endGame() {
+    gameOver = true;
+    render();
+    const { black, white } = AI.counts(board);
+    let result;
+    if (black > white) result = "黒の勝ち！";
+    else if (white > black) result = "白の勝ち！";
+    else result = "引き分け";
+    if (online) {
+      const won = (black > white && online.myColor === BLACK) ||
+                  (white > black && online.myColor === WHITE);
+      const tag = black === white ? "引き分け" : (won ? "あなたの勝ち！🎉" : "相手の勝ち…");
+      messageEl.textContent = `ゲーム終了 — ${tag}（黒 ${black} : ${white} 白）`;
+    } else {
+      messageEl.textContent = `ゲーム終了 — ${result}（黒 ${black} : ${white} 白）`;
+    }
+  }
+
+  passBtn.addEventListener("click", () => {
+    if (passBtn.disabled) return;
+    if (online) online.send({ t: "pass" });
+    messageEl.textContent = "";
+    current = AI.opponent(current);
+    advanceTurn();
+  });
+
+  resetBtn.addEventListener("click", newGame);
+  backBtn.addEventListener("click", showSetup);
+  undoBtn.addEventListener("click", undo);
+  assistEl.addEventListener("change", render);
+
+  buildGrid();
+  syncLevelEnabled();
+
+  /* ---------- Online API (called by js/online.js) ---------- */
+  window.OthelloGame = {
+    // Begin an online match. myColor: 1 (host=black) or 2 (guest=white).
+    startOnline(myColor, sendFn) {
+      online = { myColor, send: sendFn };
+      enterGameScreen();
+    },
+    // Apply a move received from the peer.
+    remoteMove(row, col) {
+      if (!online) return;
+      const flips = AI.flipsFor(board, row, col, current);
+      if (!flips.length) return; // out of sync / illegal — ignore
+      play({ row, col, flips });
+    },
+    remotePass() {
+      if (!online) return;
+      current = AI.opponent(current);
+      advanceTurn();
+    },
+    // The peer disconnected.
+    peerLeft() {
+      if (!online) return;
+      gameOver = true;
+      messageEl.textContent = "相手の接続が切れました。";
+      render();
+    },
+  };
+})();
+</script>
+<script>
+/* Othello online wiring — uses the shared OnlineLobby (one room number works
+ * across all games). Host plays black (1), guest plays white (2). */
+(function () {
+  const Game = window.OthelloGame;
+  window.OnlineLobby.init({
+    gameId: "othello",
+    hostColor: 1,   // black
+    guestColor: 2,  // white
+    basePrefix: "../",
+    startOnline: (myColor, send) => Game.startOnline(myColor, send),
+    applyRemote: (msg) => {
+      if (msg.t === "move") Game.remoteMove(msg.row, msg.col);
+      else if (msg.t === "pass") Game.remotePass();
+    },
+    onPeerLeft: () => Game.peerLeft(),
+  });
+})();
+</script>
+</body>
+</html>

@@ -215,7 +215,7 @@
           <div class="icon" style="font-size:34px;letter-spacing:-3px">⚫⚪</div>
           <div class="name">オセロ</div>
           <div class="desc">CPU 5段階・AIアシスタント付き。人間／CPUを自由に設定。</div>
-          <div class="tagrow"><a class="tag" href="オセロ/index.html">プレイする →</a><a class="tag tag-online" href="オセロ/index.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/othello.html">プレイする →</a><a class="tag tag-online" href="games/othello.html?online=1&_v=2">🌐 オンライン</a></div></div>
 
         <div class="card">
           <div class="icon" style="font-size:18px;letter-spacing:0">⚫⚪⚫⚪⚫</div>
@@ -329,7 +329,10 @@
           <div class="tagrow"><a class="tag" href="games/hitblow.html">プレイする →</a><a class="tag tag-online" href="games/hitblow.html?online=1&_v=2">🌐 オンライン</a></div></div>
 
         <div class="card">
-          <div class="icon" style="color:#e0473a;font-weight:800">2♥</div>
+          <div class="icon" style="position:relative;width:46px;height:42px">
+            <div style="position:absolute;left:1px;top:3px;transform:rotate(-9deg);width:28px;height:38px;background:linear-gradient(145deg,#2c5a3c,#234a30);border-radius:5px;border:1px solid #0d3320;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.55);font-weight:800;font-size:16px;box-shadow:0 2px 5px rgba(0,0,0,.45)">?</div>
+            <div style="position:absolute;right:1px;top:1px;transform:rotate(9deg);width:28px;height:38px;background:#f4efe3;border-radius:5px;border:1px solid #c9bfa8;display:flex;align-items:center;justify-content:center;color:#c23b26;font-weight:800;font-size:18px;box-shadow:0 2px 5px rgba(0,0,0,.45)">♥</div>
+          </div>
           <div class="name">神経衰弱</div>
           <div class="desc">ペアを揃える記憶ゲーム。1〜2人・絵文字3サイズ＋トランプ52枚。</div>
           <div class="tagrow"><a class="tag" href="games/memory.html">プレイする →</a><a class="tag tag-online" href="games/memory.html?online=1&_v=2">🌐 オンライン</a></div></div>
@@ -461,7 +464,7 @@
       <h2>どのゲームで対戦しますか？</h2>
       <p class="cm-sub">選ぶとすぐに部屋番号が発行されます。番号を相手に送ってください。</p>
       <div class="cm-grid">
-        <a href="オセロ/index.html?online=1&_v=2&create=1">⚫️<span>オセロ</span></a>
+        <a href="games/othello.html?online=1&_v=2&create=1">⚫️<span>オセロ</span></a>
         <a href="games/gomoku.html?online=1&_v=2&create=1">⭕️<span>五目並べ</span></a>
         <a href="games/shogi.html?online=1&_v=2&create=1">☗<span>将棋</span></a>
         <a href="カタン/index.html?online=1&_v=2&create=1">🌾<span>カタン</span></a>
@@ -566,7 +569,7 @@
         if (!/^\d{4}$/.test(code)) { msg.textContent = "4桁の数字を入力してください。"; return; }
         btn.disabled = true;
         msg.textContent = "部屋に接続しています…";
-        location.href = "オセロ/index.html?autojoin=" + code + "&_v=2";
+        location.href = "games/othello.html?autojoin=" + code + "&_v=2";
       }
       btn.addEventListener("click", go);
       input.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });

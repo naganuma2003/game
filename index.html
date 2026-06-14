@@ -506,7 +506,7 @@
           </div>
           <div class="name">神経衰弱</div>
           <div class="desc">ペアを揃える記憶ゲーム。1〜2人・絵文字3サイズ＋トランプ52枚。</div>
-          <div class="tagrow"><a class="tag" href="games/memory.html">プレイする →</a><a class="tag tag-online" href="games/memory.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/memory.html">プレイする →</a><a class="tag tag-online" href="games/memory.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-memory').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon" style="position:relative;width:48px;height:42px">
@@ -515,13 +515,13 @@
           </div>
           <div class="name">ブラックジャック</div>
           <div class="desc">21を目指す。1人／複数人でディーラーと勝負。チップ制。</div>
-          <div class="tagrow"><a class="tag" href="games/blackjack.html">プレイする →</a><a class="tag tag-online" href="games/blackjack.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/blackjack.html">プレイする →</a><a class="tag tag-online" href="games/blackjack.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-blackjack').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon">🃏</div>
           <div class="name">大富豪</div>
           <div class="desc">8切り・革命あり。CPU／みんなで／オンライン対戦。</div>
-          <div class="tagrow"><a class="tag" href="games/daifugo.html">プレイする →</a><a class="tag tag-online" href="games/daifugo.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/daifugo.html">プレイする →</a><a class="tag tag-online" href="games/daifugo.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-daifugo').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon" style="display:flex;align-items:center;height:44px">
@@ -531,7 +531,7 @@
           </div>
           <div class="name">七並べ</div>
           <div class="desc">7から並べて早く出し切る。CPU／みんなで／オンライン。</div>
-          <div class="tagrow"><a class="tag" href="games/sevens.html">プレイする →</a><a class="tag tag-online" href="games/sevens.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/sevens.html">プレイする →</a><a class="tag tag-online" href="games/sevens.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-sevens').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon"><svg width="40" height="46" viewBox="0 0 40 46"><defs><linearGradient id="shogi-fill" x1="0.3" y1="0" x2="0.7" y2="1"><stop offset="0%" stop-color="#f5e090"/><stop offset="100%" stop-color="#c8940c"/></linearGradient></defs><polygon points="20,2 31.2,8.7 38,44 2,44 8.8,8.7" fill="url(#shogi-fill)" stroke="#6b4210" stroke-width="1.2" stroke-linejoin="round"/><text x="20" y="26" text-anchor="middle" font-size="13" font-weight="900" fill="#1a0800" font-family="'Hiragino Mincho ProN',serif">王</text><text x="20" y="39" text-anchor="middle" font-size="13" font-weight="900" fill="#1a0800" font-family="'Hiragino Mincho ProN',serif">将</text></svg></div>
@@ -678,6 +678,13 @@
           <div class="name">ヨット</div>
           <div class="desc">サイコロ5個で役作り。1〜4人でスコアを競う。</div>
           <div class="tagrow"><a class="tag" href="games/yacht.html">プレイする →</a><a class="tag tag-online" href="games/yacht.html?online=1&_v=2">🌐 オンライン</a></div></div>
+
+        <a class="card" href="games/bomberman.html">
+          <div class="icon">💣</div>
+          <div class="name">ボンバーマン</div>
+          <div class="desc">爆弾を置いて敵を倒せ！炎・爆弾・スピードのパワーアップで強化。3難易度。</div>
+          <span class="tag">プレイする →</span>
+        </a>
 
             </div>
       <p class="filter-empty" id="filter-empty">この人数で遊べるゲームはありません</p>
@@ -1444,7 +1451,8 @@
         "テキサスホールデム": ["duo", "multi"],
         "スライドパズル": ["solo","duo"],
         "ウノ": ["duo", "multi"],
-        "スピード": ["duo"]
+        "スピード": ["duo"],
+        "ボンバーマン": ["solo"]
       };
       var cards = [].slice.call(document.querySelectorAll(".col-games .grid .card"));
       cards.forEach(function (c) {

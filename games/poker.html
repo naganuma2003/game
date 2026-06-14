@@ -658,7 +658,7 @@ function renderOpp(showAll=false){
     const ref=G.startChips||1000;
     const ratio=Math.min(G.chips[pi]/ref,1);
     const segs=Math.round(ratio*5);
-    const segCol=ratio>0.5?'#4ec05e':ratio>0.2?'#c9a030':'#e05050';
+    const segCol=ratio>0.5?'#4ec05e':ratio>0.2?'#f0e020':'#e05050';
     const segsHTML='<div class="chip-segs">'+Array.from({length:5},(_,s)=>`<div class="chip-seg" style="background:${s<segs?segCol:'rgba(255,255,255,.1)'}"></div>`).join('')+'</div>';
     el.innerHTML=`<div class="opp-name">${G.names[pi]}${G.chips[pi]===0?' (オールイン)':''}</div>
       <div class="opp-chips">💰${G.chips[pi]}</div>

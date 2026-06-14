@@ -704,12 +704,12 @@
           <div class="desc">サイコロ5個で役作り。1〜4人でスコアを競う。</div>
           <div class="tagrow"><a class="tag" href="games/yacht.html">プレイする →</a><a class="tag tag-online" href="games/yacht.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-yacht').classList.add('show')">📖 ルール</button></div></div>
 
-        <a class="card" href="games/bomberman.html">
+        <div class="card">
           <div class="icon">💣</div>
           <div class="name">ボンバーマン</div>
           <div class="desc">爆弾を置いて敵を倒せ！炎・爆弾・スピードのパワーアップで強化。3難易度。</div>
-          <span class="tag">プレイする →</span>
-        </a>
+          <div class="tagrow"><a class="tag" href="games/bomberman.html">プレイする →</a><a class="tag tag-online" href="games/bomberman.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-bomberman').classList.add('show')">📖 ルール</button></div>
+        </div>
 
             </div>
       <p class="filter-empty" id="filter-empty">この人数で遊べるゲームはありません</p>
@@ -2078,6 +2078,32 @@
     </div>
   </div>
 
+  <!-- ボンバーマン ルールモーダル -->
+  <div id="rule-bomberman" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-bomberman').classList.remove('show')">×</button>
+      <h2>💣 ボンバーマン ルール</h2>
+      <h3>目的</h3>
+      <p>爆弾を置いて炎で敵（またはオンライン対戦相手）を全滅させればクリア。自分が炎に当たるとミス（ライフ3）。</p>
+      <h3>操作</h3>
+      <ul>
+        <li><b>移動</b>：矢印キー / WASD（スマホは画面下の十字パッド）</li>
+        <li><b>爆弾設置</b>：スペースキー / Zキー（スマホは💣ボタン）</li>
+      </ul>
+      <h3>パワーアップ</h3>
+      <ul>
+        <li>💣 <b>爆弾</b>：同時に置ける爆弾数＋1</li>
+        <li>🔥 <b>炎</b>：爆弾の炎射程＋1</li>
+        <li>👟 <b>スピード</b>：移動速度アップ</li>
+      </ul>
+      <h3>オンライン対戦</h3>
+      <ul>
+        <li>「🌐 オンライン」からゲーム内ロビーへ。部屋を作るか、ルームコードを入力して参加。</li>
+        <li>相手を先に倒したプレイヤーが勝ち。同時に爆風に当たった場合は爆弾を置いたプレイヤーの勝利。</li>
+      </ul>
+    </div>
+  </div>
+
   <!-- 部屋を作成：ゲーム選択画面 -->
   <div id="create-modal" class="cm-overlay" hidden>
     <div class="cm-card">
@@ -2159,7 +2185,7 @@
         "スライドパズル": ["solo","duo"],
         "ウノ": ["duo", "multi", "card"],
         "スピード": ["duo", "card"],
-        "ボンバーマン": ["solo"]
+        "ボンバーマン": ["solo", "duo"]
       };
       var cards = [].slice.call(document.querySelectorAll(".col-games .grid .card"));
       cards.forEach(function (c) {

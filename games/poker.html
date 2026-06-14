@@ -629,6 +629,7 @@ function showWinScreen(winner,title,desc){
   document.getElementById('win-title').textContent=title;
   document.getElementById('win-desc').textContent=desc;
   document.getElementById('win-overlay').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
 }
 
 function nextHand(){

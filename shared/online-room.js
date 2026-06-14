@@ -524,11 +524,21 @@
     }
     // The current relay sits at roomId(code) (gen 0) or roomId(code)-N after
     // migrations; we don't know N, so probe a few generations.
-    function probeGen(g) {
+    // Errors (transient PeerJS failure) retry the same gen up to 2 times;
+    // timeout means nobody is home at this gen → advance to the next one.
+    function probeGen(g, retry) {
+      retry = retry | 0;
       if (g > MAX + 1) { setStatus('部屋が見つかりませんでした（対局が終了した可能性があります）。'); return; }
       const id = g === 0 ? roomId(code) : roomId(code) + '-' + g;
       const c = peer.connect(id, { reliable: true });
-      let done = false;
+      let done = false, moved = false;
+      const advance = (sameGen) => {
+        if (done || moved) return;
+        moved = true;
+        try { c.close(); } catch (_) {}
+        if (sameGen && retry < 2) setTimeout(() => probeGen(g, retry + 1), 600);
+        else probeGen(g + 1, 0);
+      };
       c.on('open', () => { try { c.send({ t: 'reclaim', seat: mySeat, game: cfg.gameId }); } catch (_) {} });
       c.on('data', (m) => {
         if (!m || typeof m !== 'object' || done) { if (m && m.t && started) guestApply(m); return; }
@@ -541,8 +551,8 @@
         }
         // ignore hello; reclaim was already sent on open
       });
-      c.on('error', () => { if (!done) probeGen(g + 1); });
-      setTimeout(() => { if (!done) { try { c.close(); } catch (_) {} probeGen(g + 1); } }, 2500);
+      c.on('error', () => advance(true));  // transient error → retry same gen
+      setTimeout(() => advance(false), 3000);  // timeout → relay not here, next gen
     }
     function applyResume(m) {
       const snap = m.snap;
@@ -631,6 +641,7 @@
       isHost: () => isHost,
       cpuCount: () => nCpus,
       setTurn,
+      clearSession,
     };
     Object.assign(window.OnlineRoom, api);
     return api;

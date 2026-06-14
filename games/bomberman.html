@@ -393,6 +393,7 @@ function loop(ts) {
   lastT = ts;
   if (state===ST.PLAY && !paused) {
     if (onlineMode && !isHost) {
+      updP2Local(dt);
       sendKeys();
     } else {
       update(dt);
@@ -549,6 +550,42 @@ function updP2(dt) {
     if (pu.t===PU.BOMB) p2.maxB=Math.min(p2.maxB+1,6);
     if (pu.t===PU.FIRE) p2.fire=Math.min(p2.fire+1,8);
     if (pu.t===PU.SPD)  p2.spd =Math.min(p2.spd+0.35,5.5);
+  }
+  if (p2.inv>0) p2.inv-=dt;
+}
+
+// ─── P2ローカル予測移動（ゲスト側: キー入力を即座に反映） ──────────────────────
+function updP2Local(dt) {
+  if (!p2 || !p2.alive) return;
+  const spd = p2.spd * T * dt;
+  const up = !!(K['ArrowUp']||K['KeyW']);
+  const dn = !!(K['ArrowDown']||K['KeyS']);
+  const lt = !!(K['ArrowLeft']||K['KeyA']);
+  const rt = !!(K['ArrowRight']||K['KeyD']);
+
+  const SNAP2 = T * 0.45;
+  let turned2 = false;
+  if ((up||dn) && (lt||rt)) {
+    const snapX = Math.round(p2.px/T)*T;
+    if (Math.abs(p2.px-snapX) < SNAP2) {
+      const ny = p2.py + (up?-spd:spd);
+      if (canGo(p2, snapX, ny)) { p2.px=snapX; p2.py=ny; p2.dir=up?0:2; turned2=true; }
+    }
+  }
+  if (!turned2) {
+    let movedH2 = false;
+    if (lt||rt) {
+      const snap = Math.round(p2.py/T)*T;
+      if (Math.abs(p2.py-snap) < SNAP2) p2.py = snap;
+      const nx = p2.px + (lt?-spd:spd);
+      if (canGo(p2, nx, p2.py)) { p2.px=nx; p2.dir=lt?3:1; movedH2=true; }
+    }
+    if ((up||dn) && !movedH2) {
+      const snap = Math.round(p2.px/T)*T;
+      if (Math.abs(p2.px-snap) < SNAP2) p2.px = snap;
+      const ny = p2.py + (up?-spd:spd);
+      if (canGo(p2, p2.px, ny)) { p2.py=ny; p2.dir=up?0:2; }
+    }
   }
   if (p2.inv>0) p2.inv-=dt;
 }
@@ -856,7 +893,14 @@ function sendState() {
 
 function applyState(d) {
   if (d.p1) Object.assign(pl, d.p1);
-  if (d.p2 && p2) Object.assign(p2, d.p2);
+  if (d.p2 && p2) {
+    const lx = p2.px, ly = p2.py, ld = p2.dir;
+    Object.assign(p2, d.p2);
+    // ゲストが生存中かつ予測位置と近い場合はローカル位置を維持
+    if (p2.alive && Math.abs(lx - d.p2.px) < T && Math.abs(ly - d.p2.py) < T) {
+      p2.px = lx; p2.py = ly; p2.dir = ld;
+    }
+  }
   if (d.ens) ens.forEach((e,i)=>{ if(d.ens[i]) Object.assign(e,d.ens[i]); });
   if (d.bbs) bbs = d.bbs;
   if (d.exps) exps = d.exps;

@@ -253,6 +253,7 @@ function win(){
     document.getElementById('win-msg').textContent=`${moveCount}手・${m}:${s<10?'0':''}${s}でクリア！`;
     document.getElementById('win-box').querySelector('h2').textContent='あなたの勝ち！';
     document.getElementById('win').classList.add('show');
+    try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
     return;
   }
   if(!bestMoves[N]||moveCount<bestMoves[N]){bestMoves[N]=moveCount;updateBest();}
@@ -427,6 +428,7 @@ function handleMsg(from,msg){
     document.getElementById('win').classList.add('show');
     document.getElementById('win-msg').textContent=myWin?`${msg.moves}手・${m}:${s<10?'0':''}${s}でクリア！`:`相手が先に解きました`;
     document.getElementById('win-box').querySelector('h2').textContent=myWin?'あなたの勝ち！':'惜しい…';
+    try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
   }
 }
 

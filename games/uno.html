@@ -657,6 +657,7 @@ function showWin(pi) {
   document.getElementById('win-title').textContent = pi===0 ? '🎉 あなたの勝ち！' : `${name} の勝ち！`;
   document.getElementById('win-msg').textContent = pi===0 ? 'おめでとうございます！' : `${name} が最初に手札をなくしました`;
   document.getElementById('winscreen').style.display = 'flex';
+  try { if (window.OnlineRoom) window.OnlineRoom.clearSession(); } catch(_) {}
 }
 
 // ── Online support ────────────────────────────────────────────────────────────

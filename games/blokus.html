@@ -506,6 +506,7 @@ function endGame(){
       <span>${medals[i]||''} <span style="color:${PCOL[s.pi+1]}">${PNAME[s.pi+1]}</span>${s.pi<G.nh?' (あなた)':' (CPU)'}</span>
       <span>${s.score === 0 ? '全部置けた！' : s.score+'マス残り'}</span>
     </div>`).join('');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
 }
 
 document.addEventListener('keydown',e=>{

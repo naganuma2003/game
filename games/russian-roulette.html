@@ -1,15 +1,17 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>ロシアンルーレット</title><style>
+/* ===== Base ===== */
 :root{--bg:#080404;--panel:#120808;--txt:#f0e6d8;--sub:#8a6a5a;--red:#cc2222;--gold:#c9a020;--gun:#3a3630;--gun2:#504840;--safe:#3a8a3a;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{background:radial-gradient(ellipse at 50% 20%,#1a0808,#080404);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 10px 30px;user-select:none}
 h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.15em;margin:2px 0;color:var(--red)}
 .sub{font-size:10px;color:var(--sub);letter-spacing:.22em;margin-bottom:12px}
-/* Setup */
+/* ===== Setup ===== */
 #setup{display:flex;flex-direction:column;align-items:center;gap:14px;width:min(96vw,360px)}
 .setup-box{background:var(--panel);border:1px solid #2a1a1a;border-radius:12px;padding:18px 20px;width:100%}
 .setup-box .lbl{font-size:11px;color:var(--sub);margin-bottom:8px;letter-spacing:.12em}
+.setup-box p{font-size:13px;color:var(--sub);line-height:1.75}
 .np-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 .np-btn{background:rgba(255,255,255,.06);border:1px solid #3a2020;color:var(--sub);padding:8px 14px;border-radius:20px;font-size:14px;cursor:pointer;font-family:inherit;transition:all .15s}
 .np-btn.on{background:rgba(180,20,20,.25);border-color:var(--red);color:var(--txt);font-weight:700}
@@ -18,55 +20,39 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.15em;
 .names input:focus{border-color:var(--red)}
 .start-btn{background:var(--red);border:none;color:#fff;font-weight:800;padding:13px 0;border-radius:10px;font-size:16px;cursor:pointer;font-family:inherit;width:100%;letter-spacing:.1em;transition:opacity .15s}
 .start-btn:hover{opacity:.85}
-/* Game */
-#game{display:none;flex-direction:column;align-items:center;gap:10px;width:min(96vw,400px)}
+/* ===== Gun game ===== */
+#game-gun{display:none;flex-direction:column;align-items:center;gap:10px;width:min(96vw,400px)}
 .player-display{text-align:center;min-height:56px}
 .cur-label{font-size:11px;color:var(--sub);letter-spacing:.18em;margin-bottom:4px}
 .cur-name{font-size:28px;font-weight:800;color:var(--gold);letter-spacing:.06em}
-/* Revolver SVG area */
-.gun-wrap{position:relative;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .gun-wrap svg{display:block;width:min(86vw,360px);height:auto;filter:drop-shadow(0 8px 24px rgba(0,0,0,.7))}
-/* Cylinder spin animation */
-@keyframes cylspin{
-  0%{transform:rotate(0deg) scale(1)}
-  40%{transform:rotate(1080deg) scale(1.04)}
-  70%{transform:rotate(1380deg) scale(1.01)}
-  100%{transform:rotate(var(--spin-end,1440deg)) scale(1)}
-}
+@keyframes cylspin{0%{transform:rotate(0deg) scale(1)}40%{transform:rotate(1080deg) scale(1.04)}70%{transform:rotate(1380deg) scale(1.01)}100%{transform:rotate(var(--spin-end,1440deg)) scale(1)}}
 .cyl-group{transform-origin:152px 94px;transform-box:fill-box}
 .cyl-group.spinning{animation:cylspin .9s cubic-bezier(.2,.8,.4,1) forwards}
-/* Flash overlay */
 #flash{position:fixed;inset:0;pointer-events:none;opacity:0;z-index:50}
 @keyframes flash-red{0%{opacity:.85}100%{opacity:0}}
 @keyframes flash-white{0%{opacity:.6}100%{opacity:0}}
 #flash.bang{background:#cc0000;animation:flash-red .5s ease-out forwards}
 #flash.safe{background:#aaffaa;animation:flash-white .3s ease-out forwards}
-/* Result */
-.result-msg{min-height:40px;font-size:20px;font-weight:800;letter-spacing:.06em;text-align:center;transition:opacity .2s;line-height:1.4}
-.result-msg.bang{color:var(--red)}
-.result-msg.safe{color:var(--safe)}
-/* Chamber indicator */
+.result-msg{min-height:40px;font-size:20px;font-weight:800;letter-spacing:.06em;text-align:center;line-height:1.4}
+.result-msg.bang{color:var(--red)}.result-msg.safe{color:var(--safe)}
 .chambers{display:flex;gap:7px;justify-content:center;margin:4px 0}
 .ch{width:18px;height:26px;border-radius:3px;border:1.5px solid #3a2a2a;background:#1a1010;transition:background .3s}
 .ch.fired-safe{background:#2a1a1a;border-color:#2a1a1a}
 .ch.fired-bang{background:var(--red);border-color:#aa1111}
 .ch.current{border-color:var(--red)}
 .bullet-info{font-size:11px;color:var(--sub);letter-spacing:.1em;text-align:center}
-/* Players list */
 .players{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;width:100%}
 .player-chip{background:var(--panel);border:1px solid #2a1818;border-radius:20px;padding:6px 14px;font-size:13px;transition:all .2s}
 .player-chip.active{border-color:var(--gold);color:var(--gold);font-weight:700;box-shadow:0 0 0 2px rgba(201,160,32,.2)}
 .player-chip.out-bang{opacity:.35;text-decoration:line-through;font-size:11px;border-color:#3a1010;color:var(--red)}
 .player-chip.out{opacity:.35;text-decoration:line-through;font-size:11px}
-/* Trigger button */
 .trigger-btn{background:var(--red);border:none;color:#fff;font-weight:800;padding:14px 0;border-radius:12px;font-size:18px;cursor:pointer;font-family:inherit;width:min(86vw,320px);letter-spacing:.12em;transition:transform .1s,opacity .2s;box-shadow:0 4px 18px rgba(180,0,0,.5)}
 .trigger-btn:active{transform:scale(.96)}
 .trigger-btn:disabled{opacity:.4;cursor:default;transform:none}
-/* Foot */
 .foot{display:flex;gap:8px;margin-top:6px}
 .foot button{background:transparent;border:1px solid #2a1818;color:var(--sub);padding:8px 18px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit}
 .foot button:hover{border-color:var(--red);color:var(--txt)}
-/* Win overlay */
 .over{position:fixed;inset:0;background:rgba(4,0,0,.88);display:none;align-items:center;justify-content:center;z-index:40;padding:16px}
 .over.show{display:flex}
 .over .c{background:#140808;border:1px solid var(--gold);border-radius:14px;padding:28px 32px;text-align:center;max-width:90vw}
@@ -74,65 +60,138 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.15em;
 .over .d{font-size:14px;color:var(--sub);margin-bottom:20px;line-height:1.8;white-space:pre-line}
 .over button{background:var(--red);border:none;color:#fff;font-weight:700;padding:10px 28px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit;margin:0 4px}
 .over .back-btn{background:transparent;border:1px solid #3a2020;color:var(--sub)}
-@media(max-width:480px){
-  h1{font-size:22px}
-  .cur-name{font-size:22px}
-  .trigger-btn{font-size:15px;padding:12px 0}
-}
+/* ===== Bomb game (full-screen overlay) ===== */
+#game-bomb{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:#2a2a2a}
+#game-bomb.show{display:flex}
+.machine{position:relative;width:100%;max-width:460px;height:100dvh;max-height:920px;padding:18px;display:flex;flex-direction:column;background:repeating-linear-gradient(45deg,#f2c200 0 22px,#1a1a1a 22px 44px);border-radius:6px}
+.bpanel{position:relative;flex:1;border-radius:8px;padding:18px 16px;display:flex;flex-direction:column;background:linear-gradient(160deg,#cfcfcf,#9a9a9a);box-shadow:inset 0 2px 4px rgba(255,255,255,.6),inset 0 -3px 8px rgba(0,0,0,.35),0 0 0 2px rgba(0,0,0,.25)}
+.bhud{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 14px;font-weight:800}
+.bhud .blabel{font-size:11px;letter-spacing:.3em;color:#555}
+.bhud .bcount{font-size:15px;color:#333;font-variant-numeric:tabular-nums}
+.bstatus{text-align:center;font-size:14px;font-weight:800;min-height:20px;color:#444;padding-bottom:10px;letter-spacing:.02em}
+.bstatus.boom{color:#9c0f08}
+.bgrid{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:8px;place-items:center;width:100%}
+.bslot{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.bbtn{position:relative;width:94%;aspect-ratio:1/1;border:none;cursor:pointer;border-radius:50%;padding:0;background:transparent;transform-origin:center}
+.bbtn:disabled{cursor:default}
+.bbtn .bbezel{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 45%,#9a9a9a,#6a6a6a 75%,#8f8f8f 100%);box-shadow:inset 0 3px 6px rgba(0,0,0,.55),inset 0 -2px 3px rgba(255,255,255,.45),0 1px 2px rgba(255,255,255,.4)}
+.bbtn .bcap{position:absolute;inset:8%;border-radius:50%;background:radial-gradient(circle at 38% 30%,#ff5b4d,#e0231a 55%,#9c0f08);box-shadow:inset 0 3px 6px rgba(255,255,255,.45),inset 0 -6px 10px rgba(0,0,0,.5),0 5px 7px rgba(0,0,0,.45);transition:transform .07s ease,box-shadow .07s ease,opacity .25s ease;display:flex;align-items:center;justify-content:center;font-size:0}
+.bbtn .bcap .bmark{font-size:clamp(16px,5vw,26px);opacity:0;transform:scale(.4);transition:opacity .15s,transform .25s cubic-bezier(.34,1.56,.64,1)}
+.bbtn:active:not(:disabled) .bcap{transform:translateY(3px) scale(.97);box-shadow:inset 0 4px 8px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.4)}
+.bbtn.bpressed .bcap{transform:translateY(4px) scale(.96);box-shadow:inset 0 5px 9px rgba(0,0,0,.6),0 1px 2px rgba(0,0,0,.4)}
+.bbtn.bsafe .bcap{opacity:0;transform:scale(.6)}
+.bbtn.bbomb .bcap{opacity:1;background:transparent;box-shadow:none}
+.bbtn.bbomb .bcap .bmark{opacity:1;transform:scale(1);font-size:clamp(30px,11vw,54px);line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.55))}
+.bbtn.brevealed{opacity:.5}
+.bfootbar{display:flex;justify-content:space-between;align-items:center;padding:12px 6px 2px}
+.biconbtn{width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;background:#f0f0f0;color:#333;font-size:20px;font-weight:800;box-shadow:0 2px 4px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;transition:transform .08s;font-family:inherit}
+.biconbtn:active{transform:scale(.92)}
+.btoggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:800;color:#444;letter-spacing:.04em}
+.btoggle .bsw{position:relative;width:46px;height:26px;border-radius:13px;background:#888;transition:background .2s;flex:none;box-shadow:inset 0 1px 3px rgba(0,0,0,.45)}
+.btoggle .bsw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .2s}
+.btoggle input{position:absolute;opacity:0;width:0;height:0}
+.btoggle input:checked + .bsw{background:#e0231a}
+.btoggle input:checked + .bsw::after{left:23px}
+.btoggle .bstate{min-width:26px}
+.binsult{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) scale(.6);z-index:210;pointer-events:none;opacity:0;max-width:84vw;text-align:center;font-size:clamp(22px,7vw,40px);font-weight:900;color:#fff;text-shadow:0 0 8px #c01206,0 3px 6px rgba(0,0,0,.7),2px 2px 0 #7a0d08,-2px -2px 0 #7a0d08;-webkit-text-stroke:1px rgba(0,0,0,.3)}
+.binsult.go{animation:insultPop 2.2s cubic-bezier(.2,1.2,.4,1) forwards}
+@keyframes insultPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.4) rotate(-6deg)}14%{opacity:1;transform:translate(-50%,-50%) scale(1.12) rotate(3deg)}24%{transform:translate(-50%,-50%) scale(1) rotate(-2deg)}80%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}100%{opacity:0;transform:translate(-50%,-58%) scale(1) rotate(0)}}
+#bblast{position:fixed;inset:0;pointer-events:none;z-index:200}
+.blastflash{position:absolute;inset:0;background:#fff;opacity:0}
+.blastflash.go{animation:bflash .6s ease-out forwards}
+@keyframes bflash{0%{opacity:1;background:#fff}25%{opacity:.9;background:#ffd54a}55%{opacity:.7;background:#ff6a2b}100%{opacity:0;background:#c01206}}
+.bfireball{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;opacity:0;background:radial-gradient(circle,#fff 0%,#ffd23f 25%,#ff6a00 55%,#c01206 80%,transparent 100%)}
+.bfireball.go{animation:fball .7s cubic-bezier(.1,.7,.3,1) forwards}
+@keyframes fball{0%{opacity:1;transform:scale(.2)}70%{opacity:.95}100%{opacity:0;transform:scale(34)}}
+.bring{position:absolute;left:50%;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:6px solid #fff;opacity:0}
+.bring.go{animation:bring .6s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes bring{0%{opacity:.9;transform:scale(.3)}100%{opacity:0;transform:scale(26);border-color:#ff5b1a}}
+.bchunk{position:absolute;left:50%;top:50%;border-radius:3px;will-change:transform,opacity}
+.bchunk.go{animation:bchunk var(--dur) cubic-bezier(.12,.6,.4,1) forwards}
+@keyframes bchunk{0%{opacity:1;transform:translate(-50%,-50%) rotate(0) scale(1)}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) rotate(var(--rot)) scale(.3)}}
+.machine.bshake{animation:mshake .6s ease-out}
+@keyframes mshake{0%,100%{transform:translate(0,0) rotate(0)}10%{transform:translate(-8px,6px) rotate(-1deg)}20%{transform:translate(9px,-5px) rotate(1deg)}30%{transform:translate(-10px,4px) rotate(-1.2deg)}45%{transform:translate(7px,-6px) rotate(.8deg)}60%{transform:translate(-5px,3px) rotate(-.6deg)}78%{transform:translate(3px,-2px) rotate(.3deg)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+@media(max-width:480px){h1{font-size:22px}.cur-name{font-size:22px}.trigger-btn{font-size:15px;padding:12px 0}}
 </style></head><body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 
 <h1>💀 ロシアンルーレット</h1>
 <div class="sub">RUSSIAN ROULETTE</div>
 
-<!-- Setup -->
+<!-- ===== Setup ===== -->
 <div id="setup">
-  <!-- Mode -->
+  <!-- Top-level: Gun / Bomb -->
   <div class="setup-box">
-    <div class="lbl">モード</div>
-    <div class="np-row" id="mode-row">
-      <button class="np-btn on" data-mode="fixed">👥 人数固定</button>
-      <button class="np-btn" data-mode="free">∞ 不特定多数</button>
+    <div class="lbl">ゲームモード</div>
+    <div class="np-row" id="gmode-row">
+      <button class="np-btn on" data-gm="gun">🔫 ガン</button>
+      <button class="np-btn" data-gm="bomb">💣 ボム</button>
     </div>
   </div>
-  <!-- Bullet count -->
-  <div class="setup-box">
-    <div class="lbl">弾の数（6穴中）</div>
-    <div class="np-row" id="bullet-row">
-      <button class="np-btn on" data-b="1">1発</button>
-      <button class="np-btn" data-b="2">2発</button>
-      <button class="np-btn" data-b="3">3発</button>
-      <button class="np-btn" data-b="4">4発</button>
-      <button class="np-btn" data-b="5">5発</button>
+
+  <!-- Gun config -->
+  <div id="gun-config">
+    <div class="setup-box">
+      <div class="lbl">プレイヤーモード</div>
+      <div class="np-row" id="mode-row">
+        <button class="np-btn on" data-mode="fixed">👥 人数固定</button>
+        <button class="np-btn" data-mode="free">∞ 不特定多数</button>
+      </div>
+    </div>
+    <div class="setup-box">
+      <div class="lbl">弾の数（6穴中）</div>
+      <div class="np-row" id="bullet-row">
+        <button class="np-btn on" data-b="1">1発</button>
+        <button class="np-btn" data-b="2">2発</button>
+        <button class="np-btn" data-b="3">3発</button>
+        <button class="np-btn" data-b="4">4発</button>
+        <button class="np-btn" data-b="5">5発</button>
+      </div>
+    </div>
+    <div class="setup-box" id="fixed-setup">
+      <div class="lbl">プレイヤー人数</div>
+      <div class="np-row" id="np-row">
+        <button class="np-btn" data-n="2">2人</button>
+        <button class="np-btn on" data-n="3">3人</button>
+        <button class="np-btn" data-n="4">4人</button>
+        <button class="np-btn" data-n="5">5人</button>
+        <button class="np-btn" data-n="6">6人</button>
+      </div>
+    </div>
+    <div class="setup-box" id="names-box">
+      <div class="lbl">プレイヤー名（省略可）</div>
+      <div class="names" id="names"></div>
     </div>
   </div>
-  <!-- Fixed mode: player count + names -->
-  <div class="setup-box" id="fixed-setup">
-    <div class="lbl">プレイヤー人数</div>
-    <div class="np-row" id="np-row">
-      <button class="np-btn" data-n="2">2人</button>
-      <button class="np-btn on" data-n="3">3人</button>
-      <button class="np-btn" data-n="4">4人</button>
-      <button class="np-btn" data-n="5">5人</button>
-      <button class="np-btn" data-n="6">6人</button>
+
+  <!-- Bomb config (description) -->
+  <div id="bomb-config" style="display:none">
+    <div class="setup-box">
+      <div class="lbl">ルール</div>
+      <p>16個の赤いボタンに爆弾が1個。<br>順番に押していき最後の1個を引いたら大爆発！<br>罰ゲームを決める定番パーティゲーム。</p>
+    </div>
+    <div class="setup-box">
+      <div class="lbl">ちくちくモード</div>
+      <label class="btoggle" style="justify-content:center;padding:4px 0">
+        <span>爆死した人を煽る</span>
+        <input type="checkbox" id="chiku">
+        <span class="bsw"></span>
+        <span class="bstate" id="chikuState">OFF</span>
+      </label>
     </div>
   </div>
-  <div class="setup-box" id="names-box">
-    <div class="lbl">プレイヤー名（省略可）</div>
-    <div class="names" id="names"></div>
-  </div>
+
   <button class="start-btn" id="start-btn">ゲーム開始</button>
 </div>
 
-<!-- Game -->
-<div id="game">
+<!-- ===== Gun Game ===== -->
+<div id="game-gun">
   <div class="player-display">
     <div class="cur-label" id="cur-label">現在のプレイヤー</div>
     <div class="cur-name" id="cur-name">—</div>
   </div>
-
-  <!-- Revolver -->
-  <div class="gun-wrap" id="gun-wrap">
+  <div class="gun-wrap">
     <svg viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg">
       <g fill="var(--gun)" stroke="var(--gun2)" stroke-width="1.2">
         <path d="M230 120 Q240 130 238 170 Q235 185 220 188 Q200 190 195 180 L200 140 Z" fill="#2a2420" stroke="#3a3028"/>
@@ -151,38 +210,78 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.15em;
       <path d="M228 74 L238 68 L242 72 L232 80 Z" fill="#404038" stroke="#585850" stroke-width="1"/>
     </svg>
   </div>
-
   <div class="bullet-info" id="bullet-info"></div>
   <div class="chambers" id="chambers-ui"></div>
   <div class="result-msg" id="result-msg"></div>
   <div class="players" id="players-ui"></div>
-
   <button class="trigger-btn" id="trigger-btn">🔫 引き金を引く</button>
-
   <div class="foot">
     <button id="restart-btn">最初から</button>
     <button id="back-btn">設定に戻る</button>
   </div>
 </div>
 
-<!-- Flash overlay -->
+<!-- Gun flash / over -->
 <div id="flash"></div>
-
-<!-- Game over overlay -->
 <div class="over" id="over">
   <div class="c">
-    <div class="t" id="over-title">💀 脱落！</div>
+    <div class="t" id="over-title"></div>
     <div class="d" id="over-desc"></div>
     <button id="again-btn">もう一度</button>
     <button class="back-btn" id="over-back">設定へ</button>
   </div>
 </div>
 
-<script>
-const CHAMBER_ANGLES = [0, 60, 120, 180, 240, 300];
-const CX = 152, CY = 94, CR = 32, CHAM_R = 13;
+<!-- ===== Bomb Game (full-screen overlay) ===== -->
+<div id="game-bomb">
+  <div id="bblast"></div>
+  <div class="binsult" id="binsult" aria-live="polite"></div>
+  <div class="machine" id="bmachine">
+    <div class="bpanel">
+      <div class="bhud">
+        <span class="blabel">BOMB &middot; 1 / 16</span>
+        <span class="bcount"><span id="bpicks">0</span> / 15 SAFE</span>
+      </div>
+      <div class="bstatus" id="bstatus">赤いボタンを押せ</div>
+      <div class="bgrid" id="bgrid" role="group" aria-label="ボタン16個"></div>
+      <div class="bfootbar">
+        <button class="biconbtn" id="breset" aria-label="やり直す">&#x21bb;</button>
+        <button class="biconbtn" id="bomb-back" aria-label="設定に戻る" title="設定へ">⬅</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-let gameMode = 'fixed';
+<script>
+/* ===== Shared ===== */
+let topMode = 'gun'; // 'gun' or 'bomb'
+
+document.getElementById('gmode-row').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#gmode-row .np-btn').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  topMode = b.dataset.gm;
+  document.getElementById('gun-config').style.display = topMode === 'gun' ? '' : 'none';
+  document.getElementById('bomb-config').style.display = topMode === 'bomb' ? '' : 'none';
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  if (topMode === 'gun') {
+    if (playerMode === 'fixed') {
+      const inputs = document.querySelectorAll('#names input');
+      playerNames = [...inputs].map((inp, i) => inp.value.trim() || ('P' + (i + 1)));
+    }
+    startGun();
+  } else {
+    startBomb();
+  }
+});
+
+/* ===== Gun Game ===== */
+const CHAMBER_ANGLES = [0,60,120,180,240,300];
+const CX=152,CY=94,CR=32,CHAM_R=13;
+
+let playerMode = 'fixed';
 let numBullets = 1;
 let numPlayers = 3;
 let playerNames = [];
@@ -195,19 +294,17 @@ let currentPlayerIdx = 0;
 let firedCount = 0;
 let bangCount = 0;
 let turnCount = 0;
-let busy = false;
+let gbusy = false;
 
-// Mode toggle
 document.getElementById('mode-row').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   document.querySelectorAll('#mode-row .np-btn').forEach(x => x.classList.remove('on'));
   b.classList.add('on');
-  gameMode = b.dataset.mode;
-  document.getElementById('fixed-setup').style.display = gameMode === 'fixed' ? '' : 'none';
-  document.getElementById('names-box').style.display = gameMode === 'fixed' ? '' : 'none';
+  playerMode = b.dataset.mode;
+  document.getElementById('fixed-setup').style.display = playerMode === 'fixed' ? '' : 'none';
+  document.getElementById('names-box').style.display = playerMode === 'fixed' ? '' : 'none';
 });
 
-// Bullet count
 document.getElementById('bullet-row').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   document.querySelectorAll('#bullet-row .np-btn').forEach(x => x.classList.remove('on'));
@@ -215,15 +312,11 @@ document.getElementById('bullet-row').addEventListener('click', e => {
   numBullets = +b.dataset.b;
 });
 
-// Player count + name inputs
 function buildNames(n) {
-  const div = document.getElementById('names');
-  div.innerHTML = '';
+  const div = document.getElementById('names'); div.innerHTML = '';
   for (let i = 0; i < n; i++) {
     const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.placeholder = 'プレイヤー ' + (i + 1);
-    inp.value = playerNames[i] || '';
+    inp.type='text'; inp.placeholder='プレイヤー '+(i+1); inp.value=playerNames[i]||'';
     inp.addEventListener('input', () => { playerNames[i] = inp.value; });
     div.appendChild(inp);
   }
@@ -237,328 +330,299 @@ document.getElementById('np-row').addEventListener('click', e => {
 });
 buildNames(3);
 
-// Generate N random unique bullet positions in 0-5
 function generateBullets(count) {
   bulletPositions = new Set();
-  const pos = [0,1,2,3,4,5];
-  for (let i = pos.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pos[i], pos[j]] = [pos[j], pos[i]];
-  }
-  for (let i = 0; i < count; i++) bulletPositions.add(pos[i]);
+  const pos=[0,1,2,3,4,5];
+  for(let i=pos.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pos[i],pos[j]]=[pos[j],pos[i]];}
+  for(let i=0;i<count;i++) bulletPositions.add(pos[i]);
 }
 
-// Draw SVG chambers; reveal bullet positions only when revealAll=true or on bang chambers
 function drawChambers(revealAll) {
-  const g = document.getElementById('chambers-svg');
-  g.innerHTML = '';
-  for (let i = 0; i < 6; i++) {
-    const angle = (CHAMBER_ANGLES[i] - 90) * Math.PI / 180;
-    const x = CX + CR * Math.cos(angle);
-    const y = CY + CR * Math.sin(angle);
-    const hasBullet = bulletPositions.has(i);
-    const wasBang = bangChambers.has(i);
-    const wasSafe = firedChambers.has(i);
-    const isCurrent = i === currentChamber;
-
-    const shadow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    shadow.setAttribute('cx', x + 1); shadow.setAttribute('cy', y + 1);
-    shadow.setAttribute('r', CHAM_R); shadow.setAttribute('fill', 'rgba(0,0,0,.5)');
-    g.appendChild(shadow);
-
-    const hole = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    hole.setAttribute('cx', x); hole.setAttribute('cy', y); hole.setAttribute('r', CHAM_R);
-
-    const showBullet = wasBang || (revealAll && hasBullet);
-    if (showBullet) {
-      hole.setAttribute('fill', '#c9a020'); hole.setAttribute('stroke', '#e0b830'); hole.setAttribute('stroke-width', '1.5');
-    } else if (wasSafe) {
-      hole.setAttribute('fill', '#1a1410'); hole.setAttribute('stroke', '#2a2018'); hole.setAttribute('stroke-width', '1.5');
-    } else {
-      hole.setAttribute('fill', '#0a0806');
-      hole.setAttribute('stroke', isCurrent ? '#cc2222' : '#3a3028');
-      hole.setAttribute('stroke-width', isCurrent ? '2.5' : '1.5');
-    }
+  const g=document.getElementById('chambers-svg'); g.innerHTML='';
+  for(let i=0;i<6;i++){
+    const angle=(CHAMBER_ANGLES[i]-90)*Math.PI/180;
+    const x=CX+CR*Math.cos(angle),y=CY+CR*Math.sin(angle);
+    const hasBullet=bulletPositions.has(i),wasBang=bangChambers.has(i),wasSafe=firedChambers.has(i),isCurrent=i===currentChamber;
+    const shadow=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    shadow.setAttribute('cx',x+1);shadow.setAttribute('cy',y+1);shadow.setAttribute('r',CHAM_R);shadow.setAttribute('fill','rgba(0,0,0,.5)');g.appendChild(shadow);
+    const hole=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    hole.setAttribute('cx',x);hole.setAttribute('cy',y);hole.setAttribute('r',CHAM_R);
+    const show=wasBang||(revealAll&&hasBullet);
+    if(show){hole.setAttribute('fill','#c9a020');hole.setAttribute('stroke','#e0b830');hole.setAttribute('stroke-width','1.5');}
+    else if(wasSafe){hole.setAttribute('fill','#1a1410');hole.setAttribute('stroke','#2a2018');hole.setAttribute('stroke-width','1.5');}
+    else{hole.setAttribute('fill','#0a0806');hole.setAttribute('stroke',isCurrent?'#cc2222':'#3a3028');hole.setAttribute('stroke-width',isCurrent?'2.5':'1.5');}
     g.appendChild(hole);
-
-    if (showBullet) {
-      const glint = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      glint.setAttribute('cx', x - 3); glint.setAttribute('cy', y - 3);
-      glint.setAttribute('r', 3); glint.setAttribute('fill', 'rgba(255,230,120,.5)');
-      g.appendChild(glint);
-    }
+    if(show){const glint=document.createElementNS('http://www.w3.org/2000/svg','circle');glint.setAttribute('cx',x-3);glint.setAttribute('cy',y-3);glint.setAttribute('r',3);glint.setAttribute('fill','rgba(255,230,120,.5)');g.appendChild(glint);}
   }
 }
 
 function buildChambersUI() {
-  const div = document.getElementById('chambers-ui');
-  div.innerHTML = '';
-  for (let i = 0; i < 6; i++) {
-    const ch = document.createElement('div');
-    ch.className = 'ch' + (i === 0 ? ' current' : '');
-    div.appendChild(ch);
-  }
+  const div=document.getElementById('chambers-ui'); div.innerHTML='';
+  for(let i=0;i<6;i++){const ch=document.createElement('div');ch.className='ch'+(i===0?' current':'');div.appendChild(ch);}
 }
 function updateChambersUI() {
-  const chs = document.querySelectorAll('#chambers-ui .ch');
-  chs.forEach((ch, i) => {
-    ch.className = 'ch';
-    if (bangChambers.has(i)) ch.classList.add('fired-bang');
-    else if (firedChambers.has(i)) ch.classList.add('fired-safe');
-    else if (i === currentChamber) ch.classList.add('current');
+  document.querySelectorAll('#chambers-ui .ch').forEach((ch,i)=>{
+    ch.className='ch';
+    if(bangChambers.has(i))ch.classList.add('fired-bang');
+    else if(firedChambers.has(i))ch.classList.add('fired-safe');
+    else if(i===currentChamber)ch.classList.add('current');
   });
 }
 function updateBulletInfo() {
-  document.getElementById('bullet-info').textContent =
-    '弾 ' + numBullets + '発 ／ 6穴　残り ' + (6 - firedCount) + ' 穴';
+  document.getElementById('bullet-info').textContent='弾 '+numBullets+'発 ／ 6穴　残り '+(6-firedCount)+' 穴';
 }
 
-// Players UI (fixed mode only)
 function buildPlayersUI() {
-  const div = document.getElementById('players-ui');
-  div.innerHTML = '';
-  if (gameMode !== 'fixed') return;
-  players.forEach((p, i) => {
-    const chip = document.createElement('div');
-    chip.className = 'player-chip' +
-      (p.bangCount > 0 ? ' out-bang' : (!p.alive ? ' out' : '')) +
-      (i === currentPlayerIdx && p.alive ? ' active' : '');
-    chip.textContent = p.name;
-    chip.id = 'chip-' + i;
-    div.appendChild(chip);
+  const div=document.getElementById('players-ui'); div.innerHTML='';
+  if(playerMode!=='fixed') return;
+  players.forEach((p,i)=>{
+    const chip=document.createElement('div');
+    chip.className='player-chip'+(p.bangCount>0?' out-bang':(!p.alive?' out':''))+(i===currentPlayerIdx&&p.alive?' active':'');
+    chip.textContent=p.name; chip.id='chip-'+i; div.appendChild(chip);
   });
 }
 function updatePlayersUI() {
-  if (gameMode !== 'fixed') return;
-  players.forEach((p, i) => {
-    const chip = document.getElementById('chip-' + i);
-    if (!chip) return;
-    chip.className = 'player-chip' +
-      (p.bangCount > 0 ? ' out-bang' : (!p.alive ? ' out' : '')) +
-      (i === currentPlayerIdx && p.alive ? ' active' : '');
+  if(playerMode!=='fixed') return;
+  players.forEach((p,i)=>{
+    const chip=document.getElementById('chip-'+i); if(!chip) return;
+    chip.className='player-chip'+(p.bangCount>0?' out-bang':(!p.alive?' out':''))+(i===currentPlayerIdx&&p.alive?' active':'');
   });
 }
 
-// Start game
-document.getElementById('start-btn').addEventListener('click', () => {
-  if (gameMode === 'fixed') {
-    const inputs = document.querySelectorAll('#names input');
-    playerNames = [...inputs].map((inp, i) => inp.value.trim() || ('P' + (i + 1)));
-  }
-  startGame();
-});
-
-function startGame() {
+function startGun() {
   generateBullets(numBullets);
-  firedChambers = new Set();
-  bangChambers = new Set();
-  currentChamber = 0;
-  firedCount = 0;
-  bangCount = 0;
-  turnCount = 1;
-  busy = false;
-
-  if (gameMode === 'fixed') {
-    players = playerNames.slice(0, numPlayers).map(n => ({ name: n, alive: true, bangCount: 0 }));
-    currentPlayerIdx = 0;
-    document.getElementById('cur-label').textContent = '現在のプレイヤー';
-    document.getElementById('cur-name').textContent = players[0].name;
-    document.getElementById('players-ui').style.display = 'flex';
-  } else {
-    players = [];
-    document.getElementById('cur-label').textContent = '挑戦者';
-    document.getElementById('cur-name').textContent = '第1番目';
-    document.getElementById('players-ui').style.display = 'none';
+  firedChambers=new Set(); bangChambers=new Set();
+  currentChamber=0; firedCount=0; bangCount=0; turnCount=1; gbusy=false;
+  if(playerMode==='fixed'){
+    players=playerNames.slice(0,numPlayers).map(n=>({name:n,alive:true,bangCount:0}));
+    currentPlayerIdx=0;
+    document.getElementById('cur-label').textContent='現在のプレイヤー';
+    document.getElementById('cur-name').textContent=players[0].name;
+    document.getElementById('players-ui').style.display='flex';
+  }else{
+    players=[];
+    document.getElementById('cur-label').textContent='挑戦者';
+    document.getElementById('cur-name').textContent='第1番目';
+    document.getElementById('players-ui').style.display='none';
   }
-
-  document.getElementById('result-msg').textContent = '';
-  document.getElementById('result-msg').className = 'result-msg';
-  document.getElementById('trigger-btn').disabled = false;
+  document.getElementById('result-msg').textContent='';
+  document.getElementById('result-msg').className='result-msg';
+  document.getElementById('trigger-btn').disabled=false;
   document.getElementById('over').classList.remove('show');
-  document.getElementById('setup').style.display = 'none';
-  document.getElementById('game').style.display = 'flex';
-  buildPlayersUI();
-  buildChambersUI();
-  updateBulletInfo();
-  drawChambers(false);
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game-gun').style.display='flex';
+  buildPlayersUI(); buildChambersUI(); updateBulletInfo(); drawChambers(false);
   spinCylinder(true);
 }
 
 function spinCylinder(initial) {
-  const group = document.getElementById('cyl-group');
-  group.classList.remove('spinning');
-  void group.offsetWidth;
-  const extraSpins = initial ? (5 + Math.floor(Math.random() * 3)) : 0;
-  const targetAngle = (360 * extraSpins) + CHAMBER_ANGLES[currentChamber];
-  group.style.setProperty('--spin-end', targetAngle + 'deg');
-  if (initial) group.classList.add('spinning');
+  const group=document.getElementById('cyl-group');
+  group.classList.remove('spinning'); void group.offsetWidth;
+  const extraSpins=initial?(5+Math.floor(Math.random()*3)):0;
+  const targetAngle=(360*extraSpins)+CHAMBER_ANGLES[currentChamber];
+  group.style.setProperty('--spin-end',targetAngle+'deg');
+  if(initial) group.classList.add('spinning');
 }
 
 document.getElementById('trigger-btn').addEventListener('click', pullTrigger);
 
 function pullTrigger() {
-  if (busy) return;
-  if (gameMode === 'fixed') {
-    const p = players[currentPlayerIdx];
-    if (!p || !p.alive) return;
-  }
-  busy = true;
-  document.getElementById('trigger-btn').disabled = true;
-  document.getElementById('result-msg').textContent = '';
-  document.getElementById('result-msg').className = 'result-msg';
-
-  const isBang = bulletPositions.has(currentChamber);
-
-  const group = document.getElementById('cyl-group');
-  group.classList.remove('spinning');
-  void group.offsetWidth;
-  const spins = Math.floor(Math.random() * 2) + 1;
-  const targetAngle = 360 * spins + CHAMBER_ANGLES[currentChamber];
-  group.style.setProperty('--spin-end', targetAngle + 'deg');
+  if(gbusy) return;
+  if(playerMode==='fixed'){const p=players[currentPlayerIdx];if(!p||!p.alive) return;}
+  gbusy=true;
+  document.getElementById('trigger-btn').disabled=true;
+  document.getElementById('result-msg').textContent='';
+  document.getElementById('result-msg').className='result-msg';
+  const isBang=bulletPositions.has(currentChamber);
+  const group=document.getElementById('cyl-group');
+  group.classList.remove('spinning'); void group.offsetWidth;
+  const spins=Math.floor(Math.random()*2)+1;
+  const targetAngle=360*spins+CHAMBER_ANGLES[currentChamber];
+  group.style.setProperty('--spin-end',targetAngle+'deg');
   group.classList.add('spinning');
-
-  setTimeout(() => { showResult(isBang); }, 950);
+  setTimeout(()=>{ showGunResult(isBang); },950);
 }
 
-function showResult(isBang) {
-  const flash = document.getElementById('flash');
-  const msg = document.getElementById('result-msg');
-  const thisChamber = currentChamber;
-
-  if (isBang) {
-    flash.className = 'bang';
-    bangChambers.add(thisChamber);
-    firedCount++;
-    bangCount++;
-    currentChamber++;
-
-    const label = gameMode === 'fixed' ? players[currentPlayerIdx].name : ('第' + turnCount + '番目');
-    msg.textContent = '💥 BANG！　' + label + ' が脱落！';
-    msg.className = 'result-msg bang';
-
-    if (gameMode === 'fixed') {
-      players[currentPlayerIdx].alive = false;
-      players[currentPlayerIdx].bangCount++;
-    }
-
-    drawChambers(false);
-    updateChambersUI();
-    updateBulletInfo();
-
-    setTimeout(() => {
-      if (gameMode === 'fixed') {
+function showGunResult(isBang) {
+  const flash=document.getElementById('flash');
+  const msg=document.getElementById('result-msg');
+  const thisChamber=currentChamber;
+  if(isBang){
+    flash.className='bang';
+    bangChambers.add(thisChamber); firedCount++; bangCount++; currentChamber++;
+    const label=playerMode==='fixed'?players[currentPlayerIdx].name:('第'+turnCount+'番目');
+    msg.textContent='💥 BANG！　'+label+' が脱落！';
+    msg.className='result-msg bang';
+    if(playerMode==='fixed'){players[currentPlayerIdx].alive=false;players[currentPlayerIdx].bangCount++;}
+    drawChambers(false); updateChambersUI(); updateBulletInfo();
+    setTimeout(()=>{
+      if(playerMode==='fixed'){
         updatePlayersUI();
-        const alive = players.filter(p => p.alive);
-        if (bangCount >= numBullets || alive.length <= 1) {
-          endGameFixed(); return;
-        }
-        advancePlayerFixed();
-        busy = false;
-        document.getElementById('trigger-btn').disabled = false;
-      } else {
-        if (bangCount >= numBullets || currentChamber >= 6) {
-          endGameFree(); return;
-        }
-        turnCount++;
-        document.getElementById('cur-name').textContent = '第' + turnCount + '番目';
-        busy = false;
-        document.getElementById('trigger-btn').disabled = false;
+        const alive=players.filter(p=>p.alive);
+        if(bangCount>=numBullets||alive.length<=1){endGunFixed();return;}
+        advancePlayerFixed(); gbusy=false; document.getElementById('trigger-btn').disabled=false;
+      }else{
+        if(bangCount>=numBullets||currentChamber>=6){endGunFree();return;}
+        turnCount++; document.getElementById('cur-name').textContent='第'+turnCount+'番目';
+        gbusy=false; document.getElementById('trigger-btn').disabled=false;
       }
-    }, 1200);
-
-  } else {
-    flash.className = 'safe';
-    firedChambers.add(thisChamber);
-    firedCount++;
-    currentChamber++;
-
-    const label = gameMode === 'fixed' ? players[currentPlayerIdx].name : ('第' + turnCount + '番目');
-    msg.textContent = '🔘 カチッ！　' + label + ' はセーフ！';
-    msg.className = 'result-msg safe';
-
-    drawChambers(false);
-    updateChambersUI();
-    updateBulletInfo();
-
-    if (currentChamber >= 6) {
-      setTimeout(() => {
-        gameMode === 'fixed' ? endGameFixed() : endGameFree();
-      }, 800);
-    } else {
-      setTimeout(() => {
-        if (gameMode === 'fixed') {
-          advancePlayerFixed();
-        } else {
-          turnCount++;
-          document.getElementById('cur-name').textContent = '第' + turnCount + '番目';
-        }
-        busy = false;
-        document.getElementById('trigger-btn').disabled = false;
-      }, 800);
+    },1200);
+  }else{
+    flash.className='safe';
+    firedChambers.add(thisChamber); firedCount++; currentChamber++;
+    const label=playerMode==='fixed'?players[currentPlayerIdx].name:('第'+turnCount+'番目');
+    msg.textContent='🔘 カチッ！　'+label+' はセーフ！';
+    msg.className='result-msg safe';
+    drawChambers(false); updateChambersUI(); updateBulletInfo();
+    if(currentChamber>=6){setTimeout(()=>{playerMode==='fixed'?endGunFixed():endGunFree();},800);}
+    else{
+      setTimeout(()=>{
+        if(playerMode==='fixed') advancePlayerFixed();
+        else{turnCount++;document.getElementById('cur-name').textContent='第'+turnCount+'番目';}
+        gbusy=false; document.getElementById('trigger-btn').disabled=false;
+      },800);
     }
   }
-
-  flash.addEventListener('animationend', () => { flash.className = ''; }, { once: true });
+  flash.addEventListener('animationend',()=>{flash.className='';},{once:true});
 }
 
 function advancePlayerFixed() {
-  do {
-    currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
-  } while (!players[currentPlayerIdx].alive);
-  document.getElementById('cur-name').textContent = players[currentPlayerIdx].name;
+  do{currentPlayerIdx=(currentPlayerIdx+1)%players.length;}while(!players[currentPlayerIdx].alive);
+  document.getElementById('cur-name').textContent=players[currentPlayerIdx].name;
   updatePlayersUI();
 }
 
-function endGameFixed() {
+function endGunFixed() {
   drawChambers(true);
-  const alive = players.filter(p => p.alive);
-  const title = document.getElementById('over-title');
-  const desc = document.getElementById('over-desc');
-  if (alive.length === 1) {
-    title.textContent = '🏆 勝者！';
-    desc.textContent = alive[0].name + ' の勝利！\n最後まで生き残りました。';
-  } else if (alive.length > 1) {
-    title.textContent = '🔫 終了！';
-    desc.textContent = '生存者: ' + alive.map(p => p.name).join('・') + '\n脱落: ' + bangCount + '人';
-  } else {
-    title.textContent = '全員脱落';
-    desc.textContent = '引き分けです。';
-  }
-  setTimeout(() => { document.getElementById('over').classList.add('show'); }, 800);
+  const alive=players.filter(p=>p.alive);
+  const title=document.getElementById('over-title'),desc=document.getElementById('over-desc');
+  if(alive.length===1){title.textContent='🏆 勝者！';desc.textContent=alive[0].name+' の勝利！\n最後まで生き残りました。';}
+  else if(alive.length>1){title.textContent='🔫 終了！';desc.textContent='生存者: '+alive.map(p=>p.name).join('・')+'\n脱落: '+bangCount+'人';}
+  else{title.textContent='全員脱落';desc.textContent='引き分けです。';}
+  setTimeout(()=>{document.getElementById('over').classList.add('show');},800);
   updatePlayersUI();
 }
 
-function endGameFree() {
+function endGunFree() {
   drawChambers(true);
-  const title = document.getElementById('over-title');
-  const desc = document.getElementById('over-desc');
-  const safeCount = firedCount - bangCount;
-  if (bangCount === 0) {
-    title.textContent = '全員セーフ！';
-    desc.textContent = '6穴すべて引き終わりました。\nもう一度挑戦しますか？';
-  } else {
-    title.textContent = '🔫 終了！';
-    desc.textContent = '脱落: ' + bangCount + '人\n生存: ' + safeCount + '人\n（計 ' + firedCount + ' 発引いた）';
-  }
-  setTimeout(() => { document.getElementById('over').classList.add('show'); }, 800);
+  const title=document.getElementById('over-title'),desc=document.getElementById('over-desc');
+  const safeCount=firedCount-bangCount;
+  if(bangCount===0){title.textContent='全員セーフ！';desc.textContent='6穴すべて引き終わりました。\nもう一度挑戦しますか？';}
+  else{title.textContent='🔫 終了！';desc.textContent='脱落: '+bangCount+'人\n生存: '+safeCount+'人\n（計 '+firedCount+' 発引いた）';}
+  setTimeout(()=>{document.getElementById('over').classList.add('show');},800);
 }
 
-document.getElementById('restart-btn').addEventListener('click', () => {
-  if (gameMode === 'fixed') playerNames = players.map(p => p.name);
-  startGame();
-});
-document.getElementById('back-btn').addEventListener('click', backToSetup);
-document.getElementById('again-btn').addEventListener('click', () => {
-  if (gameMode === 'fixed') playerNames = players.map(p => p.name);
-  document.getElementById('over').classList.remove('show');
-  startGame();
-});
-document.getElementById('over-back').addEventListener('click', backToSetup);
+document.getElementById('restart-btn').addEventListener('click',()=>{if(playerMode==='fixed')playerNames=players.map(p=>p.name);startGun();});
+document.getElementById('back-btn').addEventListener('click',backToSetup);
+document.getElementById('again-btn').addEventListener('click',()=>{if(playerMode==='fixed')playerNames=players.map(p=>p.name);document.getElementById('over').classList.remove('show');startGun();});
+document.getElementById('over-back').addEventListener('click',backToSetup);
 
 function backToSetup() {
   document.getElementById('over').classList.remove('show');
-  document.getElementById('game').style.display = 'none';
-  document.getElementById('setup').style.display = 'flex';
+  document.getElementById('game-gun').style.display='none';
+  document.getElementById('setup').style.display='flex';
 }
+
+/* ===== Bomb Game ===== */
+const BOMB_ICON='💣';
+const INSULTS=['ドンマイ！次がんばろ','あちゃー、引いちゃったか〜','今日の運、全部ここで使ったね','爆死。でも顔は無事でよかった','持ってるねぇ〜（悪い意味で）','うわっ、センスないわ〜','やっぱりお前か（笑）','引きの弱さは才能だね','みんな見た？こいつだよ','罰ゲーム確定。逃げられません','罰ゲーム2倍！おめでとう','今のは効いた…罰ゲーム2倍ね','見事すぎる爆死、罰ゲーム2倍だ'];
+let bover=false, bpicks=0, bbtns=[];
+
+document.getElementById('chiku').addEventListener('change',()=>{
+  document.getElementById('chikuState').textContent=document.getElementById('chiku').checked?'ON':'OFF';
+});
+
+function showInsult(){
+  if(!document.getElementById('chiku').checked) return;
+  const msg=INSULTS[Math.floor(Math.random()*INSULTS.length)];
+  const el=document.getElementById('binsult');
+  el.textContent=msg; el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+}
+
+function buildBomb() {
+  const grid=document.getElementById('bgrid'); grid.innerHTML=''; bbtns=[];
+  bover=false; bpicks=0; document.getElementById('bpicks').textContent='0';
+  document.getElementById('bstatus').textContent='赤いボタンを押せ';
+  document.getElementById('bstatus').className='bstatus';
+  for(let i=0;i<16;i++){
+    const slot=document.createElement('div'); slot.className='bslot';
+    const b=document.createElement('button');
+    b.className='bbtn'; b.setAttribute('aria-label',(i+1)+'番のボタン');
+    b.innerHTML='<span class="bbezel"></span><span class="bcap"><span class="bmark" aria-hidden="true"></span></span>';
+    b.addEventListener('click',()=>bpick(i,b));
+    slot.appendChild(b); grid.appendChild(slot); bbtns.push(b);
+  }
+}
+
+function bpick(i,b) {
+  if(bover||b.disabled) return;
+  b.disabled=true; b.classList.add('bpressed');
+  const mark=b.querySelector('.bmark');
+  const remaining=16-bpicks;
+  const isBomb=(remaining<=1);
+  if(isBomb){
+    b.classList.add('bbomb'); mark.textContent=BOMB_ICON;
+    document.getElementById('bstatus').textContent='💥 ドカーン！ 大爆発';
+    document.getElementById('bstatus').className='bstatus boom';
+    bigExplosion(); showInsult();
+    if(navigator.vibrate) navigator.vibrate([80,50,150,40,250]);
+    bendGame(i);
+  }else{
+    b.classList.add('bsafe');
+    bpicks++; document.getElementById('bpicks').textContent=bpicks;
+    if(navigator.vibrate) navigator.vibrate(18);
+    document.getElementById('bstatus').textContent=(bpicks>=15)?'残り1個…それが爆弾だ！':'セーフ… 次は誰だ？';
+  }
+}
+
+function bendGame(bombIdx) {
+  bover=true;
+  bbtns.forEach((c,idx)=>{
+    if(!c.classList.contains('bsafe')&&!c.classList.contains('bbomb')){
+      if(idx===bombIdx){c.classList.add('bbomb');c.querySelector('.bmark').textContent=BOMB_ICON;}
+      c.classList.add('brevealed');
+    }
+    c.disabled=true;
+  });
+}
+
+function bigExplosion() {
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const machine=document.getElementById('bmachine');
+  machine.classList.remove('bshake'); void machine.offsetWidth; machine.classList.add('bshake');
+  const blast=document.getElementById('bblast'); blast.innerHTML='';
+  const flash=document.createElement('div'); flash.className='blastflash'; blast.appendChild(flash);
+  void flash.offsetWidth; flash.classList.add('go');
+  const fb=document.createElement('div'); fb.className='bfireball'; blast.appendChild(fb);
+  void fb.offsetWidth; fb.classList.add('go');
+  const ring=document.createElement('div'); ring.className='bring'; blast.appendChild(ring);
+  void ring.offsetWidth; ring.classList.add('go');
+  const colors=['#ff5b1a','#ffd23f','#ff8a3d','#fff1d0','#c01206','#ffae42'];
+  const W=window.innerWidth,H=window.innerHeight,reach=Math.max(W,H)*0.75;
+  for(let k=0;k<60;k++){
+    const c=document.createElement('div'); c.className='bchunk';
+    const ang=Math.random()*Math.PI*2,dist=reach*(0.35+Math.random()*0.65),sz=6+Math.random()*16;
+    c.style.width=sz+'px'; c.style.height=(sz*(0.5+Math.random()*1.2))+'px';
+    c.style.background=colors[(Math.random()*colors.length)|0];
+    c.style.setProperty('--dx',Math.cos(ang)*dist+'px');
+    c.style.setProperty('--dy',Math.sin(ang)*dist+H*0.25+'px');
+    c.style.setProperty('--rot',(Math.random()*1080-540)+'deg');
+    c.style.setProperty('--dur',(0.7+Math.random()*0.7)+'s');
+    blast.appendChild(c); void c.offsetWidth; c.classList.add('go');
+  }
+  setTimeout(()=>{blast.innerHTML='';},1600);
+}
+
+function startBomb() {
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game-bomb').classList.add('show');
+  buildBomb();
+}
+
+document.getElementById('breset').addEventListener('click',buildBomb);
+document.getElementById('bomb-back').addEventListener('click',()=>{
+  document.getElementById('game-bomb').classList.remove('show');
+  document.getElementById('setup').style.display='flex';
+});
 </script>
 <script src="../shared/firebase-counter.js"></script></body></html>

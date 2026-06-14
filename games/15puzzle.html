@@ -309,15 +309,7 @@ function startPeekInterval(){
   },30000); // 以降30秒ごと
 }
 
-function showOpponentBoard(oppTiles,oppMoves,oppN){
-  const section=document.getElementById('opp-section');
-  section.style.display='block';
-
-  // 相手の盤面情報を更新
-  const solved=oppTiles.filter((v,i)=>v!==0&&v===i+1).length;
-  document.getElementById('opp-info').textContent=`${oppMoves}手・${solved}/${oppN*oppN-1}マス完成`;
-
-  // ミニボードを描画
+function renderOppMini(oppTiles,oppN){
   const mini=document.getElementById('opp-mini-board');
   const maxW=Math.min(window.innerWidth-80,200);
   const cs=Math.min(Math.floor((maxW-16-3*(oppN-1))/oppN),42);
@@ -332,6 +324,25 @@ function showOpponentBoard(oppTiles,oppMoves,oppN){
     if(v!==0)el.textContent=v;
     mini.appendChild(el);
   });
+}
+
+function showOppSectionWaiting(n){
+  // randomモード用プレースホルダー（空タイル）
+  const section=document.getElementById('opp-section');
+  section.style.display='block';
+  document.getElementById('opp-info').textContent='受信中…';
+  const dummy=[];
+  for(let i=0;i<n*n-1;i++)dummy.push(i+1);
+  dummy.push(0);
+  renderOppMini(dummy,n);
+}
+
+function showOpponentBoard(oppTiles,oppMoves,oppN){
+  const section=document.getElementById('opp-section');
+  section.style.display='block';
+  const solved=oppTiles.filter((v,i)=>v!==0&&v===i+1).length;
+  document.getElementById('opp-info').textContent=`${oppMoves}手・${solved}/${oppN*oppN-1}マス完成`;
+  renderOppMini(oppTiles,oppN);
 }
 
 function onStart(seat,n,send){
@@ -361,14 +372,15 @@ function startRace(mode){
     tiles=[...t];
     render();
     createRaceStatus('スタート！先に揃えた方の勝ち（同じ盤面）');
+    showOpponentBoard([...t],0,N); // 同じ盤面なので即表示
     roomSend({t:'start',mode:'same',tiles:t,n:N});
   } else {
     tiles=shuffle(makeSolved());
     render();
     createRaceStatus('スタート！先に揃えた方の勝ち（ランダム盤面）');
+    showOppSectionWaiting(N); // 受信待ちプレースホルダー
     roomSend({t:'start',mode:'random',n:N});
   }
-  // ホストもタイマーをここでスタート（ゲスト側と同期）
   startRaceTimer();
   startPeekInterval();
 }
@@ -390,15 +402,16 @@ function handleMsg(from,msg){
     if(msg.mode==='same'){
       N=msg.n||N;
       tiles=[...msg.tiles];
+      render();
+      createRaceStatus('スタート！先に揃えた方の勝ち（同じ盤面）');
+      showOpponentBoard([...tiles],0,N); // 同じ盤面なので即表示
     } else {
       N=msg.n||N;
-      tiles=shuffle(makeSolved()); // ゲスト側で独自にシャッフル
+      tiles=shuffle(makeSolved());
+      render();
+      createRaceStatus('スタート！先に揃えた方の勝ち（ランダム盤面）');
+      showOppSectionWaiting(N); // 受信待ちプレースホルダー
     }
-    render();
-    createRaceStatus(msg.mode==='same'
-      ?'スタート！先に揃えた方の勝ち（同じ盤面）'
-      :'スタート！先に揃えた方の勝ち（ランダム盤面）');
-    // ホストがstartを送信した瞬間＝ゲストが受信した瞬間でタイマー同時スタート
     startRaceTimer();
     startPeekInterval();
   } else if(msg.t==='peek'){

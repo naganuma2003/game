@@ -27,41 +27,32 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 .round-info{font-size:12px;color:var(--dim)}
 #status{font-size:13px;min-height:20px;text-align:center;color:var(--dim)}
 
-/* Board: 4 rows */
+/* Opponent hand (online) */
+.opp-hand-area{display:none;width:100%;background:var(--surf);border-radius:10px;padding:8px 12px}
+.opp-hand-label{font-size:11px;margin-bottom:6px}
+.opp-hand-cards{display:flex;gap:4px;flex-wrap:wrap}
+.opp-card{width:34px;height:46px;border-radius:5px;background:#24243a;border:1px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.opp-card.used{opacity:.2}
+
+/* Board */
 .board{width:100%;display:flex;flex-direction:column;gap:6px}
 .board-row{display:flex;align-items:center;gap:5px;background:var(--surf);border-radius:10px;padding:6px 8px;min-height:52px}
 .row-label{font-size:10px;color:var(--dim);width:14px;flex-shrink:0;text-align:center}
 .row-cards{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;flex:1}
 .row-empty{font-size:11px;color:#333;padding:0 4px}
-
-/* Cards */
-.card-el{
-  width:38px;height:52px;border-radius:5px;flex-shrink:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  font-weight:800;font-size:13px;
-  background:#24243a;border:1px solid #333;
-  user-select:none;position:relative;
-}
+.card-el{width:38px;height:52px;border-radius:5px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:#24243a;border:1px solid #333;user-select:none}
 .card-el .cn{line-height:1}
 .card-el .cb{font-size:8px;color:var(--red);margin-top:1px}
-.card-el.highlight{border-color:var(--gold);background:#2a2418}
-.card-el.row6{border-color:var(--red);background:#2a1818;animation:pulse6 .6s ease}
-@keyframes pulse6{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.card-el.row6{border-color:var(--red);background:#2a1818;animation:pulse6 .5s ease}
+@keyframes pulse6{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 
 /* Hand */
-.hand-wrap{width:100%}
 .hand-label{font-size:11px;color:var(--dim);text-align:center;margin-bottom:6px}
 .hand-grid{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
-.hcard{
-  width:42px;height:58px;border-radius:6px;flex-shrink:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  font-weight:800;font-size:14px;cursor:pointer;
-  background:#1e1e30;border:2px solid #2e2e44;color:var(--txt);
-  transition:all .12s;
-}
+.hcard{width:42px;height:58px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:14px;cursor:pointer;background:#1e1e30;border:2px solid #2e2e44;color:var(--txt);transition:all .12s;flex-shrink:0}
 .hcard:hover:not(.used){border-color:var(--gold);background:#252535;transform:translateY(-3px)}
 .hcard.selected{border-color:var(--gold2);background:#302808;color:var(--gold2);transform:translateY(-4px);box-shadow:0 4px 12px rgba(201,160,48,.4)}
-.hcard.used{opacity:.18;cursor:default;border-color:#1c1c28}
+.hcard.used{opacity:.2;cursor:default;border-color:#1c1c28}
 .hcard .hcb{font-size:7px;color:var(--red);margin-top:1px}
 
 /* Confirm */
@@ -72,21 +63,21 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 .confirm-hint{font-size:10px;color:var(--dim);min-height:14px}
 
 /* Row pick overlay */
-#row-pick{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:16px}
+#row-pick{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.78);align-items:center;justify-content:center;padding:16px}
 .rp-card{background:var(--surf);border-radius:14px;padding:20px;max-width:360px;width:100%;text-align:center}
-.rp-card h3{color:var(--gold);margin-bottom:8px;font-size:16px}
-.rp-card p{font-size:12px;color:var(--dim);margin-bottom:14px}
+.rp-card h3{color:var(--gold);margin-bottom:6px;font-size:15px}
+.rp-card p{font-size:11px;color:var(--dim);margin-bottom:12px}
 .rp-rows{display:flex;flex-direction:column;gap:8px}
-.rp-row-btn{
-  display:flex;align-items:center;gap:8px;padding:9px 12px;
-  border-radius:8px;background:#24243a;border:1px solid #333;cursor:pointer;
-  text-align:left;transition:background .15s;
-}
+.rp-row-btn{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;background:#24243a;border:1px solid #333;cursor:pointer;text-align:left;transition:background .15s}
 .rp-row-btn:hover{background:#2e2e48;border-color:var(--gold)}
 .rp-row-cards{display:flex;gap:3px;flex:1;overflow:hidden}
 .rp-penalty{font-size:11px;color:var(--red);flex-shrink:0}
 
-/* Scores */
+/* Reveal + scores */
+.reveal-area{display:none;width:100%;background:var(--surf);border-radius:10px;padding:10px 12px}
+.reveal-title{font-size:11px;color:var(--dim);margin-bottom:7px}
+.reveal-players{display:flex;gap:8px;flex-wrap:wrap}
+.rev-p{display:flex;align-items:center;gap:5px;font-size:12px}
 .scores{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
 .score-chip{padding:5px 11px;border-radius:8px;background:var(--surf);font-size:12px;display:flex;gap:6px;align-items:center}
 .sc-val{font-size:14px;font-weight:800}
@@ -102,20 +93,13 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 .go-btns button{padding:9px 20px;border-radius:8px;font:700 13px 'Segoe UI',sans-serif;cursor:pointer;border:none}
 .go-btns .again{background:var(--gold);color:#111}
 .go-btns .home{background:#2a2a38;color:var(--txt)}
-
-/* CPU reveal area */
-.reveal-area{display:none;width:100%;background:var(--surf);border-radius:10px;padding:10px 12px}
-.reveal-title{font-size:11px;color:var(--dim);margin-bottom:7px}
-.reveal-players{display:flex;gap:8px;flex-wrap:wrap}
-.rev-p{display:flex;align-items:center;gap:5px;font-size:12px}
 </style>
 </head>
 <body>
 <a href="../index.html" class="back">← 一覧に戻る</a>
 
-<!-- SETUP -->
 <section id="setup">
-  <h1>🐄 ニムト</h1>
+  <h1>🐂 ニムト</h1>
   <p class="subtitle">6 nimmt! — 同時出しカードゲーム 2〜10人</p>
   <div class="form-row">
     <label>人数（CPU含む）</label>
@@ -141,16 +125,20 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
   </div>
   <button class="start-btn" id="start-btn">ゲームスタート</button>
   <div class="rules-box">
-    <b>ルール：</b>104枚のカードを配り、毎ラウンド全員同時に1枚出す。出したカードは昇順で4列のどこかに並ぶ（末尾より大きく最近傍の列）。<b>6枚目を置いた人</b>はその列を引き取り、牛の頭の数がペナルティ点に。<br>
-    出したカードがどの列末尾より<b>小さければ</b>、好きな列を選んで引き取る。10ラウンドで終了、最少ペナルティの人が勝ち。<br>
-    <b>牛の頭：</b>55=7点 / ×10=3点 / ×5=2点 / その他=1点
+    <b>ルール：</b>104枚のカードを配り、毎ラウンド全員同時に1枚出す。出したカードは昇順で4列に並ぶ（末尾より大きく最近傍の列）。<b>6枚目を置いた人</b>はその列を引き取り、牛の頭の数がペナルティ。出したカードがどの列末尾より<b>小さければ</b>、好きな列を選んで引き取る。10ラウンドで最少ペナルティの人が勝ち。<br>
+    <b>牛の頭：</b>55=7頭 / ×10=3頭 / ×5=2頭 / その他=1頭
   </div>
 </section>
 
-<!-- GAME -->
 <div id="game">
   <div class="round-info" id="round-info">ラウンド 1 / 10</div>
   <div id="status">カードを1枚選んでください</div>
+
+  <!-- Online opponent hand -->
+  <div class="opp-hand-area" id="opp-hand-area">
+    <div class="opp-hand-label" id="opp-hand-label">相手の手札</div>
+    <div class="opp-hand-cards" id="opp-hand-cards"></div>
+  </div>
 
   <div class="board" id="board"></div>
 
@@ -159,7 +147,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
     <div class="reveal-players" id="reveal-players"></div>
   </div>
 
-  <div class="hand-wrap">
+  <div>
     <div class="hand-label">あなたの手札（残り <span id="hand-count">10</span> 枚）</div>
     <div class="hand-grid" id="hand-grid"></div>
   </div>
@@ -172,7 +160,6 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
   <div class="scores" id="scores"></div>
 </div>
 
-<!-- ROW PICK OVERLAY -->
 <div id="row-pick">
   <div class="rp-card">
     <h3>どの列を引き取りますか？</h3>
@@ -181,7 +168,6 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
   </div>
 </div>
 
-<!-- GAMEOVER -->
 <div id="gameover">
   <div class="go-card">
     <h2>ゲーム終了</h2>
@@ -194,286 +180,216 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 </div>
 
 <script>
-// ===================== CONSTANTS =====================
-const TOTAL_ROUNDS = 10;
-const PCOLS = ['#c9a030','#e0473a','#3e87d6','#4ec05e','#e67e22','#9b59b6','#00b3b3','#cc44cc','#999','#bb8833'];
+const TOTAL_ROUNDS=10;
+const PCOLS=['#c9a030','#e0473a','#3e87d6','#4ec05e','#e67e22','#9b59b6','#00b3b3','#cc44cc','#aaa','#bb8833'];
+function bullHeads(n){return n===55?7:n%10===0?3:n%5===0?2:1;}
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
 
-function bullHeads(n) {
-  if (n === 55) return 7;
-  if (n % 10 === 0) return 3;
-  if (n % 5 === 0) return 2;
-  return 1;
-}
+let G={};
+let opPlay=null;
+let pendingRowCb=null;
 
-function shuffle(a) {
-  a = [...a]; for (let i=a.length-1;i>0;i--){const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;
-}
-
-// ===================== GAME STATE =====================
-let G = {};
-
-function initGame(numP, diff) {
-  const deck = shuffle(Array.from({length:104},(_,i)=>i+1));
-  const hands = Array.from({length:numP}, (_,i) => deck.slice(i*10, i*10+10).sort((a,b)=>a-b));
-  const tableCards = deck.slice(numP*10, numP*10+4).sort((a,b)=>a-b);
-
-  G = {
-    numP, diff,
-    names: ['あなた',...Array.from({length:numP-1},(_,i)=>`CPU ${i+1}`)],
-    hands,
-    rows: tableCards.map(c=>[c]),
-    penalties: Array(numP).fill(0),
-    round: 1,
-    phase: 'picking',
-    myChoice: null,
-    pendingPick: null, // player index who must pick a row
-    pendingBids: null,
+function initGame(numP,diff,online,mySeat){
+  const deck=shuffle(Array.from({length:104},(_,i)=>i+1));
+  const hands=Array.from({length:numP},(_,i)=>deck.slice(i*10,i*10+10).sort((a,b)=>a-b));
+  const tableCards=deck.slice(numP*10,numP*10+4).sort((a,b)=>a-b);
+  const myIdx=online?mySeat:0;
+  G={
+    numP,diff,online,myIdx,
+    names:online?(mySeat===0?['あなた','相手']:['相手','あなた']):['あなた',...Array.from({length:numP-1},(_,i)=>`CPU ${i+1}`)],
+    hands,rows:tableCards.map(c=>[c]),
+    penalties:Array(numP).fill(0),
+    round:1,phase:'picking',myChoice:null,cpuChoices:[],
   };
-
+  opPlay=null;pendingRowCb=null;
   document.getElementById('setup').style.display='none';
   document.getElementById('game').style.display='flex';
+  if(online){
+    const area=document.getElementById('opp-hand-area');area.style.display='block';
+    const opIdx=1-mySeat;
+    document.getElementById('opp-hand-label').textContent=`${G.names[opIdx]}の手札`;
+  }
   renderAll();
 }
 
-// ===================== GAME LOGIC =====================
-
-// Find target row for a card: the row whose last card is smaller than this card
-// and closest to it. Returns row index or -1 if no valid row.
-function targetRow(card) {
-  let best = -1, bestVal = -1;
-  for (let r=0;r<4;r++) {
-    const last = G.rows[r][G.rows[r].length-1];
-    if (last < card && last > bestVal) { bestVal=last; best=r; }
-  }
+function targetRow(card){
+  let best=-1,bestVal=-1;
+  for(let r=0;r<4;r++){const last=G.rows[r][G.rows[r].length-1];if(last<card&&last>bestVal){bestVal=last;best=r;}}
   return best;
 }
+function takeRow(r,player){
+  G.penalties[player]+=G.rows[r].reduce((s,c)=>s+bullHeads(c),0);
+  G.rows[r]=[];renderScores();
+}
+function cpuChoose(hand,rows,diff){
+  if(diff==='easy')return hand[0|Math.random()*hand.length];
+  const safe=hand.filter(c=>{const r=targetRow2(c,rows);return r!==-1&&rows[r].length<5;});
+  if(diff==='normal'){if(safe.length)return safe[0|Math.random()*safe.length];return hand[0|Math.random()*hand.length];}
+  let best=null,bestS=Infinity;
+  for(const c of hand){const r=targetRow2(c,rows);let s;if(r===-1)s=Math.min(...rows.map(row=>row.reduce((x,c2)=>x+bullHeads(c2),0)));else if(rows[r].length===5)s=rows[r].reduce((x,c2)=>x+bullHeads(c2),0);else s=0;if(s<bestS){bestS=s;best=c;}}
+  return best||hand[0];
+}
+function targetRow2(card,rows){let b=-1,bv=-1;for(let r=0;r<4;r++){const l=rows[r][rows[r].length-1];if(l<card&&l>bv){bv=l;b=r;}}return b;}
+function cpuPickRow(rows){let b=0,bp=Infinity;for(let r=0;r<4;r++){const p=rows[r].reduce((s,c)=>s+bullHeads(c),0);if(p<bp){bp=p;b=r;}}return b;}
 
-function selectCard(c) {
-  if (G.phase !== 'picking') return;
-  if (!G.hands[0].includes(c)) return;
-  G.myChoice = G.myChoice===c ? null : c;
-  renderHand(); updateBtn();
+function selectCard(c){
+  if(G.phase!=='picking')return;
+  if(!G.hands[G.myIdx].includes(c))return;
+  G.myChoice=G.myChoice===c?null:c;
+  renderHand();updateBtn();
 }
 
-function confirmChoice() {
-  if (!G.myChoice || G.phase!=='picking') return;
-  G.phase = 'waiting';
-  updateBtn();
+function confirmChoice(){
+  if(!G.myChoice||G.phase!=='picking')return;
+  G.phase='waiting';updateBtn();
+  document.getElementById('status').textContent=G.online?'相手の選択を待っています…':'集計中…';
 
-  // CPU picks
-  const bids = [{player:0, card:G.myChoice}];
-  for (let i=1;i<G.numP;i++) {
-    bids.push({player:i, card:cpuChoose(G.hands[i], G.rows, G.diff)});
-  }
-
-  // Remove chosen cards from hands
-  for (const b of bids) {
-    G.hands[b.player] = G.hands[b.player].filter(c=>c!==b.card);
-  }
-
-  // Show reveal
-  showReveal(bids);
-
-  // Sort bids ascending
-  bids.sort((a,b)=>a.card-b.card);
-  G.pendingBids = bids;
-
-  setTimeout(()=>processBids(bids, 0), 800);
-}
-
-function processBids(bids, idx) {
-  if (idx >= bids.length) {
-    // Round done
-    G.round++;
-    G.phase = 'picking';
-    G.myChoice = null;
-    G.pendingBids = null;
-    document.getElementById('reveal-area').style.display='none';
-    if (G.round > TOTAL_ROUNDS || G.hands[0].length === 0) {
-      showGameOver(); return;
-    }
-    renderAll(); return;
-  }
-
-  const b = bids[idx];
-  const row = targetRow(b.card);
-
-  if (row === -1) {
-    // Card smaller than all row endings — must pick a row
-    if (b.player === 0) {
-      // Human picks
-      showRowPick(b.card, (pickedRow)=>{
-        takeRow(pickedRow, b.player);
-        G.rows[pickedRow].push(b.card);
-        renderBoard();
-        setTimeout(()=>processBids(bids, idx+1), 600);
-      });
-    } else {
-      // CPU picks row with minimum penalty
-      const pick = cpuPickRow(G.rows, G.diff);
-      takeRow(pick, b.player);
-      G.rows[pick].push(b.card);
-      renderBoard();
-      setTimeout(()=>processBids(bids, idx+1), 600);
-    }
-  } else if (G.rows[row].length === 5) {
-    // Will become 6th card — take the row
-    takeRow(row, b.player);
-    G.rows[row].push(b.card);
-    renderBoard(row);
-    setTimeout(()=>processBids(bids, idx+1), 600);
+  if(G.online){
+    OnlineCore.send({t:'play',card:G.myChoice});
+    if(opPlay!==null)startOnlineReveal();
   } else {
-    // Normal placement
-    G.rows[row].push(b.card);
-    renderBoard();
-    setTimeout(()=>processBids(bids, idx+1), 400);
+    G.cpuChoices=[];
+    for(let i=1;i<G.numP;i++)G.cpuChoices.push(cpuChoose([...G.hands[i]],G.rows,G.diff));
+    showRevealOffline();
+    const bids=[{player:0,card:G.myChoice},...G.cpuChoices.map((c,i)=>({player:i+1,card:c}))];
+    for(const b of bids)G.hands[b.player]=G.hands[b.player].filter(c=>c!==b.card);
+    bids.sort((a,b)=>a.card-b.card);
+    setTimeout(()=>processBidsSeq(bids,0,roundDone),500);
   }
 }
 
-function takeRow(rowIdx, player) {
-  const pen = G.rows[rowIdx].reduce((s,c)=>s+bullHeads(c),0);
-  G.penalties[player] += pen;
-  G.rows[rowIdx] = [];
-  renderScores();
+function handleOnlineMsg(msg){
+  if(msg.t==='play'){
+    opPlay=msg.card;
+    if(G.phase==='waiting')startOnlineReveal();
+  } else if(msg.t==='pick-row'){
+    if(pendingRowCb){const cb=pendingRowCb;pendingRowCb=null;cb(msg.row);}
+  }
 }
 
-// ===================== CPU AI =====================
-function cpuChoose(hand, rows, diff) {
-  if (diff==='easy') return hand[0|Math.random()*hand.length];
+function startOnlineReveal(){
+  const myCard=G.myChoice,opCard=opPlay;opPlay=null;
+  const bids=G.myIdx===0
+    ?[{player:0,card:myCard},{player:1,card:opCard}]
+    :[{player:0,card:opCard},{player:1,card:myCard}];
+  G.hands[0]=G.hands[0].filter(c=>c!==bids[0].card);
+  G.hands[1]=G.hands[1].filter(c=>c!==bids[1].card);
+  showReveal(bids);
+  bids.sort((a,b)=>a.card-b.card);
+  setTimeout(()=>processBidsSeq(bids,0,roundDone),500);
+}
 
-  // normal/hard: try to play a card that goes to an existing row without triggering 6th
-  const rowEnds = rows.map(r=>r[r.length-1]);
+function processBidsSeq(bids,idx,done){
+  if(idx>=bids.length){setTimeout(done,300);return;}
+  const b=bids[idx];
+  const row=targetRow(b.card);
+  const next=()=>setTimeout(()=>processBidsSeq(bids,idx+1,done),450);
+  const isHuman=G.online?(b.player===G.myIdx):(b.player===0);
 
-  if (diff==='normal') {
-    // Pick a small-ish card — avoid being too high (risk taking full row)
-    // Prefer cards that fit rows without being 6th
-    const safe = hand.filter(c=>{
-      const r=targetRow2(c,rows);
-      return r!==-1 && rows[r].length<5;
-    });
-    if (safe.length) return safe[0|Math.random()*safe.length];
-    return hand[0|Math.random()*hand.length];
-  }
-
-  // hard: minimize expected penalty
-  // Sort candidates by score impact
-  let best=null, bestScore=Infinity;
-  for (const c of hand) {
-    const r=targetRow2(c,rows);
-    let score;
-    if (r===-1) {
-      // Must take a row — take min penalty row
-      score = Math.min(...rows.map(row=>row.reduce((s,c2)=>s+bullHeads(c2),0)));
-    } else if (rows[r].length===5) {
-      score = rows[r].reduce((s,c2)=>s+bullHeads(c2),0);
+  if(row===-1){
+    if(isHuman){
+      showRowPick(b.card,r=>{
+        if(G.online)OnlineCore.send({t:'pick-row',row:r});
+        takeRow(r,b.player);G.rows[r].push(b.card);renderBoard();next();
+      });
+    } else if(G.online){
+      pendingRowCb=r=>{takeRow(r,b.player);G.rows[r].push(b.card);renderBoard();next();};
+      document.getElementById('status').textContent='相手が列を選んでいます…';
     } else {
-      score = 0;
+      const r=cpuPickRow(G.rows);
+      setTimeout(()=>{takeRow(r,b.player);G.rows[r].push(b.card);renderBoard();next();},300);
     }
-    if (score < bestScore) { bestScore=score; best=c; }
+  } else {
+    const is6=G.rows[row].length===5;
+    if(is6)takeRow(row,b.player);
+    G.rows[row].push(b.card);
+    renderBoard(is6?row:undefined);
+    next();
   }
-  return best || hand[0];
 }
 
-function targetRow2(card, rows) {
-  let best=-1, bestVal=-1;
-  for (let r=0;r<4;r++) {
-    const last=rows[r][rows[r].length-1];
-    if (last<card&&last>bestVal){bestVal=last;best=r;}
-  }
-  return best;
+function roundDone(){
+  G.round++;G.myChoice=null;G.cpuChoices=[];G.phase='picking';
+  document.getElementById('reveal-area').style.display='none';
+  if(G.round>TOTAL_ROUNDS||G.hands[G.myIdx].length===0){showGameOver();return;}
+  renderAll();
 }
 
-function cpuPickRow(rows, diff) {
-  let best=0, bestPen=Infinity;
-  for (let r=0;r<4;r++) {
-    const pen=rows[r].reduce((s,c)=>s+bullHeads(c),0);
-    if (pen<bestPen){bestPen=pen;best=r;}
-  }
-  return best;
-}
-
-// ===================== ROW PICK UI =====================
-function showRowPick(card, cb) {
-  const overlay = document.getElementById('row-pick');
-  const rows = document.getElementById('rp-rows');
-  rows.innerHTML = '';
-  overlay.style.display='flex';
-
+function showRowPick(card,cb){
+  const ov=document.getElementById('row-pick'),rows=document.getElementById('rp-rows');
+  rows.innerHTML='';ov.style.display='flex';
   G.rows.forEach((row,r)=>{
-    const pen = row.reduce((s,c)=>s+bullHeads(c),0);
-    const btn = document.createElement('button');
-    btn.className='rp-row-btn';
-    const cardsHtml = row.map(c=>`<div class="card-el" style="width:32px;height:44px;font-size:11px"><div class="cn">${c}</div><div class="cb">${'🐄'.repeat(bullHeads(c))}</div></div>`).join('');
-    btn.innerHTML=`<div class="rp-row-cards">${cardsHtml}</div><span class="rp-penalty">${pen}頭</span>`;
-    btn.addEventListener('click',()=>{
-      overlay.style.display='none';
-      cb(r);
-    });
+    const pen=row.reduce((s,c)=>s+bullHeads(c),0);
+    const btn=document.createElement('button');btn.className='rp-row-btn';
+    const ch=row.map(c=>`<div class="card-el" style="width:30px;height:42px;font-size:11px"><div class="cn">${c}</div><div class="cb">${bullHeads(c)>1?'🐂'.repeat(Math.min(bullHeads(c),7)):''}</div></div>`).join('');
+    btn.innerHTML=`<div class="rp-row-cards">${ch}</div><span class="rp-penalty">${pen}頭</span>`;
+    btn.addEventListener('click',()=>{ov.style.display='none';cb(r);});
     rows.appendChild(btn);
   });
 }
 
-// ===================== RENDERING =====================
-function renderAll() {
+function showReveal(bids){
+  const area=document.getElementById('reveal-area'),pl=document.getElementById('reveal-players');
+  area.style.display='block';pl.innerHTML='';
+  for(const b of [...bids].sort((a,z)=>a.card-z.card)){
+    const d=document.createElement('div');d.className='rev-p';
+    d.innerHTML=`<span style="color:${PCOLS[b.player]};font-weight:700">${G.names[b.player]}</span><div class="card-el" style="width:34px;height:46px;font-size:12px"><div class="cn">${b.card}</div><div class="cb" style="font-size:7px">${'🐂'.repeat(Math.min(bullHeads(b.card),7))}</div></div>`;
+    pl.appendChild(d);
+  }
+}
+function showRevealOffline(){
+  const bids=[{player:0,card:G.myChoice},...G.cpuChoices.map((c,i)=>({player:i+1,card:c}))];
+  showReveal(bids);
+}
+
+function renderAll(){
   document.getElementById('round-info').textContent=`ラウンド ${G.round} / ${TOTAL_ROUNDS}`;
   document.getElementById('status').textContent='カードを1枚選んでください';
-  renderBoard();
-  renderHand();
-  renderScores();
-  updateBtn();
+  renderBoard();renderHand();renderScores();renderOppHand();updateBtn();
 }
-
-function renderBoard(highlightRow) {
-  const board = document.getElementById('board');
-  board.innerHTML='';
+function renderBoard(highlightRow){
+  const board=document.getElementById('board');board.innerHTML='';
   G.rows.forEach((row,r)=>{
-    const div=document.createElement('div');
-    div.className='board-row';
+    const div=document.createElement('div');div.className='board-row';
     div.innerHTML=`<div class="row-label">${r+1}</div>`;
     const rc=document.createElement('div');rc.className='row-cards';
-    if(row.length===0){
-      rc.innerHTML='<span class="row-empty">（空）</span>';
-    } else {
-      row.forEach((c,i)=>{
-        const ce=document.createElement('div');
-        ce.className='card-el'+(r===highlightRow&&i===row.length-1?' row6':'');
-        ce.innerHTML=`<div class="cn">${c}</div><div class="cb">${bullHeads(c)>1?'🐄'.repeat(Math.min(bullHeads(c),7)):''}</div>`;
-        rc.appendChild(ce);
-      });
-    }
-    div.appendChild(rc);
-    board.appendChild(div);
+    if(!row.length){rc.innerHTML='<span class="row-empty">（空）</span>';}
+    else row.forEach((c,i)=>{
+      const ce=document.createElement('div');
+      ce.className='card-el'+(r===highlightRow&&i===row.length-1?' row6':'');
+      ce.innerHTML=`<div class="cn">${c}</div><div class="cb">${bullHeads(c)>1?'🐂'.repeat(Math.min(bullHeads(c),7)):''}</div>`;
+      rc.appendChild(ce);
+    });
+    div.appendChild(rc);board.appendChild(div);
   });
 }
-
-function renderHand() {
+function renderHand(){
   const grid=document.getElementById('hand-grid');
-  const used=new Set();
-  if(G.myChoice!==null)used.add(G.myChoice);
-  grid.innerHTML='';
-  const hand=[...G.hands[0]].sort((a,b)=>a-b);
+  const hand=[...G.hands[G.myIdx]].sort((a,b)=>a-b);
   document.getElementById('hand-count').textContent=hand.length;
+  grid.innerHTML='';
   hand.forEach(c=>{
     const btn=document.createElement('button');
-    btn.className='hcard'+(c===G.myChoice?' selected':'');
-    btn.innerHTML=`<div>${c}</div><div class="hcb">${'🐄'.repeat(Math.min(bullHeads(c),7))}</div>`;
+    btn.className='hcard'+(c===G.myChoice?' selected':G.phase!=='picking'?' used':'');
+    btn.innerHTML=`<div>${c}</div><div class="hcb">${'🐂'.repeat(Math.min(bullHeads(c),7))}</div>`;
     btn.addEventListener('click',()=>selectCard(c));
     grid.appendChild(btn);
   });
 }
-
-function showReveal(bids) {
-  const area=document.getElementById('reveal-area');
-  const players=document.getElementById('reveal-players');
-  area.style.display='block';players.innerHTML='';
-  for(const b of [...bids].sort((a,z)=>a.card-z.card)){
-    const d=document.createElement('div');d.className='rev-p';
-    d.innerHTML=`<span style="color:${PCOLS[b.player]};font-weight:700">${G.names[b.player]}</span><div class="card-el" style="width:34px;height:46px;font-size:12px"><div class="cn">${b.card}</div><div class="cb" style="font-size:7px">${'🐄'.repeat(Math.min(bullHeads(b.card),7))}</div></div>`;
-    players.appendChild(d);
-  }
+function renderOppHand(){
+  if(!G.online)return;
+  const opIdx=1-G.myIdx;
+  const hand=[...G.hands[opIdx]].sort((a,b)=>a-b);
+  const area=document.getElementById('opp-hand-cards');area.innerHTML='';
+  const allOrig=[...Array(10).keys()].map(i=>i*10+opIdx*10+1); // not quite right but close
+  // Just show remaining cards (same structure as my hand display)
+  hand.forEach(c=>{
+    const d=document.createElement('div');d.className='opp-card';
+    d.innerHTML=`<div>${c}</div><div style="font-size:7px;color:var(--red)">${'🐂'.repeat(Math.min(bullHeads(c),7))}</div>`;
+    area.appendChild(d);
+  });
 }
-
-function renderScores() {
+function renderScores(){
   const el=document.getElementById('scores');el.innerHTML='';
   for(let i=0;i<G.numP;i++){
     const c=document.createElement('div');c.className='score-chip';
@@ -481,16 +397,13 @@ function renderScores() {
     el.appendChild(c);
   }
 }
-
-function updateBtn() {
-  const btn=document.getElementById('confirm-btn');
-  const hint=document.getElementById('confirm-hint');
+function updateBtn(){
+  const btn=document.getElementById('confirm-btn'),hint=document.getElementById('confirm-hint');
   const ok=G.myChoice!==null&&G.phase==='picking';
   btn.classList.toggle('active',ok);
   hint.textContent=ok?`${G.myChoice} を出す（牛${bullHeads(G.myChoice)}頭）`:(G.phase==='picking'?'カードをタップ':'');
 }
-
-function showGameOver() {
+function showGameOver(){
   const rows=document.getElementById('go-rows');rows.innerHTML='';
   const ps=G.penalties.map((p,i)=>({i,p,name:G.names[i]})).sort((a,b)=>a.p-b.p);
   const min=ps[0].p;
@@ -503,15 +416,32 @@ function showGameOver() {
   document.getElementById('gameover').style.display='flex';
 }
 
-// ===================== EVENTS =====================
 document.getElementById('start-btn').addEventListener('click',()=>{
-  initGame(+document.getElementById('sel-players').value, document.getElementById('sel-diff').value);
+  initGame(+document.getElementById('sel-players').value,document.getElementById('sel-diff').value,false,-1);
 });
-document.getElementById('confirm-btn').addEventListener('click', confirmChoice);
+document.getElementById('confirm-btn').addEventListener('click',confirmChoice);
 document.getElementById('again-btn').addEventListener('click',()=>{
   document.getElementById('gameover').style.display='none';
-  document.getElementById('game').style.display='none';
-  document.getElementById('setup').style.display='';
+  if(G.online){location.reload();}else{document.getElementById('game').style.display='none';document.getElementById('setup').style.display='';}
+});
+</script>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js?v=7"></script>
+<script src="../shared/online-core.js?v=8"></script>
+<script>
+OnlineCore.init({
+  gameId:'nimmt',
+  statusSel:'#status',
+  hostMark:'\x00',guestMark:'\x00',
+  blockRelay:()=>true,pvpSel:null,hideSel:null,
+  afterStart:(seat)=>{
+    const b=document.getElementById('oc-badge');if(b)b.style.display='none';
+    document.getElementById('setup').style.display='none';
+    document.getElementById('opp-hand-area').style.display='block';
+    initGame(2,'normal',true,seat);
+  },
+  customMsg:handleOnlineMsg,
 });
 </script>
 <script src="../shared/firebase-counter.js"></script>

@@ -48,6 +48,8 @@
     morris: "games/morris.html",
     koikoi: "games/hanafuda.html",
     hagetaka: "games/hagetaka.html",
+    nimmt: "games/nimmt.html",
+    algo: "games/algo.html",
   };
 
   function randomCode() {

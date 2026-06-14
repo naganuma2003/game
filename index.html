@@ -363,13 +363,13 @@
           </div>
           <div class="name">マンカラ</div>
           <div class="desc">種まきのカラハ。連続手番の妙を楽しむ。</div>
-          <div class="tagrow"><a class="tag" href="games/mancala.html">プレイする →</a><a class="tag tag-online" href="games/mancala.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/mancala.html">プレイする →</a><a class="tag tag-online" href="games/mancala.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-mancala').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon" style="font-size:30px;letter-spacing:-2px"><span style="color:#e0473a">⬢</span><span style="color:#3e87d6">⬢</span></div>
           <div class="name">ヘックス</div>
           <div class="desc">六角盤の接続ゲーム。引き分けなし。</div>
-          <div class="tagrow"><a class="tag" href="games/hex.html">プレイする →</a><a class="tag tag-online" href="games/hex.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/hex.html">プレイする →</a><a class="tag tag-online" href="games/hex.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-hex').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon" style="display:flex;gap:2px;height:40px;align-items:flex-start">
@@ -386,13 +386,13 @@
           <div class="icon">👻</div>
           <div class="name">ガイスター</div>
           <div class="desc">青と赤の正体非公開。ノーチートCPU。</div>
-          <div class="tagrow"><a class="tag" href="games/geister.html">プレイする →</a><a class="tag tag-online" href="games/geister.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/geister.html">プレイする →</a><a class="tag tag-online" href="games/geister.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-geister').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon" style="font-size:17px;letter-spacing:1px">🔴🟡🔴🟡</div>
           <div class="name">コネクトフォー</div>
           <div class="desc">重力落下で4連。深さ9のαβ探索CPU。</div>
-          <div class="tagrow"><a class="tag" href="games/connect4.html">プレイする →</a><a class="tag tag-online" href="games/connect4.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/connect4.html">プレイする →</a><a class="tag tag-online" href="games/connect4.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-connect4').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon" style="display:inline-grid;grid-template-columns:repeat(3,1fr);width:39px;height:39px;border-radius:4px;overflow:hidden">
@@ -1053,6 +1053,114 @@
       <ul>
         <li>序盤は中央付近に展開すると有利。</li>
         <li>「四」（あと1手で五目）を作りながら守りを崩すのが基本。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- マンカラ ルールモーダル -->
+  <div id="rule-mancala" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-mancala').classList.remove('show')">×</button>
+      <h2>🪨 マンカラ ルール</h2>
+      <h3>目的</h3>
+      <p>ゲーム終了時に自分のストア（右端の大きな穴）に入った石が多い方の勝ち。</p>
+      <h3>盤の構成</h3>
+      <ul>
+        <li>2列×6穴＋両端にストアの計14穴。</li>
+        <li>最初は各穴に石4個ずつ（計48個）。</li>
+      </ul>
+      <h3>手番の流れ</h3>
+      <ul>
+        <li>自分側の穴を1つ選び、全ての石を取り出す。</li>
+        <li>反時計回りに1穴ずつ1個ずつ石を蒔いていく。</li>
+        <li>自分のストアには石を入れる（＋1点）が、相手のストアは飛ばす。</li>
+      </ul>
+      <h3>特別ルール</h3>
+      <ul>
+        <li><b>連続手番</b>：最後の石が自分のストアに入ったら、もう一度手番を得る。</li>
+        <li><b>奪取</b>：最後の石が自分側の空穴に入り、かつ真向かいの穴に石があれば、両方の穴の石を自分のストアに取り込める。</li>
+      </ul>
+      <h3>終了</h3>
+      <p>どちらかのプレイヤーの穴がすべて空になったら終了。残った石は相手のストアへ。石の多い方が勝ち。</p>
+    </div>
+  </div>
+
+  <!-- ヘックス ルールモーダル -->
+  <div id="rule-hex" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-hex').classList.remove('show')">×</button>
+      <h2>⬡ ヘックス ルール</h2>
+      <h3>目的</h3>
+      <p>六角形のマス目で、自分の2辺を石でつなぎ切った方の勝ち。</p>
+      <h3>基本ルール</h3>
+      <ul>
+        <li>赤と青が交互に1マスずつ石を置く。</li>
+        <li>赤は上下の辺、青は左右の辺をつなぐことを目指す。</li>
+        <li>六角形なので隣接は最大6方向。斜めにもつながる。</li>
+        <li><b>引き分けは絶対に起きない</b>（数学的に証明されている）。</li>
+      </ul>
+      <h3>パイルール（スワップ）</h3>
+      <ul>
+        <li>先手有利を緩和するため、後手は1手目だけ「相手の置いた石を自分のものにする」選択ができる。</li>
+      </ul>
+      <h3>戦略</h3>
+      <ul>
+        <li>中央を押さえると両辺への経路が広がり有利。</li>
+        <li>相手の接続を遮断しながら自分のパスを確保するのが核心。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ガイスター ルールモーダル -->
+  <div id="rule-geister" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-geister').classList.remove('show')">×</button>
+      <h2>👻 ガイスター ルール</h2>
+      <h3>目的</h3>
+      <p>次の3つのどれかを達成したら勝ち：</p>
+      <ul>
+        <li>相手の青いお化けを4体すべて取る。</li>
+        <li>自分の青いお化けを1体、相手側のコーナーから脱出させる。</li>
+        <li>相手が自分の赤いお化けを4体すべて取る（相手が全部引き取る）。</li>
+      </ul>
+      <h3>セットアップ</h3>
+      <ul>
+        <li>6×6のボード。各プレイヤーは青4体・赤4体の計8体を自分の陣地2行に秘密裏に配置。</li>
+        <li>お化けの色は自分だけが知っている（相手には見えない）。</li>
+      </ul>
+      <h3>手番</h3>
+      <ul>
+        <li>自分のお化けを縦・横に1マス動かす。</li>
+        <li>相手のお化けがいるマスに移動すると、そのお化けを取る（色が判明）。</li>
+      </ul>
+      <h3>脱出</h3>
+      <p>自分の青いお化けが相手陣地の奥コーナー（2か所）に到達し、そのまま脱出すると勝ち。</p>
+    </div>
+  </div>
+
+  <!-- コネクトフォー ルールモーダル -->
+  <div id="rule-connect4" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-connect4').classList.remove('show')">×</button>
+      <h2>🔴 コネクトフォー ルール</h2>
+      <h3>目的</h3>
+      <p>縦・横・斜めのいずれかに自分の色を4つ連続して並べた方の勝ち。</p>
+      <h3>基本ルール</h3>
+      <ul>
+        <li>7列×6行の縦型ボード。</li>
+        <li>コマは<b>重力で落下</b>する——列を選ぶと一番下の空きマスに入る。</li>
+        <li>赤と黄が交互に1枚ずつコマを投入する。</li>
+      </ul>
+      <h3>終了条件</h3>
+      <ul>
+        <li>4連が完成したプレイヤーが勝ち。</li>
+        <li>全マスが埋まって4連がなければ引き分け。</li>
+      </ul>
+      <h3>戦略</h3>
+      <ul>
+        <li>中央列を早めに確保すると勝ちパターンが増える。</li>
+        <li>「3連＋両端が空き」の形（オープンスリー）を作ると防ぎにくい。</li>
+        <li>相手の3連を放置すると次の手で負けるので即座に防ぐ。</li>
       </ul>
     </div>
   </div>

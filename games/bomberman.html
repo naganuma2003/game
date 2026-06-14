@@ -20,7 +20,7 @@
     h1 { font-size: 20px; margin-bottom: 8px; letter-spacing: 0.1em; }
 
     /* 難易度 */
-    .drow { display: flex; gap: 8px; margin-bottom: 8px; }
+    .drow { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; justify-content: center; }
     .dbtn {
       padding: 6px 18px; border: 1.5px solid rgba(255,255,255,0.18);
       border-radius: 20px; background: rgba(255,255,255,0.05);
@@ -29,6 +29,18 @@
     }
     .dbtn.on { background: rgba(80,160,255,0.22); border-color: rgba(80,160,255,0.65); color:#fff; font-weight:700; }
     .dbtn:hover { border-color: rgba(80,160,255,0.5); }
+
+    /* CPU爆弾トグル */
+    #cpu-bomb-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; font-size: 13px; color: #bdd; justify-content: center; }
+    #cpu-bomb-btn {
+      padding: 5px 16px; border-radius: 20px; cursor: pointer; font: 13px inherit;
+      transition: all .15s; border: 1.5px solid rgba(80,220,80,0.65);
+      background: rgba(40,180,80,0.25); color: #8ef; font-weight: 700;
+    }
+    #cpu-bomb-btn.off {
+      background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.18);
+      color: #bdd; font-weight: normal;
+    }
 
     /* HUD */
     #hud {
@@ -91,6 +103,10 @@
   <button class="dbtn on" data-d="0">かんたん</button>
   <button class="dbtn"    data-d="1">ふつう</button>
   <button class="dbtn"    data-d="2">むずかしい</button>
+</div>
+<div id="cpu-bomb-row">
+  <span>🤖 CPU爆弾:</span>
+  <button id="cpu-bomb-btn">ON</button>
 </div>
 
 <div id="hud">
@@ -170,6 +186,7 @@ let sendTimer = 0;   // state送信タイマー
 let cpuMode = false;
 let cpuNextTx = 0, cpuNextTy = 0;
 let cpuBombCD = 0;
+let cpuBombEnabled = true;
 
 // ─── 入力 ────────────────────────────────────────────────────────────────────
 const K = {};
@@ -245,6 +262,13 @@ document.querySelectorAll('.dbtn').forEach(b => b.addEventListener('click', () =
   b.classList.add('on');
   diff = +b.dataset.d;
 }));
+
+document.getElementById('cpu-bomb-btn').addEventListener('click', () => {
+  cpuBombEnabled = !cpuBombEnabled;
+  const btn = document.getElementById('cpu-bomb-btn');
+  btn.textContent = cpuBombEnabled ? 'ON' : 'OFF';
+  btn.classList.toggle('off', !cpuBombEnabled);
+});
 
 // スマホ
 const isTouch = 'ontouchstart' in window;
@@ -559,7 +583,7 @@ function updCPU(dt) {
       const plTx = Math.round(pl.px/T), plTy = Math.round(pl.py/T);
 
       // 爆弾設置: プレイヤーと同一行/列で射程内
-      if (cpuBombCD <= 0 && p2.actB < p2.maxB) {
+      if (cpuBombEnabled && cpuBombCD <= 0 && p2.actB < p2.maxB) {
         const aligned = curTx===plTx || curTy===plTy;
         const dist = Math.abs(curTx-plTx) + Math.abs(curTy-plTy);
         if (aligned && dist <= p2.fire+1 && cpuPathClear(curTx,curTy,plTx,plTy)) {

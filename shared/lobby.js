@@ -47,6 +47,7 @@
     g2048vs: "games/g2048-vs.html",
     morris: "games/morris.html",
     koikoi: "games/hanafuda.html",
+    hagetaka: "games/hagetaka.html",
   };
 
   function randomCode() {

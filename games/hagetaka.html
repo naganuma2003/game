@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ハゲタカのえじき</title>
+<style>
+:root{--bg:#111118;--surf:#1c1c2a;--gold:#c9a030;--gold2:#f0d060;--txt:#e8e8f0;--dim:#555;--red:#d94040;--grn:#3dba6a;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:56px 12px 32px}
+.back{position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.25)}
+
+/* SETUP */
+#setup{width:100%;max-width:360px;margin-top:16px;background:var(--surf);border-radius:16px;padding:24px 20px}
+#setup h1{font-size:24px;text-align:center;color:var(--gold);margin-bottom:2px}
+.subtitle{font-size:12px;color:var(--dim);text-align:center;margin-bottom:20px}
+.form-row{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.form-row label{font-size:12px;color:var(--gold2)}
+.form-row select{background:#141420;border:1px solid #333;color:var(--txt);padding:8px 10px;border-radius:8px;font-size:14px;font-family:inherit}
+.start-btn{width:100%;padding:12px;background:var(--gold);color:#111;border:none;border-radius:10px;font:700 16px 'Segoe UI',sans-serif;cursor:pointer;margin-top:4px}
+.start-btn:hover{background:var(--gold2)}
+.rules-box{margin-top:16px;padding:12px;background:rgba(255,255,255,.04);border-radius:8px;font-size:11px;color:var(--dim);line-height:1.7}
+.rules-box b{color:var(--txt)}
+
+/* GAME */
+#game{display:none;width:100%;max-width:480px;flex-direction:column;align-items:center;gap:12px}
+.round-info{font-size:12px;color:var(--dim);margin-top:4px}
+
+/* Prize card */
+.prize-area{display:flex;flex-direction:column;align-items:center;gap:6px}
+.prize-label{font-size:11px;color:var(--dim)}
+.prize-card{width:110px;height:150px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(0,0,0,.5);user-select:none}
+.prize-card.pos{background:linear-gradient(135deg,#2a1f00,#3c2c00);border:2px solid var(--gold);color:var(--gold2)}
+.prize-card.neg{background:linear-gradient(135deg,#220000,#380808);border:2px solid var(--red);color:var(--red)}
+.picon{font-size:26px;margin-bottom:2px}
+.pval{font-size:52px;font-weight:900;line-height:1}
+@keyframes flipIn{0%{transform:rotateY(90deg) scale(.8);opacity:0}100%{transform:rotateY(0) scale(1);opacity:1}}
+.prize-card.anim{animation:flipIn .35s ease-out}
+
+#status{font-size:13px;min-height:20px;text-align:center;color:var(--dim)}
+
+/* Hand */
+.hand-label{font-size:11px;color:var(--dim);text-align:center;margin-bottom:6px}
+.hand-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;width:100%;max-width:340px}
+.bid-card{aspect-ratio:2/3;border-radius:7px;border:2px solid #2a2a38;background:#1a1a28;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;cursor:pointer;transition:all .12s;color:var(--txt);font-family:inherit}
+.bid-card:hover:not(.used):not(.selected){border-color:var(--gold);background:#252535;transform:translateY(-2px)}
+.bid-card.selected{border-color:var(--gold2);background:#382e08;color:var(--gold2);transform:translateY(-3px);box-shadow:0 4px 12px rgba(201,160,48,.4)}
+.bid-card.used{opacity:.22;cursor:default;border-color:#1e1e28}
+
+/* Confirm */
+.confirm-area{display:flex;flex-direction:column;align-items:center;gap:6px}
+#confirm-btn{padding:10px 36px;background:var(--gold);color:#111;border:none;border-radius:10px;font:700 15px 'Segoe UI',sans-serif;cursor:pointer;opacity:.35;pointer-events:none;transition:opacity .2s}
+#confirm-btn.active{opacity:1;pointer-events:auto}
+#confirm-btn.active:hover{background:var(--gold2)}
+.confirm-hint{font-size:11px;color:var(--dim);min-height:16px}
+
+/* Reveal */
+.reveal-area{display:none;width:100%;max-width:420px;flex-wrap:wrap;gap:10px;justify-content:center;padding:14px;background:var(--surf);border-radius:12px}
+.rev-player{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:68px}
+.rev-name{font-size:11px}
+.rev-card{width:56px;height:78px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;background:#1e1e30;border:2px solid #333;color:var(--txt)}
+.rev-card.winner{border-color:var(--gold);background:#2e2408;color:var(--gold2)}
+.rev-card.loser{border-color:var(--red);background:#2a0808;color:var(--red)}
+.rev-msg{width:100%;text-align:center;font-size:12px;color:var(--txt);font-weight:600;margin-top:2px}
+
+/* Scores */
+.scores{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%}
+.score-chip{padding:6px 12px;border-radius:8px;font-size:12px;background:var(--surf);display:flex;gap:6px;align-items:center}
+.sc-val{font-size:15px;font-weight:800}
+
+/* Gameover */
+#gameover{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.82);align-items:center;justify-content:center;padding:16px}
+.go-card{background:var(--surf);border-radius:16px;padding:24px 20px;max-width:360px;width:100%;text-align:center}
+.go-card h2{font-size:22px;color:var(--gold);margin-bottom:16px}
+.go-rows{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+.go-row{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-radius:8px;background:rgba(255,255,255,.04)}
+.go-row.top{background:rgba(201,160,48,.12);border:1px solid var(--gold)}
+.go-rank{margin-right:6px;font-size:16px}
+.go-name{font-weight:700}
+.go-score{font-size:18px;font-weight:900}
+.go-btns{display:flex;gap:8px;justify-content:center}
+.go-btns button{padding:10px 22px;border-radius:8px;font:700 14px 'Segoe UI',sans-serif;cursor:pointer;border:none}
+.go-btns .again{background:var(--gold);color:#111}
+.go-btns .home{background:#2a2a38;color:var(--txt)}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← 一覧に戻る</a>
+
+<!-- SETUP -->
+<section id="setup">
+  <h1>🦅 ハゲタカのえじき</h1>
+  <p class="subtitle">同時入札カードゲーム 2〜6人</p>
+  <div class="form-row">
+    <label>人数（CPU含む）</label>
+    <select id="sel-players">
+      <option value="2">2人（CPU 1体）</option>
+      <option value="3" selected>3人（CPU 2体）</option>
+      <option value="4">4人（CPU 3体）</option>
+      <option value="5">5人（CPU 4体）</option>
+      <option value="6">6人（CPU 5体）</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label>CPUの強さ</label>
+    <select id="sel-diff">
+      <option value="easy">弱い</option>
+      <option value="normal" selected>ふつう</option>
+      <option value="hard">強い</option>
+    </select>
+  </div>
+  <button class="start-btn" id="start-btn">ゲームスタート</button>
+  <div class="rules-box">
+    <b>ルール：</b>全15ラウンド。毎回1枚の得点カード（-5〜+10）が公開され、全員が同時に入札カード（1〜15）を1枚出す。<br>
+    プラスは<b>最高値の唯一</b>の人が獲得、マイナスは<b>最低値の唯一</b>の人がペナルティ。被ったカードは無効。終了時に合計点が最多の人の勝ち。
+  </div>
+</section>
+
+<!-- GAME -->
+<div id="game">
+  <div class="round-info" id="round-info">ラウンド 1 / 15</div>
+
+  <div class="prize-area">
+    <div class="prize-label">今回の得点カード</div>
+    <div class="prize-card pos" id="prize-card">
+      <div class="picon">🦅</div>
+      <div class="pval" id="prize-val">+1</div>
+    </div>
+  </div>
+
+  <div id="status">カードを選んでください</div>
+
+  <div>
+    <div class="hand-label">あなたの入札カード（1枚選択）</div>
+    <div class="hand-grid" id="hand-grid"></div>
+  </div>
+
+  <div class="confirm-area">
+    <button id="confirm-btn">決定</button>
+    <span class="confirm-hint" id="confirm-hint"></span>
+  </div>
+
+  <div class="reveal-area" id="reveal-area"></div>
+  <div class="scores" id="scores"></div>
+</div>
+
+<!-- GAMEOVER -->
+<div id="gameover">
+  <div class="go-card">
+    <h2>ゲーム終了</h2>
+    <div class="go-rows" id="go-rows"></div>
+    <div class="go-btns">
+      <button class="again" id="again-btn">もう一度</button>
+      <button class="home" onclick="location.href='../index.html'">一覧へ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PRIZES = [-5,-4,-3,-2,-1,1,2,3,4,5,6,7,8,9,10];
+const PCOLS  = ['#c9a030','#e0473a','#3e87d6','#4ec05e','#e67e22','#9b59b6'];
+let G = {};
+
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function resolveRound(prize, bids) {
+  const dir = prize > 0 ? -1 : 1;
+  const uniq = [...new Set(bids.map(b=>b.card))].sort((a,b)=>(b-a)*dir);
+  for (const v of uniq) {
+    const w = bids.filter(b=>b.card===v);
+    if (w.length===1) return w[0].player;
+  }
+  return null;
+}
+
+function cpuChoose(hand, prize, diff) {
+  const s=[...hand].sort((a,b)=>a-b), n=s.length;
+  if(!n)return null;
+  if(diff==='easy')return s[0|Math.random()*n];
+  if(diff==='normal'){
+    if(prize>0){const r=Math.min(n-1,0|n*(0.4+prize/30)+(Math.random()-.5)*2);return s[Math.max(0,r)];}
+    return s[Math.random()<.75?0:Math.min(1,n-1)];
+  }
+  if(prize>0){const r=Math.max(0,Math.min(n-1,0|n*(0.35+prize/20+(Math.random()-.5)*.1)));return s[r];}
+  const r=Math.random();return s[r<.45?0:r<.75?Math.min(1,n-1):Math.min(2,n-1)];
+}
+
+function initGame(numP, diff, online, mySeat) {
+  G = {
+    numP, diff, online, mySeat,
+    names: online
+      ? (mySeat===0?['あなた','相手']:['相手','あなた'])
+      : ['あなた',...Array.from({length:numP-1},(_,i)=>`CPU ${i+1}`)],
+    deck: shuffle(PRIZES),
+    hands: Array.from({length:numP},()=>new Set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15])),
+    scores: Array(numP).fill(0),
+    round: 0, prize:null, phase:'picking',
+    myChoice:null, opChoice:null, cpuChoices:[],
+  };
+  document.getElementById('setup').style.display='none';
+  const g=document.getElementById('game');g.style.display='flex';
+  buildHand();startRound();
+}
+
+function startRound(){
+  if(G.round>=15){showGameOver();return;}
+  G.prize=G.deck[G.round];G.myChoice=null;G.opChoice=null;G.cpuChoices=[];G.phase='picking';
+  document.getElementById('reveal-area').style.display='none';
+  document.getElementById('round-info').textContent=`ラウンド ${G.round+1} / 15`;
+  renderPrize();renderHand();renderScores();renderStatus();updateBtn();
+}
+
+function selectCard(c){
+  if(G.phase!=='picking')return;
+  const h=G.hands[G.online?G.mySeat:0];
+  if(!h.has(c))return;
+  G.myChoice=G.myChoice===c?null:c;
+  renderHand();updateBtn();
+}
+
+function confirmChoice(){
+  if(!G.myChoice||G.phase!=='picking')return;
+  G.phase='waiting';updateBtn();renderStatus();
+  if(G.online){
+    OnlineCore.send({t:'choice',card:G.myChoice});
+    if(G.opChoice!==null)doReveal();
+  } else {
+    for(let i=1;i<G.numP;i++)G.cpuChoices.push(cpuChoose([...G.hands[i]],G.prize,G.diff));
+    setTimeout(doReveal,400);
+  }
+}
+
+function handleOnlineMsg(msg){
+  if(msg.t!=='choice')return;
+  G.opChoice=msg.card;
+  if(G.phase==='waiting')doReveal();
+}
+
+function doReveal(){
+  G.phase='revealing';
+  let bids;
+  if(G.online){
+    bids=G.mySeat===0
+      ?[{player:0,card:G.myChoice},{player:1,card:G.opChoice}]
+      :[{player:0,card:G.opChoice},{player:1,card:G.myChoice}];
+  } else {
+    bids=[{player:0,card:G.myChoice},...G.cpuChoices.map((c,i)=>({player:i+1,card:c}))];
+  }
+  for(const b of bids)G.hands[b.player].delete(b.card);
+  const winner=resolveRound(G.prize,bids);
+  if(winner!==null)G.scores[winner]+=G.prize;
+  renderReveal(bids,winner);renderScores();renderHand();
+  const delay=G.round<14?2500:2800;
+  setTimeout(()=>{if(G.round>=14)showGameOver();else{G.round++;startRound();}},delay);
+}
+
+function showGameOver(){
+  G.phase='gameover';
+  const rows=document.getElementById('go-rows');rows.innerHTML='';
+  const ps=[...G.scores.map((s,i)=>({i,s,name:G.names[i]}))].sort((a,b)=>b.s-a.s);
+  const top=ps[0].s;
+  ps.forEach((p,rank)=>{
+    const d=document.createElement('div');
+    d.className='go-row'+(p.s===top?' top':'');
+    d.innerHTML=`<span><span class="go-rank">${rank===0?'🏆':rank+1+'位'}</span><span class="go-name" style="color:${PCOLS[p.i]}">${p.name}</span></span><span class="go-score" style="color:${p.s>=0?'var(--grn)':'var(--red)'}">${p.s>0?'+':''}${p.s}点</span>`;
+    rows.appendChild(d);
+  });
+  document.getElementById('gameover').style.display='flex';
+}
+
+// --- render ---
+function renderPrize(){
+  const pc=document.getElementById('prize-card'),pv=document.getElementById('prize-val'),p=G.prize;
+  pc.className='prize-card '+(p>0?'pos':'neg');
+  pc.querySelector('.picon').textContent=p>0?'🦅':'💀';
+  pv.textContent=(p>0?'+':'')+p;
+  pc.classList.remove('anim');void pc.offsetWidth;pc.classList.add('anim');
+}
+
+function buildHand(){
+  const g=document.getElementById('hand-grid');g.innerHTML='';
+  for(let c=1;c<=15;c++){
+    const b=document.createElement('button');b.className='bid-card';b.textContent=c;b.dataset.card=c;
+    b.addEventListener('click',()=>selectCard(c));g.appendChild(b);
+  }
+}
+
+function renderHand(){
+  const h=G.hands[G.online?G.mySeat:0];
+  document.querySelectorAll('.bid-card').forEach(b=>{
+    const c=+b.dataset.card;b.classList.remove('selected','used');
+    if(!h.has(c))b.classList.add('used');
+    else if(c===G.myChoice)b.classList.add('selected');
+  });
+}
+
+function renderStatus(){
+  const el=document.getElementById('status');
+  if(G.phase==='picking'){el.textContent=G.prize>0?'高い数字ほど有利（被ると無効）':'低い数字の人にペナルティ！';el.style.color='var(--dim)';}
+  else if(G.phase==='waiting'){el.textContent=G.online?'相手の入札を待っています…':'集計中…';el.style.color='var(--gold)';}
+}
+
+function updateBtn(){
+  const btn=document.getElementById('confirm-btn'),hint=document.getElementById('confirm-hint');
+  const ok=G.myChoice!==null&&G.phase==='picking';
+  btn.classList.toggle('active',ok);
+  hint.textContent=ok?`${G.myChoice} 番を選択中`:G.phase==='picking'?'カードをタップして選択':'';
+}
+
+function renderReveal(bids,winner){
+  const area=document.getElementById('reveal-area');area.style.display='flex';area.innerHTML='';
+  for(const b of bids){
+    const div=document.createElement('div');div.className='rev-player';
+    const iw=winner===b.player;
+    const cls=iw?(G.prize>0?'winner':'loser'):'';
+    div.innerHTML=`<div class="rev-name" style="color:${PCOLS[b.player]}">${G.names[b.player]}</div><div class="rev-card ${cls}">${b.card}</div>`;
+    area.appendChild(div);
+  }
+  const msg=document.createElement('div');msg.className='rev-msg';
+  if(winner===null){msg.textContent=G.prize>0?'全員被り — 誰も獲得せず':'全員被り — ペナルティなし';}
+  else{const wn=G.names[winner];msg.textContent=G.prize>0?`${wn} が +${G.prize}点獲得！`:`${wn} が ${G.prize}点のペナルティ…`;}
+  area.appendChild(msg);
+  const st=document.getElementById('status');
+  if(winner===null){st.textContent='全員被り！';st.style.color='var(--dim)';}
+  else{st.style.color=G.prize>0?'var(--grn)':'var(--red)';st.textContent=G.prize>0?`${G.names[winner]} が +${G.prize}点！`:`${G.names[winner]} が ${G.prize}点のペナルティ`;}
+}
+
+function renderScores(){
+  const el=document.getElementById('scores');el.innerHTML='';
+  for(let i=0;i<G.numP;i++){
+    const c=document.createElement('div');c.className='score-chip';
+    c.innerHTML=`<span style="color:${PCOLS[i]};font-weight:700">${G.names[i]}</span><span class="sc-val">${G.scores[i]>0?'+':''}${G.scores[i]}</span>`;
+    el.appendChild(c);
+  }
+}
+
+document.getElementById('start-btn').addEventListener('click',()=>{
+  initGame(+document.getElementById('sel-players').value,document.getElementById('sel-diff').value,false,-1);
+});
+document.getElementById('confirm-btn').addEventListener('click',confirmChoice);
+document.getElementById('again-btn').addEventListener('click',()=>{
+  document.getElementById('gameover').style.display='none';
+  if(G.online){location.reload();}else{document.getElementById('game').style.display='none';document.getElementById('setup').style.display='';}
+});
+</script>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js?v=7"></script>
+<script src="../shared/online-core.js?v=8"></script>
+<script>
+OnlineCore.init({
+  gameId:'hagetaka',
+  statusSel:'#status',
+  hostMark:'\x00',guestMark:'\x00',
+  blockRelay:()=>true,
+  pvpSel:null,hideSel:null,
+  afterStart:(seat)=>{
+    const b=document.getElementById('oc-badge');if(b)b.style.display='none';
+    document.getElementById('setup').style.display='none';
+    initGame(2,'normal',true,seat);
+  },
+  customMsg:handleOnlineMsg,
+});
+</script>
+<script src="../shared/firebase-counter.js"></script>
+</body>
+</html>

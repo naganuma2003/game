@@ -143,6 +143,18 @@
     a.tag { text-decoration: none; }
     a.tag:hover { filter: brightness(1.25); }
     .tag-online { background: rgba(80,150,255,0.18); color: #9cc4ff; }
+    .tag-rule { background: rgba(201,162,39,0.15); color: #e8c84a; border: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+    .tag-rule:hover { filter: brightness(1.25); }
+    /* ルールモーダル */
+    .rule-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.82);display:none;align-items:center;justify-content:center;z-index:60;padding:16px; }
+    .rule-overlay.show { display:flex; }
+    .rule-card { background:#1a1510;border:1px solid rgba(201,162,39,0.35);border-radius:14px;padding:28px 28px 24px;max-width:480px;width:100%;max-height:82vh;overflow-y:auto;position:relative; }
+    .rule-card h2 { color:#e8c84a;font-size:18px;font-family:"Hiragino Mincho ProN",serif;margin-bottom:16px;padding-right:28px; }
+    .rule-card h3 { color:#e8c84a;font-size:13px;font-weight:700;margin:14px 0 4px; }
+    .rule-card p,.rule-card li { font-size:13px;line-height:1.75;color:#ede6d6;opacity:.9; }
+    .rule-card ul { padding-left:18px; }
+    .rule-card li { margin-bottom:4px; }
+    .rule-close { position:absolute;top:14px;right:16px;background:none;border:none;color:#9a8f7b;font-size:22px;cursor:pointer;line-height:1; }
 
     /* 人数フィルター */
     .filterbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; align-items: center; }
@@ -350,7 +362,7 @@
           </div>
           <div class="name">バックギャモン</div>
           <div class="desc">ヒット・ベアオフ・ギャモン判定つき。</div>
-          <div class="tagrow"><a class="tag" href="games/backgammon.html">プレイする →</a><a class="tag tag-online" href="games/backgammon.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/backgammon.html">プレイする →</a><a class="tag tag-online" href="games/backgammon.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-backgammon').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon">👻</div>
@@ -673,6 +685,39 @@
   </div>
 
   <footer>クリックで各ゲームが開きます</footer>
+
+  <!-- バックギャモン ルールモーダル -->
+  <div id="rule-backgammon" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-backgammon').classList.remove('show')">×</button>
+      <h2>🎲 バックギャモン ルール</h2>
+      <h3>目的</h3>
+      <p>15個の駒をすべて相手側から自分のホームボード（右下6点）に集め、先に全駒を盤外に出した方の勝ち。</p>
+      <h3>基本の動かし方</h3>
+      <ul>
+        <li>サイコロを2個振り、出た目の数だけ駒を前進させる。</li>
+        <li>2つの目は別々の駒に使っても、1つの駒に合計して使ってもよい。</li>
+        <li>ゾロ目が出たら同じ目を4回分使える。</li>
+        <li>相手の駒が2個以上いる点（スタック）には止まれない。</li>
+      </ul>
+      <h3>ヒット（弾き飛ばし）</h3>
+      <ul>
+        <li>相手の駒が1個しかいない点（ブロット）に止まると、その駒をバー（中央の仕切り）に送れる。</li>
+        <li>バーに駒がある間は、まずその駒を相手のホームボードに戻さなければならない。</li>
+      </ul>
+      <h3>ベアオフ（駒の持ち出し）</h3>
+      <ul>
+        <li>全15個の駒がホームボードに揃ったらベアオフ開始。</li>
+        <li>サイコロの目に合う点の駒を盤外に出す。該当する駒がなければ最も遠い点の駒を動かす。</li>
+      </ul>
+      <h3>勝利点数</h3>
+      <ul>
+        <li><b>通常勝ち</b>：相手が1個以上ベアオフ済みなら1点。</li>
+        <li><b>ギャモン</b>：相手がベアオフ0個のまま勝つと2点。</li>
+        <li><b>バックギャモン</b>：相手の駒がバー or 自陣ホームボードに残った状態で勝つと3点。</li>
+      </ul>
+    </div>
+  </div>
 
   <!-- 部屋を作成：ゲーム選択画面 -->
   <div id="create-modal" class="cm-overlay" hidden>

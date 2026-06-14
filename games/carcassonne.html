@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>カルカソンヌ</title>
+<style>
+:root {
+  --bg: #1a1a2e;
+  --card: #16213e;
+  --border: #0f3460;
+  --gold: #e0a13a;
+  --txt: #edf1f8;
+  --sub: #8fa0b8;
+  --red: #e74c3c;
+  --blue: #3498db;
+  --green: #2ecc71;
+  --yellow: #f1c40f;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 8px 32px;
+  user-select: none;
+}
+h1 {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: .3em;
+  margin: 4px 0 2px;
+}
+.sub { font-size: 10px; color: var(--sub); letter-spacing: .2em; margin-bottom: 8px; }
+.modes { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; justify-content: center; }
+.modes button {
+  background: transparent; border: 1px solid #303a5e; color: var(--sub);
+  padding: 5px 11px; border-radius: 14px; font-size: 11.5px; cursor: pointer;
+  font-family: inherit; transition: all .2s;
+}
+.modes button.on { border-color: var(--gold); color: var(--gold); }
+
+#hud {
+  display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; justify-content: center;
+  font-size: 12px;
+}
+.hud-player {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 10px;
+  background: rgba(255,255,255,.04); border: 1px solid transparent;
+  transition: border-color .2s;
+}
+.hud-player.active { border-color: var(--gold); }
+.hud-player.me { border-color: #3498db; }
+.hud-dot { width: 10px; height: 10px; border-radius: 50%; }
+.hud-score { font-weight: 700; }
+.hud-meeples { font-size: 10px; color: var(--sub); }
+
+#tile-info {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+  font-size: 13px; color: var(--sub);
+}
+#current-tile-canvas { border: 2px solid var(--gold); border-radius: 4px; }
+.tile-btns { display: flex; flex-direction: column; gap: 5px; }
+.tile-btns button {
+  background: var(--border); border: 1px solid #4a5a7a; color: var(--txt);
+  padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit;
+}
+.tile-btns button:hover { border-color: var(--gold); }
+.tile-btns button:disabled { opacity: .35; }
+#tile-remaining { font-size: 12px; color: var(--sub); text-align: center; }
+
+#msg { min-height: 20px; font-size: 13px; color: var(--gold); margin: 4px 0 6px; text-align: center; letter-spacing: .05em; }
+
+#canvas-wrap {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  touch-action: pan-x pan-y;
+  background: #111827;
+  cursor: pointer;
+}
+#game-canvas { display: block; }
+
+#meeple-panel {
+  display: none;
+  flex-direction: column; align-items: center; gap: 8px;
+  margin-top: 8px; padding: 12px;
+  background: var(--card); border: 1px solid var(--gold); border-radius: 10px;
+  width: 100%; max-width: 380px;
+}
+#meeple-panel.show { display: flex; }
+#meeple-panel h3 { font-size: 14px; color: var(--gold); }
+#meeple-dirs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+#meeple-dirs button {
+  background: var(--border); border: 1px solid #4a5a7a; color: var(--txt);
+  padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit;
+}
+#meeple-dirs button:hover { border-color: var(--gold); }
+#meeple-dirs button:disabled { opacity: .35; cursor: not-allowed; }
+#skip-meeple {
+  background: transparent; border: 1px solid #4a5a7a; color: var(--sub);
+  padding: 5px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit;
+}
+#skip-meeple:hover { border-color: var(--sub); }
+
+.foot { display: flex; gap: 8px; margin-top: 8px; }
+.foot button {
+  background: transparent; border: 1px solid #303a5e; color: var(--txt);
+  padding: 6px 16px; border-radius: 6px; font-size: 12.5px; cursor: pointer; font-family: inherit;
+}
+.foot button:hover { border-color: var(--gold); }
+
+.overlay {
+  position: fixed; inset: 0; background: rgba(7,9,16,.85);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .35s; z-index: 20;
+}
+.overlay.show { opacity: 1; pointer-events: auto; }
+.card {
+  background: #171D33; border: 1px solid var(--gold); border-radius: 10px;
+  padding: 24px 36px; text-align: center; max-width: 340px;
+}
+.card .t {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-size: 24px; letter-spacing: .2em; color: var(--gold); margin-bottom: 8px;
+}
+.card .s { font-size: 12px; color: var(--sub); margin-bottom: 6px; }
+.card .score-list { font-size: 13px; margin-bottom: 16px; line-height: 2; }
+.card button {
+  background: var(--gold); border: none; color: #171D33;
+  padding: 8px 24px; border-radius: 6px; font-size: 13px;
+  font-weight: 700; cursor: pointer; font-family: inherit;
+}
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,.55);color:#fff;text-decoration:none;font:600 12px/1 'Segoe UI',sans-serif;padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.25)">← 一覧に戻る</a>
+
+<h1>カルカソンヌ</h1>
+<div class="sub">CARCASSONNE</div>
+
+<div class="modes" id="modes">
+  <button data-m="solo">ひとり（CPU）</button>
+  <button data-m="pvp2" class="on">2人対戦</button>
+  <button data-m="pvp3">3人対戦</button>
+  <button data-m="pvp4">4人対戦</button>
+</div>
+
+<div id="hud"></div>
+
+<div id="tile-info">
+  <canvas id="current-tile-canvas" width="56" height="56"></canvas>
+  <div>
+    <div id="tile-remaining">残り 0 枚</div>
+    <div style="font-size:11px;color:var(--sub);margin-top:2px">Rキーで回転</div>
+  </div>
+  <div class="tile-btns">
+    <button id="btn-rotate">↻ 回転</button>
+    <button id="btn-restart">最初から</button>
+  </div>
+</div>
+
+<div id="msg">ゲームを開始してください</div>
+
+<div id="canvas-wrap">
+  <canvas id="game-canvas"></canvas>
+</div>
+
+<div id="meeple-panel">
+  <h3>ミープルを置く場所を選んでください</h3>
+  <div id="meeple-dirs"></div>
+  <button id="skip-meeple">置かない</button>
+</div>
+
+<div class="foot">
+</div>
+
+<div class="overlay" id="gov">
+  <div class="card">
+    <div class="t" id="g-t">ゲーム終了</div>
+    <div class="score-list" id="g-scores"></div>
+    <div class="s" id="g-s"></div>
+    <button id="g-again">もう一度</button>
+  </div>
+</div>
+
+<script>
+/* ===== TILE DEFINITIONS ===== */
+// edges: 0=N,1=E,2=S,3=W
+// C=City, R=Road, F=Field, M=Monastery(center only)
+const TILE_DEFS = [
+  // Monasteries
+  {n:'F',e:'F',s:'F',w:'F',center:'M',cityGroups:[],roadGroups:[],count:4},
+  {n:'F',e:'F',s:'R',w:'F',center:'M',cityGroups:[],roadGroups:[[2]],count:2},
+  // Single city edge
+  {n:'C',e:'F',s:'F',w:'F',center:'F',cityGroups:[[0]],roadGroups:[],count:5},
+  {n:'F',e:'C',s:'F',w:'F',center:'F',cityGroups:[[1]],roadGroups:[],count:0}, // rotated version covered
+  // Corner city (2 adjacent edges)
+  {n:'C',e:'C',s:'F',w:'F',center:'C',cityGroups:[[0,1]],roadGroups:[],count:3},
+  {n:'C',e:'C',s:'F',w:'F',center:'C',cityGroups:[[0,1]],roadGroups:[],shield:true,count:2},
+  // Opposite cities (separate)
+  {n:'C',e:'F',s:'C',w:'F',center:'F',cityGroups:[[0],[2]],roadGroups:[],count:3},
+  // 3-side city
+  {n:'C',e:'C',s:'F',w:'C',center:'C',cityGroups:[[0,1,3]],roadGroups:[],count:3},
+  {n:'C',e:'C',s:'F',w:'C',center:'C',cityGroups:[[0,1,3]],roadGroups:[],shield:true,count:2},
+  // 4-side city
+  {n:'C',e:'C',s:'C',w:'C',center:'C',cityGroups:[[0,1,2,3]],roadGroups:[],count:1},
+  {n:'C',e:'C',s:'C',w:'C',center:'C',cityGroups:[[0,1,2,3]],roadGroups:[],shield:true,count:2},
+  // City N + road E-W
+  {n:'C',e:'R',s:'F',w:'R',center:'R',cityGroups:[[0]],roadGroups:[[1,3]],count:3},
+  // City N + road S-W (corner road)
+  {n:'C',e:'F',s:'R',w:'R',center:'R',cityGroups:[[0]],roadGroups:[[2,3]],count:3},
+  // City N + road S (separate)
+  {n:'C',e:'F',s:'R',w:'F',center:'F',cityGroups:[[0]],roadGroups:[[2]],count:3},
+  // Corner city + road S
+  {n:'C',e:'C',s:'R',w:'F',center:'C',cityGroups:[[0,1]],roadGroups:[[2]],count:2},
+  // Corner city + road S + road W (T-junction at S,W with city NE)
+  {n:'C',e:'C',s:'R',w:'R',center:'C',cityGroups:[[0,1]],roadGroups:[[2],[3]],count:2},
+  // Straight road N-S
+  {n:'R',e:'F',s:'R',w:'F',center:'R',cityGroups:[],roadGroups:[[0,2]],count:8},
+  // Curve road E-S
+  {n:'F',e:'R',s:'R',w:'F',center:'R',cityGroups:[],roadGroups:[[1,2]],count:6},
+  // T-junction road E,S,W (N closed)
+  {n:'F',e:'R',s:'R',w:'R',center:'R',cityGroups:[],roadGroups:[[1],[2],[3]],count:4},
+  // 4-way junction
+  {n:'R',e:'R',s:'R',w:'R',center:'R',cityGroups:[],roadGroups:[[0],[1],[2],[3]],count:1},
+  // T-junction road N,E,S (W closed)
+  {n:'R',e:'R',s:'R',w:'F',center:'R',cityGroups:[],roadGroups:[[0],[1],[2]],count:0},
+];
+
+const PLAYER_COLORS = ['#e74c3c','#3498db','#2ecc71','#f1c40f'];
+const PLAYER_NAMES = ['赤','青','緑','黄'];
+const EDGES = ['n','e','s','w'];
+const OPPE = [2,3,0,1]; // opposite edge index
+const DX = [0,1,0,-1];
+const DY = [-1,0,1,0];
+
+/* ===== GAME STATE ===== */
+let state = null;
+let mode = 'pvp2';
+let myOnlineSeat = -1;
+let onlineSend = null;
+let isOnlineGame = false;
+
+// Viewport / pan
+let viewOX = 0, viewOY = 0;
+let CELL = 56;
+let panStart = null;
+let isPanning = false;
+
+// Current tile rotation
+let currentRot = 0;
+let placingPhase = false; // false=place tile, true=place meeple
+let lastPlacedPos = null; // {x,y} after placing tile
+let validMoves = []; // [{x,y}]
+let highlightedMove = null;
+
+/* ===== TILE UTILITIES ===== */
+function buildDeck() {
+  const deck = [];
+  for (const def of TILE_DEFS) {
+    for (let i = 0; i < def.count; i++) deck.push({ ...def });
+  }
+  // Shuffle
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+}
+
+function rotateTile(tile, times) {
+  // Rotate the tile def `times` times (90° clockwise each)
+  let t = { ...tile, cityGroups: tile.cityGroups.map(g=>[...g]), roadGroups: tile.roadGroups.map(g=>[...g]) };
+  for (let k = 0; k < times; k++) {
+    const old = [t.n, t.e, t.s, t.w];
+    [t.n, t.e, t.s, t.w] = [old[3], old[0], old[1], old[2]];
+    // Rotate edge indices in groups: 0->1->2->3->0
+    t.cityGroups = t.cityGroups.map(g => g.map(i => (i + 1) % 4));
+    t.roadGroups = t.roadGroups.map(g => g.map(i => (i + 1) % 4));
+  }
+  return t;
+}
+
+function getRotatedTile(tile, rot) {
+  return rotateTile(tile, rot);
+}
+
+/* ===== STATE INIT ===== */
+function initGame(nPlayers) {
+  const deck = buildDeck();
+  // Starting tile: use the straight road tile
+  const startDef = TILE_DEFS.find(t => t.n==='F'&&t.e==='R'&&t.s==='R'&&t.w==='F'&&t.center==='R');
+  const startTile = startDef ? { ...startDef } : { n:'F',e:'F',s:'F',w:'F',center:'F',cityGroups:[],roadGroups:[] };
+
+  const scores = new Array(nPlayers).fill(0);
+  const meeples = new Array(nPlayers).fill(7);
+
+  const board = {}; // key: "x,y" -> { tile, rot, meeple: {seat, dir} | null }
+  board['0,0'] = { tile: startTile, rot: 0, meeple: null };
+
+  state = {
+    board, deck,
+    nPlayers,
+    scores,
+    meeples,
+    turn: 0, // current player seat
+    phase: 'place', // 'place' | 'meeple' | 'end'
+    currentTile: deck.shift(),
+    currentRot: 0,
+    lastPlaced: null,
+  };
+
+  currentRot = 0;
+  placingPhase = false;
+  computeValidMoves();
+  centerView();
+  renderAll();
+  updateHUD();
+  updateMsg();
+}
+
+/* ===== PLACEMENT VALIDITY ===== */
+function posKey(x, y) { return `${x},${y}`; }
+function parseKey(k) { const [x,y]=k.split(',').map(Number); return {x,y}; }
+
+function getEdgeVal(tile, rot, edgeIdx) {
+  // edgeIdx: 0=N,1=E,2=S,3=W of the placed orientation
+  const rotated = getRotatedTile(tile, rot);
+  return [rotated.n, rotated.e, rotated.s, rotated.w][edgeIdx];
+}
+
+function canPlace(tile, rot, x, y) {
+  if (state.board[posKey(x,y)]) return false;
+  let hasNeighbor = false;
+  for (let d = 0; d < 4; d++) {
+    const nx = x + DX[d], ny = y + DY[d];
+    const cell = state.board[posKey(nx, ny)];
+    if (!cell) continue;
+    hasNeighbor = true;
+    const myEdge = getEdgeVal(tile, rot, d);
+    const theirEdge = getEdgeVal(cell.tile, cell.rot, OPPE[d]);
+    if (myEdge !== theirEdge) return false;
+  }
+  return hasNeighbor;
+}
+
+function computeValidMoves() {
+  validMoves = [];
+  if (!state || state.phase !== 'place') return;
+  const tile = state.currentTile;
+  const rot = currentRot;
+  const checked = new Set();
+  for (const key of Object.keys(state.board)) {
+    const { x, y } = parseKey(key);
+    for (let d = 0; d < 4; d++) {
+      const nx = x + DX[d], ny = y + DY[d];
+      const nkey = posKey(nx, ny);
+      if (checked.has(nkey)) continue;
+      checked.add(nkey);
+      if (canPlace(tile, rot, nx, ny)) {
+        validMoves.push({ x: nx, y: ny });
+      }
+    }
+  }
+}
+
+/* ===== FEATURE BFS ===== */
+// A "feature" is identified by (x, y, edgeIdx) or (x, y, 'C') for monastery
+// BFS across city/road connections
+
+function getTileEdgeGroup(tile, rot, edgeIdx, featureType) {
+  // Returns the group index (array of edge indices) that contains edgeIdx for featureType
+  const rotated = getRotatedTile(tile, rot);
+  const groups = featureType === 'C' ? rotated.cityGroups : rotated.roadGroups;
+  for (const g of groups) {
+    if (g.includes(edgeIdx)) return g;
+  }
+  return null;
+}
+
+function bfsFeature(startX, startY, startEdge, featureType) {
+  // BFS returns { cells: [{x,y,edgeIdx}], complete, meeples: [{seat,x,y,dir}] }
+  const visited = new Set();
+  const queue = [{ x: startX, y: startY, edge: startEdge }];
+  const cells = [];
+  let complete = true;
+  const meeples = [];
+
+  while (queue.length) {
+    const { x, y, edge } = queue.shift();
+    const key = `${x},${y},${edge}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+
+    const cell = state.board[posKey(x, y)];
+    if (!cell) { complete = false; continue; }
+
+    const group = getTileEdgeGroup(cell.tile, cell.rot, edge, featureType);
+    if (!group) continue;
+
+    cells.push({ x, y, edgeIdx: edge });
+
+    // Check meeple on this tile for this feature
+    if (cell.meeple) {
+      const m = cell.meeple;
+      const mEdge = dirToEdge(m.dir);
+      if (mEdge !== null) {
+        // meeple on edge feature - check if same group
+        if (group.includes(mEdge)) {
+          meeples.push({ seat: m.seat, x, y, dir: m.dir });
+        }
+      } else if (m.dir === 'C' && (featureType === 'R' || featureType === 'M')) {
+        meeples.push({ seat: m.seat, x, y, dir: m.dir });
+      }
+    }
+
+    // Visit all edges in the same group on this tile
+    for (const g of group) {
+      const gkey = `${x},${y},${g}`;
+      if (!visited.has(gkey)) {
+        visited.add(gkey);
+        cells.push({ x, y, edgeIdx: g });
+        // Check meeple for this edge too
+        if (cell.meeple && !meeples.find(m=>m.x===x&&m.y===y)) {
+          const m = cell.meeple;
+          const mEdge = dirToEdge(m.dir);
+          if (mEdge !== null && group.includes(mEdge)) {
+            meeples.push({ seat: m.seat, x, y, dir: m.dir });
+          }
+        }
+      }
+      // Cross to neighbor
+      const nx = x + DX[g], ny = y + DY[g];
+      const oppEdge = OPPE[g];
+      const nkey2 = `${nx},${ny},${oppEdge}`;
+      if (!visited.has(nkey2)) {
+        queue.push({ x: nx, y: ny, edge: oppEdge });
+      }
+    }
+  }
+
+  // Deduplicate cells by tile position
+  const tileSet = new Set();
+  const uniqueTiles = [];
+  for (const c of cells) {
+    const tk = posKey(c.x, c.y);
+    if (!tileSet.has(tk)) { tileSet.add(tk); uniqueTiles.push({ x: c.x, y: c.y }); }
+  }
+
+  // Deduplicate meeples
+  const meepleSet = new Set();
+  const uniqueMeeples = [];
+  for (const m of meeples) {
+    const mk = `${m.seat},${m.x},${m.y}`;
+    if (!meepleSet.has(mk)) { meepleSet.add(mk); uniqueMeeples.push(m); }
+  }
+
+  return { tiles: uniqueTiles, complete, meeples: uniqueMeeples };
+}
+
+function dirToEdge(dir) {
+  if (dir === 'N') return 0;
+  if (dir === 'E') return 1;
+  if (dir === 'S') return 2;
+  if (dir === 'W') return 3;
+  return null;
+}
+
+function checkCityComplete(x, y, edgeIdx) {
+  // BFS over city
+  const visited = new Set();
+  const queue = [{ x, y, edge: edgeIdx }];
+  const tiles = new Set();
+  const meeples = [];
+  let shieldCount = 0;
+  let complete = true;
+
+  while (queue.length) {
+    const { x: cx, y: cy, edge } = queue.shift();
+    const key = `${cx},${cy},${edge}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+
+    const cell = state.board[posKey(cx, cy)];
+    if (!cell) { complete = false; continue; }
+
+    const rotated = getRotatedTile(cell.tile, cell.rot);
+    const group = rotated.cityGroups.find(g => g.includes(edge));
+    if (!group) { complete = false; continue; }
+
+    const tk = posKey(cx, cy);
+    if (!tiles.has(tk)) {
+      tiles.add(tk);
+      if (cell.tile.shield) shieldCount++;
+    }
+
+    if (cell.meeple) {
+      const m = cell.meeple;
+      const mEdge = dirToEdge(m.dir);
+      if (mEdge !== null && group.includes(mEdge)) {
+        const mk = `${m.seat},${cx},${cy}`;
+        if (!meeples.find(e=>e.mk===mk)) meeples.push({ seat: m.seat, x: cx, y: cy, mk });
+      }
+    }
+
+    for (const g of group) {
+      const gkey = `${cx},${cy},${g}`;
+      if (!visited.has(gkey)) {
+        visited.add(gkey);
+        const nx = cx + DX[g], ny = cy + DY[g];
+        queue.push({ x: nx, y: ny, edge: OPPE[g] });
+      }
+    }
+  }
+
+  return { tiles: [...tiles].map(k=>parseKey(k)), shieldCount, meeples, complete };
+}
+
+function checkRoadComplete(x, y, edgeIdx) {
+  const visited = new Set();
+  const queue = [{ x, y, edge: edgeIdx }];
+  const tiles = new Set();
+  const meeples = [];
+  let complete = true;
+
+  while (queue.length) {
+    const { x: cx, y: cy, edge } = queue.shift();
+    const key = `${cx},${cy},${edge}`;
+    if (visited.has(key)) continue;
+    visited.add(key);
+
+    const cell = state.board[posKey(cx, cy)];
+    if (!cell) { complete = false; continue; }
+
+    const rotated = getRotatedTile(cell.tile, cell.rot);
+    const group = rotated.roadGroups.find(g => g.includes(edge));
+    if (!group) {
+      // Road ends here (terminal: junction or dead end)
+      tiles.add(posKey(cx, cy));
+      // Capture meeple if on this tile's road
+      if (cell.meeple) {
+        const m = cell.meeple;
+        if (m.dir === 'C' || dirToEdge(m.dir) === edge) {
+          const mk = `${m.seat},${cx},${cy}`;
+          if (!meeples.find(e=>e.mk===mk)) meeples.push({ seat: m.seat, x: cx, y: cy, mk });
+        }
+      }
+      continue;
+    }
+
+    tiles.add(posKey(cx, cy));
+
+    if (cell.meeple) {
+      const m = cell.meeple;
+      const mEdge = dirToEdge(m.dir);
+      if ((mEdge !== null && group.includes(mEdge)) || m.dir === 'C') {
+        const mk = `${m.seat},${cx},${cy}`;
+        if (!meeples.find(e=>e.mk===mk)) meeples.push({ seat: m.seat, x: cx, y: cy, mk });
+      }
+    }
+
+    for (const g of group) {
+      const gkey = `${cx},${cy},${g}`;
+      if (!visited.has(gkey)) {
+        visited.add(gkey);
+        const nx = cx + DX[g], ny = cy + DY[g];
+        queue.push({ x: nx, y: ny, edge: OPPE[g] });
+      }
+    }
+  }
+
+  return { tiles: [...tiles].map(k=>parseKey(k)), meeples, complete };
+}
+
+function checkMonastery(x, y) {
+  let count = 0;
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (dx === 0 && dy === 0) continue;
+      if (state.board[posKey(x+dx, y+dy)]) count++;
+    }
+  }
+  return { count, complete: count === 8 };
+}
+
+/* ===== SCORING ===== */
+function getWinners(meeples) {
+  const counts = {};
+  for (const m of meeples) {
+    counts[m.seat] = (counts[m.seat] || 0) + 1;
+  }
+  if (Object.keys(counts).length === 0) return [];
+  const max = Math.max(...Object.values(counts));
+  return Object.keys(counts).filter(s => counts[s] === max).map(Number);
+}
+
+function removeMeeples(meeples) {
+  for (const m of meeples) {
+    const cell = state.board[posKey(m.x, m.y)];
+    if (cell && cell.meeple && cell.meeple.seat === m.seat) {
+      state.meeples[m.seat]++;
+      cell.meeple = null;
+    }
+  }
+}
+
+function scoreCompletedFeatures(px, py) {
+  // Check all features touching the newly placed tile
+  const cell = state.board[posKey(px, py)];
+  if (!cell) return;
+  const rotated = getRotatedTile(cell.tile, cell.rot);
+
+  const scoredCities = new Set();
+  const scoredRoads = new Set();
+
+  // Check city features on each edge
+  for (let edge = 0; edge < 4; edge++) {
+    if ([rotated.n, rotated.e, rotated.s, rotated.w][edge] !== 'C') continue;
+    const res = checkCityComplete(px, py, edge);
+    if (!res.complete) continue;
+    // Deduplicate by canonical tile set
+    const sig = res.tiles.map(t=>posKey(t.x,t.y)).sort().join('|');
+    if (scoredCities.has(sig)) continue;
+    scoredCities.add(sig);
+    if (res.meeples.length === 0) continue;
+    const pts = res.tiles.length * 2 + res.shieldCount * 2;
+    const winners = getWinners(res.meeples);
+    for (const s of winners) state.scores[s] += pts;
+    removeMeeples(res.meeples);
+  }
+
+  // Check road features on each edge
+  for (let edge = 0; edge < 4; edge++) {
+    if ([rotated.n, rotated.e, rotated.s, rotated.w][edge] !== 'R') continue;
+    const res = checkRoadComplete(px, py, edge);
+    if (!res.complete) continue;
+    const sig = res.tiles.map(t=>posKey(t.x,t.y)).sort().join('|');
+    if (scoredRoads.has(sig)) continue;
+    scoredRoads.add(sig);
+    if (res.meeples.length === 0) continue;
+    const pts = res.tiles.length;
+    const winners = getWinners(res.meeples);
+    for (const s of winners) state.scores[s] += pts;
+    removeMeeples(res.meeples);
+  }
+
+  // Check monasteries: the placed tile and its 8 neighbors
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const mx = px+dx, my = py+dy;
+      const mc = state.board[posKey(mx, my)];
+      if (!mc) continue;
+      const mr = getRotatedTile(mc.tile, mc.rot);
+      if (mr.center !== 'M') continue;
+      if (!mc.meeple || mc.meeple.dir !== 'C') continue;
+      const { complete } = checkMonastery(mx, my);
+      if (!complete) continue;
+      state.scores[mc.meeple.seat] += 9;
+      state.meeples[mc.meeple.seat]++;
+      mc.meeple = null;
+    }
+  }
+}
+
+function finalScoring() {
+  // Score all remaining features
+  const scoredCities = new Set();
+  const scoredRoads = new Set();
+  const scoredMonasteries = new Set();
+
+  for (const key of Object.keys(state.board)) {
+    const { x, y } = parseKey(key);
+    const cell = state.board[key];
+    const rotated = getRotatedTile(cell.tile, cell.rot);
+
+    for (let edge = 0; edge < 4; edge++) {
+      if ([rotated.n, rotated.e, rotated.s, rotated.w][edge] === 'C') {
+        const res = checkCityComplete(x, y, edge);
+        const sig = res.tiles.map(t=>posKey(t.x,t.y)).sort().join('|');
+        if (!scoredCities.has(sig)) {
+          scoredCities.add(sig);
+          if (res.meeples.length > 0) {
+            const pts = res.tiles.length + res.shieldCount;
+            const winners = getWinners(res.meeples);
+            for (const s of winners) state.scores[s] += pts;
+          }
+        }
+      }
+      if ([rotated.n, rotated.e, rotated.s, rotated.w][edge] === 'R') {
+        const res = checkRoadComplete(x, y, edge);
+        const sig = res.tiles.map(t=>posKey(t.x,t.y)).sort().join('|');
+        if (!scoredRoads.has(sig)) {
+          scoredRoads.add(sig);
+          if (res.meeples.length > 0) {
+            const pts = res.tiles.length;
+            const winners = getWinners(res.meeples);
+            for (const s of winners) state.scores[s] += pts;
+          }
+        }
+      }
+    }
+
+    if (rotated.center === 'M' && cell.meeple && cell.meeple.dir === 'C') {
+      const mk = posKey(x, y);
+      if (!scoredMonasteries.has(mk)) {
+        scoredMonasteries.add(mk);
+        const { count } = checkMonastery(x, y);
+        state.scores[cell.meeple.seat] += 1 + count;
+      }
+    }
+  }
+}
+
+/* ===== FEATURE OCCUPANCY CHECK ===== */
+function isFeatureOccupied(x, y, dir) {
+  // Returns true if the feature at (x,y) in direction dir already has a meeple
+  if (dir === 'C') {
+    // monastery center - just check the cell
+    const cell = state.board[posKey(x,y)];
+    return cell && cell.meeple !== null;
+  }
+  const edge = dirToEdge(dir);
+  const cell = state.board[posKey(x, y)];
+  if (!cell) return false;
+  const rotated = getRotatedTile(cell.tile, cell.rot);
+  const edgeType = [rotated.n, rotated.e, rotated.s, rotated.w][edge];
+
+  if (edgeType === 'C') {
+    const res = checkCityComplete(x, y, edge);
+    return res.meeples.length > 0;
+  } else if (edgeType === 'R') {
+    const res = checkRoadComplete(x, y, edge);
+    return res.meeples.length > 0;
+  }
+  return false;
+}
+
+function getMeepleDirs(x, y) {
+  // Returns valid meeple placement directions for (x,y)
+  const cell = state.board[posKey(x, y)];
+  if (!cell) return [];
+  const rotated = getRotatedTile(cell.tile, cell.rot);
+  const dirs = [];
+  const edges = [rotated.n, rotated.e, rotated.s, rotated.w];
+
+  // Check N,E,S,W
+  const dirNames = ['N','E','S','W'];
+  for (let i = 0; i < 4; i++) {
+    if (edges[i] === 'F') continue; // skip field
+    const occupied = isFeatureOccupied(x, y, dirNames[i]);
+    dirs.push({ dir: dirNames[i], type: edges[i], disabled: occupied });
+  }
+
+  // Check center (monastery)
+  if (rotated.center === 'M') {
+    dirs.push({ dir: 'C', type: 'M', disabled: isFeatureOccupied(x, y, 'C') });
+  }
+
+  return dirs;
+}
+
+/* ===== TURN LOGIC ===== */
+function isMyTurn() {
+  if (!state) return false;
+  if (isOnlineGame) return state.turn === myOnlineSeat;
+  if (mode === 'solo') return state.turn === 0;
+  return true; // PvP: all seats are human
+}
+
+function applyPlace(x, y, rot) {
+  if (!state || state.phase !== 'place') return;
+  const tile = state.currentTile;
+  if (!canPlace(tile, rot, x, y)) return;
+
+  const placed = { tile, rot, meeple: null };
+  state.board[posKey(x, y)] = placed;
+  state.lastPlaced = { x, y };
+  state.phase = 'meeple';
+  lastPlacedPos = { x, y };
+  placingPhase = true;
+
+  scoreCompletedFeatures(x, y);
+
+  renderAll();
+  updateHUD();
+  showMeeplePanel(x, y);
+  updateMsg();
+}
+
+function applyMeeple(dir) {
+  if (!state || state.phase !== 'meeple') return;
+  const { x, y } = state.lastPlaced;
+  const cell = state.board[posKey(x, y)];
+  if (!cell) return;
+
+  if (dir !== null && state.meeples[state.turn] > 0) {
+    cell.meeple = { seat: state.turn, dir };
+    state.meeples[state.turn]--;
+    // Re-check scoring after meeple placed (shouldn't score immediately, but consistency)
+  }
+
+  nextTurn();
+}
+
+function nextTurn() {
+  hideMeeplePanel();
+  placingPhase = false;
+
+  if (state.deck.length === 0) {
+    finalScoring();
+    state.phase = 'end';
+    renderAll();
+    updateHUD();
+    showEndOverlay();
+    return;
+  }
+
+  state.currentTile = state.deck.shift();
+  state.phase = 'place';
+  currentRot = 0;
+  state.turn = (state.turn + 1) % state.nPlayers;
+
+  // Check if current tile has any valid placement; if not, discard and advance
+  let attempts = 0;
+  while (!hasAnyValidPlacement(state.currentTile) && state.deck.length > 0 && attempts < 100) {
+    state.currentTile = state.deck.shift();
+    attempts++;
+  }
+  if (!hasAnyValidPlacement(state.currentTile) && state.deck.length === 0) {
+    finalScoring();
+    state.phase = 'end';
+    renderAll();
+    updateHUD();
+    showEndOverlay();
+    return;
+  }
+
+  computeValidMoves();
+  renderAll();
+  updateHUD();
+  updateMsg();
+  drawCurrentTile();
+
+  if (!isOnlineGame && mode === 'solo' && state.turn !== 0) {
+    setTimeout(doCPUTurn, 500);
+  }
+}
+
+function hasAnyValidPlacement(tile) {
+  for (let rot = 0; rot < 4; rot++) {
+    for (const key of Object.keys(state.board)) {
+      const { x, y } = parseKey(key);
+      for (let d = 0; d < 4; d++) {
+        if (canPlace(tile, rot, x + DX[d], y + DY[d])) return true;
+      }
+    }
+  }
+  return false;
+}
+
+/* ===== CPU AI ===== */
+function doCPUTurn() {
+  if (!state || state.phase !== 'place') return;
+  if (isOnlineGame) return;
+
+  // Find valid placements for all rotations
+  const moves = [];
+  for (let rot = 0; rot < 4; rot++) {
+    for (const key of Object.keys(state.board)) {
+      const { x, y } = parseKey(key);
+      for (let d = 0; d < 4; d++) {
+        const nx = x + DX[d], ny = y + DY[d];
+        if (canPlace(state.currentTile, rot, nx, ny)) {
+          moves.push({ x: nx, y: ny, rot });
+        }
+      }
+    }
+  }
+
+  if (moves.length === 0) { nextTurn(); return; }
+  const pick = moves[Math.floor(Math.random() * moves.length)];
+  currentRot = pick.rot;
+  computeValidMoves();
+  renderAll();
+  drawCurrentTile();
+
+  setTimeout(() => {
+    applyPlace(pick.x, pick.y, pick.rot);
+    // CPU meeple placement
+    setTimeout(() => {
+      if (state.phase !== 'meeple') return;
+      const dirs = getMeepleDirs(pick.x, pick.y);
+      const valid = dirs.filter(d => !d.disabled);
+      if (valid.length > 0 && state.meeples[state.turn] > 0 && Math.random() < 0.4) {
+        const chosen = valid[Math.floor(Math.random() * valid.length)];
+        if (isOnlineGame) {
+          onlineSend({ type: 'meeple', dir: chosen.dir });
+        } else {
+          applyMeeple(chosen.dir);
+        }
+      } else {
+        if (isOnlineGame) {
+          onlineSend({ type: 'skip-meeple' });
+        } else {
+          applyMeeple(null);
+        }
+      }
+    }, 300);
+  }, 400);
+}
+
+/* ===== CANVAS RENDERING ===== */
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const CANVAS_W = Math.min(window.innerWidth - 16, 600);
+const CANVAS_H = Math.min(window.innerHeight * 0.5, 400);
+canvas.width = CANVAS_W;
+canvas.height = CANVAS_H;
+
+function centerView() {
+  viewOX = CANVAS_W / 2 - CELL / 2;
+  viewOY = CANVAS_H / 2 - CELL / 2;
+}
+
+function boardToCanvas(x, y) {
+  return { cx: viewOX + x * CELL, cy: viewOY + y * CELL };
+}
+
+function canvasToBoard(cx, cy) {
+  return {
+    x: Math.floor((cx - viewOX) / CELL),
+    y: Math.floor((cy - viewOY) / CELL)
+  };
+}
+
+function drawTileOnCtx(ctx2, tile, rot, px, py, size, meeple) {
+  const rotated = getRotatedTile(tile, rot);
+  const edges = [rotated.n, rotated.e, rotated.s, rotated.w];
+  const h = size;
+  const w = size;
+
+  // Background (field = green)
+  ctx2.fillStyle = '#3a7d44';
+  ctx2.fillRect(px, py, w, h);
+
+  // Center
+  if (rotated.center === 'C') {
+    ctx2.fillStyle = '#c8873a';
+    ctx2.fillRect(px + w*0.2, py + h*0.2, w*0.6, h*0.6);
+  } else if (rotated.center === 'M') {
+    ctx2.fillStyle = '#8b7355';
+    const mw = w*0.35, mh = h*0.4;
+    ctx2.fillRect(px + w*0.5 - mw/2, py + h*0.5 - mh/2, mw, mh);
+    // cross
+    ctx2.fillStyle = '#d4c4a0';
+    ctx2.fillRect(px + w*0.5 - mw*0.1, py + h*0.5 - mh*0.45, mw*0.2, mh*0.55);
+    ctx2.fillRect(px + w*0.5 - mw*0.35, py + h*0.5 - mh*0.15, mw*0.7, mh*0.18);
+  } else if (rotated.center === 'R') {
+    // Road center: draw a grey dot
+    ctx2.fillStyle = '#aaa';
+    ctx2.beginPath();
+    ctx2.arc(px + w/2, py + h/2, w*0.1, 0, Math.PI*2);
+    ctx2.fill();
+  }
+
+  // Draw edges
+  const edgeW = w * 0.28;
+  const edgeH = h * 0.28;
+
+  // N edge
+  drawEdge(ctx2, edges[0], 'N', px, py, w, h, edgeW, edgeH, rotated);
+  // E edge
+  drawEdge(ctx2, edges[1], 'E', px, py, w, h, edgeW, edgeH, rotated);
+  // S edge
+  drawEdge(ctx2, edges[2], 'S', px, py, w, h, edgeW, edgeH, rotated);
+  // W edge
+  drawEdge(ctx2, edges[3], 'W', px, py, w, h, edgeW, edgeH, rotated);
+
+  // Shield
+  if (tile.shield) {
+    ctx2.fillStyle = 'rgba(0,180,255,0.8)';
+    ctx2.beginPath();
+    ctx2.arc(px + w*0.82, py + h*0.18, w*0.09, 0, Math.PI*2);
+    ctx2.fill();
+    ctx2.fillStyle = '#fff';
+    ctx2.font = `bold ${Math.max(8, w*0.12)}px sans-serif`;
+    ctx2.textAlign = 'center';
+    ctx2.textBaseline = 'middle';
+    ctx2.fillText('★', px + w*0.82, py + h*0.18);
+  }
+
+  // Tile border
+  ctx2.strokeStyle = 'rgba(0,0,0,0.35)';
+  ctx2.lineWidth = 1;
+  ctx2.strokeRect(px, py, w, h);
+
+  // Meeple
+  if (meeple) {
+    drawMeepleOnTile(ctx2, meeple, px, py, w, h, rotated);
+  }
+}
+
+function drawEdge(ctx2, type, dir, px, py, w, h, edgeW, edgeH, rotated) {
+  if (type === 'C') {
+    ctx2.fillStyle = '#c8873a';
+    if (dir === 'N') ctx2.fillRect(px, py, w, edgeH);
+    else if (dir === 'E') ctx2.fillRect(px + w - edgeW, py, edgeW, h);
+    else if (dir === 'S') ctx2.fillRect(px, py + h - edgeH, w, edgeH);
+    else if (dir === 'W') ctx2.fillRect(px, py, edgeW, h);
+    // Connect adjacent city edges of the same group
+  } else if (type === 'R') {
+    ctx2.fillStyle = '#b0a090';
+    const rw = w * 0.22, rh = h * 0.22;
+    if (dir === 'N') {
+      ctx2.fillRect(px + w/2 - rw/2, py, rw, h/2 + rh/2);
+    } else if (dir === 'E') {
+      ctx2.fillRect(px + w/2 - rh/2, py + h/2 - rw/2, w/2 + rh/2, rw);
+    } else if (dir === 'S') {
+      ctx2.fillRect(px + w/2 - rw/2, py + h/2 - rh/2, rw, h/2 + rh/2);
+    } else if (dir === 'W') {
+      ctx2.fillRect(px, py + h/2 - rw/2, w/2 + rh/2, rw);
+    }
+  }
+}
+
+function drawMeepleOnTile(ctx2, meeple, px, py, w, h, rotated) {
+  const color = PLAYER_COLORS[meeple.seat];
+  let mx = px + w/2, my = py + h/2;
+  const offset = w * 0.28;
+  if (meeple.dir === 'N') my = py + offset;
+  else if (meeple.dir === 'E') mx = px + w - offset;
+  else if (meeple.dir === 'S') my = py + h - offset;
+  else if (meeple.dir === 'W') mx = px + offset;
+
+  const r = w * 0.13;
+  ctx2.fillStyle = color;
+  ctx2.strokeStyle = '#fff';
+  ctx2.lineWidth = 1.5;
+  ctx2.beginPath();
+  ctx2.arc(mx, my, r, 0, Math.PI*2);
+  ctx2.fill();
+  ctx2.stroke();
+}
+
+function renderAll() {
+  ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+  if (!state) return;
+
+  // Draw board tiles
+  for (const key of Object.keys(state.board)) {
+    const { x, y } = parseKey(key);
+    const cell = state.board[key];
+    const { cx, cy } = boardToCanvas(x, y);
+    if (cx + CELL < 0 || cy + CELL < 0 || cx > CANVAS_W || cy > CANVAS_H) continue;
+    drawTileOnCtx(ctx, cell.tile, cell.rot, cx, cy, CELL, cell.meeple);
+  }
+
+  // Draw valid move indicators
+  if (state.phase === 'place') {
+    for (const { x, y } of validMoves) {
+      const { cx, cy } = boardToCanvas(x, y);
+      if (cx + CELL < 0 || cy + CELL < 0 || cx > CANVAS_W || cy > CANVAS_H) continue;
+      ctx.strokeStyle = 'rgba(80,220,80,0.8)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(80,220,80,0.15)';
+      ctx.fillRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
+    }
+  }
+
+  // Highlight last placed
+  if (state.lastPlaced) {
+    const { x, y } = state.lastPlaced;
+    const { cx, cy } = boardToCanvas(x, y);
+    ctx.strokeStyle = 'rgba(255,200,0,0.9)';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([]);
+    ctx.strokeRect(cx + 1, cy + 1, CELL - 2, CELL - 2);
+  }
+
+  drawCurrentTileOverlay();
+}
+
+function drawCurrentTileOverlay() {
+  // Show ghost of current tile at highlighted move
+  if (!highlightedMove || !state || state.phase !== 'place') return;
+  const { x, y } = highlightedMove;
+  const { cx, cy } = boardToCanvas(x, y);
+  ctx.globalAlpha = 0.5;
+  drawTileOnCtx(ctx, state.currentTile, currentRot, cx, cy, CELL, null);
+  ctx.globalAlpha = 1;
+}
+
+const curCanvas = document.getElementById('current-tile-canvas');
+const curCtx = curCanvas.getContext('2d');
+function drawCurrentTile() {
+  curCtx.clearRect(0, 0, 56, 56);
+  if (!state || !state.currentTile) return;
+  drawTileOnCtx(curCtx, state.currentTile, currentRot, 0, 0, 56, null);
+}
+
+/* ===== HUD ===== */
+function updateHUD() {
+  if (!state) return;
+  const hud = document.getElementById('hud');
+  hud.innerHTML = '';
+  for (let i = 0; i < state.nPlayers; i++) {
+    const div = document.createElement('div');
+    div.className = 'hud-player' + (state.turn === i && state.phase !== 'end' ? ' active' : '') + (isOnlineGame && i === myOnlineSeat ? ' me' : '');
+    div.innerHTML = `<div class="hud-dot" style="background:${PLAYER_COLORS[i]}"></div>
+      <span>${PLAYER_NAMES[i]}</span>
+      <span class="hud-score">${state.scores[i]}</span>
+      <span class="hud-meeples">♟×${state.meeples[i]}</span>`;
+    hud.appendChild(div);
+  }
+  document.getElementById('tile-remaining').textContent = `残り ${state.deck.length} 枚`;
+}
+
+function updateMsg() {
+  if (!state) return;
+  const msg = document.getElementById('msg');
+  if (state.phase === 'end') { msg.textContent = 'ゲーム終了'; return; }
+  if (state.phase === 'place') {
+    if (isOnlineGame && !isMyTurn()) {
+      msg.textContent = `${PLAYER_NAMES[state.turn]}の番です（待機中）`;
+    } else {
+      msg.textContent = `${PLAYER_NAMES[state.turn]}の番：タイルを置いてください`;
+    }
+  } else if (state.phase === 'meeple') {
+    if (isOnlineGame && !isMyTurn()) {
+      msg.textContent = `${PLAYER_NAMES[state.turn]}がミープルを配置中…`;
+    } else {
+      msg.textContent = `${PLAYER_NAMES[state.turn]}：ミープルを置く場所を選んでください`;
+    }
+  }
+}
+
+/* ===== MEEPLE PANEL ===== */
+function showMeeplePanel(x, y) {
+  const panel = document.getElementById('meeple-panel');
+  const dirsEl = document.getElementById('meeple-dirs');
+  dirsEl.innerHTML = '';
+
+  if (!isMyTurn()) {
+    panel.classList.add('show');
+    document.getElementById('skip-meeple').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('skip-meeple').style.display = '';
+
+  const dirs = getMeepleDirs(x, y);
+  if (dirs.length === 0 || state.meeples[state.turn] === 0) {
+    hideMeeplePanel();
+    if (isOnlineGame) {
+      onlineSend({ type: 'skip-meeple' });
+    } else {
+      applyMeeple(null);
+    }
+    return;
+  }
+
+  const labels = { N: '北（城/道）', E: '東（城/道）', S: '南（城/道）', W: '西（城/道）', C: '中央（修道院）' };
+  for (const { dir, type, disabled } of dirs) {
+    const btn = document.createElement('button');
+    btn.textContent = labels[dir] || dir;
+    btn.disabled = disabled;
+    btn.addEventListener('click', () => {
+      hideMeeplePanel();
+      if (isOnlineGame) {
+        onlineSend({ type: 'meeple', dir });
+      } else {
+        applyMeeple(dir);
+      }
+    });
+    dirsEl.appendChild(btn);
+  }
+
+  panel.classList.add('show');
+}
+
+function hideMeeplePanel() {
+  document.getElementById('meeple-panel').classList.remove('show');
+}
+
+/* ===== END OVERLAY ===== */
+function showEndOverlay() {
+  const scores = state.scores.map((s, i) => ({ seat: i, score: s })).sort((a, b) => b.score - a.score);
+  const maxScore = scores[0].score;
+  const winners = scores.filter(s => s.score === maxScore);
+
+  document.getElementById('g-t').textContent = winners.length === 1
+    ? `${PLAYER_NAMES[winners[0].seat]}の勝利！`
+    : '引き分け！';
+
+  const list = document.getElementById('g-scores');
+  list.innerHTML = scores.map(({ seat, score }) =>
+    `<div style="color:${PLAYER_COLORS[seat]};font-weight:${score===maxScore?'700':'400'}">${PLAYER_NAMES[seat]}：${score}点</div>`
+  ).join('');
+
+  document.getElementById('g-s').textContent = `総タイル数 ${Object.keys(state.board).length} 枚`;
+  document.getElementById('gov').classList.add('show');
+}
+
+/* ===== INTERACTION ===== */
+canvas.addEventListener('click', (e) => {
+  if (!state || state.phase !== 'place') return;
+  if (!isMyTurn()) return;
+  const rect = canvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const { x, y } = canvasToBoard(cx, cy);
+  if (!validMoves.find(m => m.x === x && m.y === y)) return;
+
+  if (isOnlineGame) {
+    onlineSend({ type: 'place', x, y, rot: currentRot });
+  } else {
+    applyPlace(x, y, currentRot);
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (!state || state.phase !== 'place') { highlightedMove = null; return; }
+  if (isPanning) return;
+  const rect = canvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const { x, y } = canvasToBoard(cx, cy);
+  const found = validMoves.find(m => m.x === x && m.y === y);
+  const prev = highlightedMove;
+  highlightedMove = found ? { x, y } : null;
+  if ((prev && !highlightedMove) || (!prev && highlightedMove) || (prev && highlightedMove && (prev.x !== highlightedMove.x || prev.y !== highlightedMove.y))) {
+    renderAll();
+  }
+});
+canvas.addEventListener('mouseleave', () => { highlightedMove = null; renderAll(); });
+
+// Pan
+let panRef = null;
+canvas.addEventListener('mousedown', (e) => {
+  if (e.button === 1 || e.button === 2) {
+    panRef = { sx: e.clientX, sy: e.clientY, ox: viewOX, oy: viewOY };
+    isPanning = true;
+  }
+});
+canvas.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
+    panRef = { sx: (e.touches[0].clientX + e.touches[1].clientX)/2, sy: (e.touches[0].clientY + e.touches[1].clientY)/2, ox: viewOX, oy: viewOY };
+    isPanning = true;
+  } else if (e.touches.length === 1) {
+    panRef = { sx: e.touches[0].clientX, sy: e.touches[0].clientY, ox: viewOX, oy: viewOY, timer: setTimeout(() => { isPanning = true; }, 150) };
+  }
+}, { passive: true });
+canvas.addEventListener('touchmove', (e) => {
+  if (!panRef) return;
+  const mx = e.touches[0].clientX, my = e.touches[0].clientY;
+  const dx = mx - panRef.sx, dy = my - panRef.sy;
+  if (!isPanning && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) { clearTimeout(panRef.timer); isPanning = true; }
+  if (isPanning) {
+    viewOX = panRef.ox + dx;
+    viewOY = panRef.oy + dy;
+    renderAll();
+  }
+}, { passive: true });
+canvas.addEventListener('touchend', (e) => {
+  if (panRef && panRef.timer) clearTimeout(panRef.timer);
+  if (!isPanning && panRef && e.changedTouches.length === 1 && state && state.phase === 'place' && isMyTurn()) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = e.changedTouches[0].clientX - rect.left;
+    const cy = e.changedTouches[0].clientY - rect.top;
+    const { x, y } = canvasToBoard(cx, cy);
+    if (validMoves.find(m => m.x === x && m.y === y)) {
+      if (isOnlineGame) onlineSend({ type: 'place', x, y, rot: currentRot });
+      else applyPlace(x, y, currentRot);
+    }
+  }
+  panRef = null;
+  isPanning = false;
+});
+document.addEventListener('mouseup', (e) => {
+  if (isPanning) { isPanning = false; panRef = null; }
+});
+document.addEventListener('mousemove', (e) => {
+  if (panRef && isPanning) {
+    viewOX = panRef.ox + (e.clientX - panRef.sx);
+    viewOY = panRef.oy + (e.clientY - panRef.sy);
+    renderAll();
+  }
+});
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+function rotate() {
+  if (!state || state.phase !== 'place') return;
+  currentRot = (currentRot + 1) % 4;
+  computeValidMoves();
+  renderAll();
+  drawCurrentTile();
+}
+
+document.getElementById('btn-rotate').addEventListener('click', rotate);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'r' || e.key === 'R') rotate();
+});
+
+document.getElementById('btn-restart').addEventListener('click', startGame);
+
+document.getElementById('skip-meeple').addEventListener('click', () => {
+  hideMeeplePanel();
+  if (isOnlineGame) {
+    onlineSend({ type: 'skip-meeple' });
+  } else {
+    applyMeeple(null);
+  }
+});
+
+document.getElementById('g-again').addEventListener('click', () => {
+  document.getElementById('gov').classList.remove('show');
+  if (!isOnlineGame) startGame();
+});
+
+document.getElementById('modes').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  mode = b.dataset.m;
+  document.querySelectorAll('#modes button').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+  startGame();
+});
+
+function startGame() {
+  if (isOnlineGame) return;
+  document.getElementById('gov').classList.remove('show');
+  const nMap = { solo: 2, pvp2: 2, pvp3: 3, pvp4: 4 };
+  initGame(nMap[mode] || 2);
+  drawCurrentTile();
+}
+
+/* ===== ONLINE ===== */
+function handleOnlineMessage(fromSeat, msg) {
+  if (msg.type === 'place') {
+    currentRot = msg.rot;
+    computeValidMoves();
+    applyPlace(msg.x, msg.y, msg.rot);
+  } else if (msg.type === 'meeple') {
+    applyMeeple(msg.dir);
+  } else if (msg.type === 'skip-meeple') {
+    hideMeeplePanel();
+    applyMeeple(null);
+  }
+}
+
+/* ===== INIT ===== */
+startGame();
+</script>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js?v=7"></script>
+<script src="../shared/online-room.js"></script>
+<script>
+OnlineRoom.init({
+  gameId: 'carcassonne',
+  minPlayers: 2,
+  maxPlayers: 4,
+  note: '2〜4人対戦',
+  onStart(seat, nPlayers, send) {
+    isOnlineGame = true;
+    myOnlineSeat = seat;
+    onlineSend = send;
+    document.getElementById('modes').style.display = 'none';
+    initGame(nPlayers);
+    drawCurrentTile();
+    if (seat === 0 && mode === 'solo') {
+      // don't run CPU
+    }
+  },
+  onMessage(fromSeat, msg) {
+    handleOnlineMessage(fromSeat, msg);
+  },
+  onLeft(seat) {
+    document.getElementById('msg').textContent = `プレイヤー${PLAYER_NAMES[seat]}が退出しました`;
+  }
+});
+</script>
+</body>
+</html>

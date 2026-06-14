@@ -56,6 +56,7 @@
     speed: "games/speed.html",
     uno: "games/uno.html",
     bomberman: "games/bomberman.html",
+    carcassonne: "games/carcassonne.html",
   };
 
   function randomCode() {

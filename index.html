@@ -594,21 +594,21 @@
           </svg></div>
           <div class="name">囲碁</div>
           <div class="desc">9/13/19路。コウ・地計算・死石指定に対応。</div>
-          <div class="tagrow"><a class="tag" href="games/go.html">プレイする →</a><a class="tag tag-online" href="games/go.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/go.html">プレイする →</a><a class="tag tag-online" href="games/go.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-go').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon">♞</div>
           <div class="name">チェス</div>
           <div class="desc">キャスリング・アンパッサン対応。PST評価CPU。</div>
-          <div class="tagrow"><a class="tag" href="games/chess.html">プレイする →</a><a class="tag tag-online" href="games/chess.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/chess.html">プレイする →</a><a class="tag tag-online" href="games/chess.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-chess').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon">🎴</div>
           <div class="name">花札こいこい</div>
           <div class="desc">花札の定番こいこい。札を合わせ役を作り、こいこいで高得点を狙う。CPU・2人・オンライン対戦。</div>
-          <div class="tagrow"><a class="tag" href="games/hanafuda.html">プレイする →</a><a class="tag tag-online" href="games/hanafuda.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/hanafuda.html">プレイする →</a><a class="tag tag-online" href="games/hanafuda.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-hanafuda').classList.add('show')">📖 ルール</button></div></div>
 
-        <a class="card" href="games/sudoku.html">
+        <div class="card">
           <div class="icon" style="display:inline-grid;grid-template-columns:repeat(3,1fr);gap:1px;width:40px;height:40px;background:#5a5040;padding:2px;border-radius:4px">
             <span style="background:#1b2334;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#cfe3ff">5</span><span style="background:#1b2334"></span><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#cfe3ff">3</span>
             <span style="background:#1b2334"></span><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#cfe3ff">7</span><span style="background:#1b2334"></span>
@@ -616,8 +616,8 @@
           </div>
           <div class="name">数独</div>
           <div class="desc">9×9に1〜9を埋める。難易度3段階・自動生成。</div>
-          <span class="tag">プレイする →</span>
-        </a>
+          <div class="tagrow"><a class="tag" href="games/sudoku.html">プレイする →</a><button class="tag tag-rule" onclick="document.getElementById('rule-sudoku').classList.add('show')">📖 ルール</button></div>
+        </div>
 
         <div class="card">
           <div class="icon">⊞</div>
@@ -1554,6 +1554,96 @@
       <ul>
         <li>双方が出せるカードない場合、山札から1枚ずつ場に出してリスタート。</li>
         <li>山札も尽きたら手札の先頭を出す。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 囲碁 ルールモーダル -->
+  <div id="rule-go" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-go').classList.remove('show')">×</button>
+      <h2>⚫ 囲碁 ルール</h2>
+      <h3>目的</h3>
+      <p>盤上により多くの「地（じ）」を囲んだ方が勝ち。地とは自分の石で囲まれた空点のこと。</p>
+      <h3>基本ルール</h3>
+      <ul>
+        <li>黒と白が交互に、盤の交点に石を置く。黒が先手。</li>
+        <li>上下左右に隣接する空点を「呼吸点（ダメ）」と呼ぶ。呼吸点が全てふさがれた石は取られる。</li>
+        <li>取られた石は相手の地から引かれる（アゲハマ）。</li>
+        <li>パスも可能。両者連続パスでゲーム終了。</li>
+      </ul>
+      <h3>コウ</h3>
+      <p>直前に取られた形と同じ形に戻す着手は禁止（無限ループ防止）。</p>
+      <h3>このゲームの設定</h3>
+      <p>9路・13路・19路を選択可能。死石の指定と地の計算に対応。</p>
+    </div>
+  </div>
+
+  <!-- チェス ルールモーダル -->
+  <div id="rule-chess" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-chess').classList.remove('show')">×</button>
+      <h2>♞ チェス ルール</h2>
+      <h3>目的</h3>
+      <p>相手の「キング」を詰める（チェックメイト）と勝ち。</p>
+      <h3>駒の動き</h3>
+      <ul>
+        <li><b>キング</b>：全方向に1マス。<b>クイーン</b>：全方向に何マスでも。</li>
+        <li><b>ルーク</b>：縦横に何マスでも。<b>ビショップ</b>：斜めに何マスでも。</li>
+        <li><b>ナイト</b>：L字（縦2横1または縦1横2）。駒を飛び越えられる。</li>
+        <li><b>ポーン</b>：前に1マス（初手のみ2マス可）。斜め前に1マスで取る。</li>
+      </ul>
+      <h3>特殊ルール</h3>
+      <ul>
+        <li><b>キャスリング</b>：キングとルークを同時に動かす特殊手（条件あり）。</li>
+        <li><b>アンパッサン</b>：ポーンが2マス進んだ直後、隣のポーンで斜めに取れる。</li>
+        <li><b>プロモーション</b>：ポーンが相手陣の最終列に到達すると強い駒に昇格。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 花札こいこい ルールモーダル -->
+  <div id="rule-hanafuda" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-hanafuda').classList.remove('show')">×</button>
+      <h2>🎴 花札こいこい ルール</h2>
+      <h3>目的</h3>
+      <p>場の札と手札を合わせて「役」を作り、点数を稼ぐ。</p>
+      <h3>基本ルール</h3>
+      <ul>
+        <li>花札48枚（12か月×4枚）を使う。手札8枚・場8枚を配る。</li>
+        <li>手番に手札から1枚出し、同じ月の場の札があれば合わせて取る。</li>
+        <li>次に山札から1枚めくり、同様に合わせて取る。</li>
+        <li>取った札で役が完成したら「こいこい」か「あがり」を選ぶ。</li>
+      </ul>
+      <h3>こいこい vs あがり</h3>
+      <ul>
+        <li><b>あがり</b>：その場で得点を確定して勝ち。</li>
+        <li><b>こいこい</b>：続行してさらに役を狙う。ただし相手に役ができると相手の勝ち。</li>
+      </ul>
+      <h3>主な役</h3>
+      <p>五光（5点）・雨四光・四光・三光・月見で一杯・花見で一杯・猪鹿蝶・赤短・青短・たね・短冊・かすなど。</p>
+    </div>
+  </div>
+
+  <!-- 数独 ルールモーダル -->
+  <div id="rule-sudoku" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-sudoku').classList.remove('show')">×</button>
+      <h2>🔢 数独 ルール</h2>
+      <h3>目的</h3>
+      <p>9×9のマスに1〜9の数字を埋めて完成させる。</p>
+      <h3>ルール（たった3つ）</h3>
+      <ul>
+        <li>各行（横9マス）に1〜9が1つずつ入る。</li>
+        <li>各列（縦9マス）に1〜9が1つずつ入る。</li>
+        <li>各3×3ブロック（9個）に1〜9が1つずつ入る。</li>
+      </ul>
+      <h3>解き方のコツ</h3>
+      <ul>
+        <li>すでに埋まっている数字から、入れられない数字を消去していく。</li>
+        <li>あるマスに入れられる数字が1つだけになったら確定。</li>
+        <li>ある行・列・ブロックで特定の数字が入れるマスが1つだけなら確定。</li>
       </ul>
     </div>
   </div>

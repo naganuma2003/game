@@ -125,13 +125,13 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.15em;
   <div class="setup-box">
     <div class="lbl">ゲームモード</div>
     <div class="np-row" id="gmode-row">
-      <button class="np-btn on" data-gm="gun">🔫 ガン</button>
-      <button class="np-btn" data-gm="bomb">💣 ボム</button>
+      <button class="np-btn" data-gm="gun">🔫 ガン</button>
+      <button class="np-btn on" data-gm="bomb">💣 ボム</button>
     </div>
   </div>
 
   <!-- Gun config -->
-  <div id="gun-config">
+  <div id="gun-config" style="display:none">
     <div class="setup-box">
       <div class="lbl">プレイヤーモード</div>
       <div class="np-row" id="mode-row">
@@ -166,7 +166,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.15em;
   </div>
 
   <!-- Bomb config (description) -->
-  <div id="bomb-config" style="display:none">
+  <div id="bomb-config">
     <div class="setup-box">
       <div class="lbl">ルール</div>
       <p>16個の赤いボタンに爆弾が1個。<br>順番に押していき最後の1個を引いたら大爆発！<br>罰ゲームを決める定番パーティゲーム。</p>
@@ -175,9 +175,9 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.15em;
       <div class="lbl">ちくちくモード</div>
       <label class="btoggle" style="justify-content:center;padding:4px 0">
         <span>爆死した人を煽る</span>
-        <input type="checkbox" id="chiku">
+        <input type="checkbox" id="chiku" checked>
         <span class="bsw"></span>
-        <span class="bstate" id="chikuState">OFF</span>
+        <span class="bstate" id="chikuState">ON</span>
       </label>
     </div>
   </div>
@@ -254,7 +254,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.15em;
 
 <script>
 /* ===== Shared ===== */
-let topMode = 'gun'; // 'gun' or 'bomb'
+let topMode = 'bomb';
 
 document.getElementById('gmode-row').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;

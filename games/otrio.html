@@ -257,10 +257,12 @@ function finish(){
   const t=mode==='pvp'?(nm+'の勝ち！ ('+kindTxt+')'):(winner===0?'あなた('+nm+')の勝ち！🎉 ('+kindTxt+')':'CPU('+nm+')の勝ち ('+kindTxt+')');
   document.getElementById('ovt').textContent=t;
   document.getElementById('over').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
 }
 function finishDraw(){
   document.getElementById('ovt').textContent='引き分け';
   document.getElementById('over').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
 }
 
 document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});

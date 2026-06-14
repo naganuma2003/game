@@ -180,6 +180,7 @@ function finishMatch(){
     ovt.textContent='終了';ovs.innerHTML='スコア: <b>'+myC+'</b>';
   }
   document.getElementById('over').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
 }
 function checkOneshotEnd(){ // ②: 両者ゲームオーバーで即終了
   if(MODE!=='oneshot'||!ONLINE)return;

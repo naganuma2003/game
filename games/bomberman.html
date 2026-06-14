@@ -869,6 +869,7 @@ function end(won, winner=1) {
   if (onlineMode) {
     if (isHost && _onlineSend) _onlineSend({type:'end', winner});
     state = (winner===mySeat+1) ? ST.CLEAR : ST.OVER;
+    try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
   } else {
     state = won ? ST.CLEAR : ST.OVER;
   }

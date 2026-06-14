@@ -296,7 +296,8 @@ function finishMulti(player){over=true;winner=player;
   t.textContent=win;t.style.color='var(--gold)';
   s.innerHTML=tries+'手で決着<div class="answer">'+secret.map(symHtml).join(mode==='num'?' ':'')+'</div>';
   document.getElementById('over').classList.add('show');
-  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(false);}
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(false);
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
 function finishDuel(wseat){over=true;winner=wseat;
   const t=document.getElementById('ov-t'),s=document.getElementById('ov-s');
   const win=ONLINE?(wseat===MYSEAT?'あなたの勝ち！ 🎉':'プレイヤー'+(wseat+1)+'の勝ち'):'プレイヤー'+(wseat+1)+'の勝ち！ 🎉';
@@ -305,7 +306,8 @@ function finishDuel(wseat){over=true;winner=wseat;
   s.innerHTML=tries+'手で決着<div style="font-size:12px;color:var(--sub)">P1の番号</div><div class="answer">'+sec(0)+'</div>'+
     '<div style="font-size:12px;color:var(--sub)">P2の番号</div><div class="answer">'+sec(1)+'</div>';
   document.getElementById('over').classList.add('show');
-  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(false);}
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(false);
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
 function finish(win){over=true;const t=document.getElementById('ov-t'),s=document.getElementById('ov-s');
   if(win){t.textContent='正解！ 🎉';t.style.color='var(--gold)';
     s.innerHTML=tries+'回で当てました<div class="answer">'+secret.map(symHtml).join(mode==='num'?' ':'')+'</div>';}

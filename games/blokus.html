@@ -239,10 +239,7 @@ function curShape(){
 }
 
 function placeAt(shape,ar,ac){
-  const rArr=shape.map(([r])=>r),cArr=shape.map(([,c])=>c);
-  const or=ar-Math.round((Math.max(...rArr))/2);
-  const oc=ac-Math.round((Math.max(...cArr))/2);
-  return shape.map(([r,c])=>[r+or,c+oc]);
+  return shape.map(([r,c])=>[r+ar,c+ac]);
 }
 
 function isValid(cells,pi){

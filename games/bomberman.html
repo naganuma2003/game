@@ -153,6 +153,7 @@ let p2 = null;       // P2プレイヤー
 let guestKeys = {};  // ホストが受け取るゲストのキー入力
 let sendTimer = 0;   // state送信タイマー
 let mapSeed = 0;
+let currentSeed = 0; // 現在のマップシード
 
 // シードRNG (xorshift32)
 let _rngS = 1;
@@ -270,7 +271,7 @@ function buildMap() {
       if (r===0||r===ROWS-1||c===0||c===COLS-1) return CELL.H;
       if (r%2===0 && c%2===0) return CELL.H;
       if (SAFE.has(`${c},${r}`)) return CELL.E;
-      return (onlineMode ? srng() : Math.random()) < d.den ? CELL.S : CELL.E;
+      return srng() < d.den ? CELL.S : CELL.E;
     })
   );
 }
@@ -283,6 +284,11 @@ function tile(c, r) {
 // ─── ゲーム開始 ──────────────────────────────────────────────────────────────
 function go() {
   clearInterval(tickId);
+  // オンライン時はホストが setRngSeed() 済み、オフライン時はここで生成
+  if (!onlineMode) {
+    currentSeed = Math.floor(Math.random() * 0x7fffffff) || 1;
+    setRngSeed(currentSeed);
+  }
   buildMap();
   const d = CFG[diff];
 
@@ -350,6 +356,9 @@ function loop(ts) {
   render();
 }
 requestAnimationFrame(loop);
+
+// ?online=1 で直接オンラインロビーへ
+if (new URLSearchParams(location.search).get('online')) state = ST.ONLINE;
 
 // ─── 更新 ────────────────────────────────────────────────────────────────────
 function update(dt) {

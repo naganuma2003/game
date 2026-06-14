@@ -204,7 +204,7 @@ function go() {
     px: T, py: T,   // ピクセル座標（タイル左上）
     spd: 2.5,       // タイル毎秒
     maxB: 1, actB: 0,
-    fire: 2,
+    fire: 1,
     lives: 3,
     inv: 0,         // 無敵残り秒
     dead: 0,        // 死亡アニメ残り秒
@@ -552,16 +552,31 @@ function drawMap() {
 }
 
 // ─── パワーアップ ────────────────────────────────────────────────────────────
-const PUIC=['💣','🔥','⚡'], PUCL=['#ffe000','#ff8800','#00ffaa'];
+const PUIC=['💣','🔥','👟'], PUCL=['#ffe000','#ff6600','#00ddff'];
+const PUBG=['#5a3a00','#5a1a00','#003a4a'];
 function drawPups() {
   const n=Date.now()/1000;
   cx.textAlign='center'; cx.textBaseline='middle';
   for (const p of pups) {
+    const fx=p.tx*T+T/2, fy=p.ty*T+T/2;
+    const bob=Math.sin(n*3)*T*0.05;
+    const col=PUCL[p.t];
     cx.save();
-    cx.shadowBlur=14; cx.shadowColor=PUCL[p.t];
-    cx.globalAlpha=0.85+0.15*Math.sin(n*3);
-    cx.font=`${T*0.58}px serif`;
-    cx.fillText(PUIC[p.t], p.tx*T+T/2, p.ty*T+T/2);
+
+    // 背景パネル
+    const pad=T*0.13;
+    cx.fillStyle=PUBG[p.t];
+    cx.strokeStyle=col;
+    cx.lineWidth=T*0.1;
+    cx.shadowBlur=16; cx.shadowColor=col;
+    rrect(p.tx*T+pad, p.ty*T+pad+bob, T-pad*2, T-pad*2, T*0.15);
+    cx.fill(); cx.stroke();
+
+    // アイコン
+    cx.shadowBlur=8; cx.shadowColor=col;
+    cx.font=`${T*0.52}px serif`;
+    cx.fillText(PUIC[p.t], fx, fy+bob);
+
     cx.restore();
   }
 }

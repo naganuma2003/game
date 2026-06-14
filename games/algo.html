@@ -247,6 +247,7 @@ function applyAttack(targetPi,pos,guess){
     } else {
       document.getElementById('status').textContent=G.players[G.cur].name+' が続けるか考え中…';
       showActs([]);
+      setTimeout(()=>{G.phase='cpu';cpuPlay();},900);
     }
   } else {
     addLog(`❌ ${G.players[G.cur].name}: 外れ（実際は${cardLabel(card)}）`,'miss');

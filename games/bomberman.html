@@ -275,8 +275,7 @@ function canGo(npx, npy) {
     if (tile(gc,gr)!==CELL.E) return false;
     for (const b of bbs) {
       if (b.tx===gc && b.ty===gr) {
-        // 置いた直後は乗り越えを許可
-        if (Math.round(pl.px/T)===gc && Math.round(pl.py/T)===gr) continue;
+        if (b.passable) continue;
         return false;
       }
     }
@@ -301,6 +300,17 @@ function updPlayer(dt) {
     if (Math.abs(pl.px-snap) < spd+1) pl.px = snap;
     const ny = pl.py + (up?-spd:spd);
     if (canGo(pl.px,ny)) { pl.py=ny; pl.dir=up?0:2; }
+  }
+
+  // ヒットボックスが爆弾マスを完全に離れたらpassableを解除
+  const hm = 3, hsz = T-hm*2-1;
+  for (const b of bbs) {
+    if (b.passable) {
+      const hx1=pl.px+hm, hx2=pl.px+hm+hsz, hy1=pl.py+hm, hy2=pl.py+hm+hsz;
+      const btX=b.tx*T, btY=b.ty*T;
+      const overlap = hx1<btX+T && hx2>=btX && hy1<btY+T && hy2>=btY;
+      if (!overlap) b.passable = false;
+    }
   }
 
   // パワーアップ取得
@@ -357,7 +367,7 @@ function placeBomb() {
   if (!pl.alive || pl.actB>=pl.maxB) return;
   const btx=Math.round(pl.px/T), bty=Math.round(pl.py/T);
   if (hasBomb(btx,bty)) return;
-  bbs.push({ tx:btx, ty:bty, t:CFG[diff].bt, fire:pl.fire, ph:0 });
+  bbs.push({ tx:btx, ty:bty, t:CFG[diff].bt, fire:pl.fire, ph:0, passable:true });
   pl.actB++;
 }
 

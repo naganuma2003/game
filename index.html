@@ -623,13 +623,13 @@
           <div class="icon">⊞</div>
           <div class="name">ナインメンズモリス</div>
           <div class="desc">9個の駒で3つ並べ（ミル）て相手の駒を取る古典戦略。CPU3段階・2人・オンライン。</div>
-          <div class="tagrow"><a class="tag" href="games/morris.html">プレイする →</a><a class="tag tag-online" href="games/morris.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/morris.html">プレイする →</a><a class="tag tag-online" href="games/morris.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-morris').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon">🐮</div>
           <div class="name">ニムト</div>
           <div class="desc">104枚のカードを同時出し。6枚目を置いた人が列を引き取り、牛の頭がペナルティ点に。2〜10人。</div>
-          <div class="tagrow"><a class="tag" href="games/nimmt.html">プレイする →</a><a class="tag tag-online" href="games/nimmt.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/nimmt.html">プレイする →</a><a class="tag tag-online" href="games/nimmt.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-nimmt').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon" style="display:inline-grid;grid-template-columns:repeat(3,1fr);gap:1px;width:42px;height:54px;background:#7a5c25;padding:2px;border-radius:4px;font-size:10px">
@@ -648,14 +648,14 @@
           </div>
           <div class="name">どうぶつしょうぎ</div>
           <div class="desc">3×4の入門将棋。トライとキャッチ。CPU対戦。</div>
-          <div class="tagrow"><a class="tag" href="games/dobutsu.html">プレイする →</a><a class="tag tag-online" href="games/dobutsu.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/dobutsu.html">プレイする →</a><a class="tag tag-online" href="games/dobutsu.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-dobutsu').classList.add('show')">📖 ルール</button></div></div>
 
-        <a class="card" href="カルカソンヌ/index.html">
+        <div class="card">
           <div class="icon">🏰</div>
           <div class="name">カルカソンヌ</div>
           <div class="desc">タイル配置で街道や都市を作る陣取りゲーム。CPU対戦。</div>
-          <span class="tag">プレイする →</span>
-        </a>
+          <div class="tagrow"><a class="tag" href="カルカソンヌ/index.html">プレイする →</a><button class="tag tag-rule" onclick="document.getElementById('rule-carcassonne').classList.add('show')">📖 ルール</button></div>
+        </div>
 
         <div class="card">
           <div class="icon" style="display:inline-grid;grid-template-columns:repeat(3,1fr);gap:2px;width:42px;height:42px;background:#8a93a8;padding:2px;border-radius:4px;font-weight:900;font-size:12px">
@@ -1644,6 +1644,89 @@
         <li>すでに埋まっている数字から、入れられない数字を消去していく。</li>
         <li>あるマスに入れられる数字が1つだけになったら確定。</li>
         <li>ある行・列・ブロックで特定の数字が入れるマスが1つだけなら確定。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ナインメンズモリス ルールモーダル -->
+  <div id="rule-morris" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-morris').classList.remove('show')">×</button>
+      <h2>⊞ ナインメンズモリス ルール</h2>
+      <h3>目的</h3>
+      <p>相手の駒を2枚以下にするか、相手が動けなくなったら勝ち。</p>
+      <h3>フェーズ1：配置</h3>
+      <ul>
+        <li>交互に盤上の点に駒を1枚ずつ置く（各9枚）。</li>
+        <li>自分の駒が一直線に3つ並ぶと「ミル」完成。相手の駒を1枚取れる（ミルの駒は取れない）。</li>
+      </ul>
+      <h3>フェーズ2：移動</h3>
+      <ul>
+        <li>全9枚を置いたら、駒を隣接する点へ1つずつ動かす。</li>
+        <li>ミルが完成するたびに相手の駒を1枚取れる。</li>
+      </ul>
+      <h3>フェーズ3：飛び</h3>
+      <p>駒が3枚になったプレイヤーは、盤上の任意の点に「飛ぶ」ことができる。</p>
+    </div>
+  </div>
+
+  <!-- ニムト ルールモーダル -->
+  <div id="rule-nimmt" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-nimmt').classList.remove('show')">×</button>
+      <h2>🐮 ニムト ルール</h2>
+      <h3>目的</h3>
+      <p>牛の頭（ペナルティ）をできるだけ少なく取って、最終的に点数が最も低い人が勝ち。</p>
+      <h3>基本ルール</h3>
+      <ul>
+        <li>1〜104の数字カードを使用。各カードには牛の頭マーク（1〜7個）がある。</li>
+        <li>全員が同時に手札から1枚選んで出す。数字の小さい順に処理する。</li>
+        <li>出したカードは4列のいずれかの末尾に置く（その列の最大値の直上の数字）。</li>
+        <li>列の6枚目になるカードを出した人は、その列を引き取りペナルティを受ける。</li>
+        <li>どの列にも置けない場合は、好きな列を引き取りそこに置く。</li>
+      </ul>
+      <h3>終了条件</h3>
+      <p>手札がなくなったらラウンド終了。規定点数に達したプレイヤーが出たら全体終了。</p>
+    </div>
+  </div>
+
+  <!-- どうぶつしょうぎ ルールモーダル -->
+  <div id="rule-dobutsu" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-dobutsu').classList.remove('show')">×</button>
+      <h2>🦁 どうぶつしょうぎ ルール</h2>
+      <h3>目的</h3>
+      <p>相手の「ライオン」を取るか（キャッチ）、自分のライオンが相手陣の最前列まで進むと勝ち（トライ）。</p>
+      <h3>駒の種類と動き</h3>
+      <ul>
+        <li><b>ライオン</b>：全方向に1マス（将棋の王将と同じ）。</li>
+        <li><b>ぞう</b>：斜め方向に1マス。</li>
+        <li><b>きりん</b>：前後左右に1マス。</li>
+        <li><b>ひよこ</b>：前に1マスのみ。相手陣の最前列に到達すると「にわとり」に成る（前・横・斜め前に1マス）。</li>
+      </ul>
+      <h3>持ち駒</h3>
+      <p>取った駒は持ち駒になり、好きなタイミングで盤上の空きマスに打てる（成った駒は元に戻る）。</p>
+    </div>
+  </div>
+
+  <!-- カルカソンヌ ルールモーダル -->
+  <div id="rule-carcassonne" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-carcassonne').classList.remove('show')">×</button>
+      <h2>🏰 カルカソンヌ ルール</h2>
+      <h3>目的</h3>
+      <p>タイルを配置して道・都市・修道院を完成させ、ミープル（駒）で得点を稼ぐ。最終的に最も高得点の人が勝ち。</p>
+      <h3>基本ルール</h3>
+      <ul>
+        <li>手番にタイルを1枚引き、既存タイルと辺を合わせて配置する（道は道に、都市は都市に続くように）。</li>
+        <li>タイルを置いた後、自分のミープルをその地形に置ける（空き地形のみ）。</li>
+      </ul>
+      <h3>得点</h3>
+      <ul>
+        <li><b>道</b>：完成時に道のタイル数×1点（ミープルを回収）。</li>
+        <li><b>都市</b>：完成時にタイル数×2点＋紋章×2点。</li>
+        <li><b>修道院</b>：周囲8マスが埋まると9点。</li>
+        <li>ゲーム終了時の未完成地形は減点して計算。</li>
       </ul>
     </div>
   </div>

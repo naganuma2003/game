@@ -156,6 +156,22 @@
     .rule-card li { margin-bottom:4px; }
     .rule-close { position:absolute;top:14px;right:16px;background:none;border:none;color:#9a8f7b;font-size:22px;cursor:pointer;line-height:1; }
 
+    /* 検索 */
+    .search-wrap { position: relative; margin: 0 0 12px; }
+    .search-wrap input {
+      width: 100%; box-sizing: border-box;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+      color: #cfd8e6; padding: 9px 36px 9px 38px; border-radius: 8px; font-size: 14px;
+      font-family: inherit; outline: none; transition: border-color 0.15s;
+    }
+    .search-wrap input:focus { border-color: rgba(80,150,255,0.65); }
+    .search-wrap input::placeholder { color: rgba(255,255,255,0.3); }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; opacity: 0.45; pointer-events: none; }
+    .search-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; font-size: 18px;
+      display: none; padding: 2px 6px; line-height: 1; }
+    .search-clear:hover { color: rgba(255,255,255,0.8); }
+
     /* フィルター */
     .filterbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; align-items: center; }
     .filterbar .fb-label { font-size: 12px; opacity: 0.65; margin-right: 2px; }
@@ -271,6 +287,11 @@
 
     <!-- ゲーム一覧 -->
     <div class="col-games">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="game-search" placeholder="ゲームを検索..." autocomplete="off" spellcheck="false">
+        <button class="search-clear" id="search-clear" aria-label="クリア">×</button>
+      </div>
       <div class="filterbar" id="filterbar">
         <span class="fb-label">人数:</span>
         <button data-f="all" class="on">すべて</button>
@@ -2147,17 +2168,38 @@
         c.dataset.tags = t ? t.join(",") : "solo,duo,multi"; // 未登録は常に表示
       });
       var bar = document.getElementById("filterbar");
-      bar.addEventListener("click", function (e) {
-        var b = e.target.closest("button"); if (!b) return;
-        bar.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); });
-        b.classList.add("on");
-        var f = b.dataset.f, visible = 0;
+      var searchInput = document.getElementById("game-search");
+      var searchClear = document.getElementById("search-clear");
+      var currentFilter = "all";
+
+      function applyFilters() {
+        var q = searchInput.value.trim().toLowerCase();
+        var f = currentFilter;
+        var visible = 0;
         cards.forEach(function (c) {
-          var show = (f === "all") || (("," + c.dataset.tags + ",").indexOf("," + f + ",") >= 0);
+          var name = (c.querySelector(".name") ? c.querySelector(".name").textContent : "").toLowerCase();
+          var desc = (c.querySelector(".desc") ? c.querySelector(".desc").textContent : "").toLowerCase();
+          var tagMatch = (f === "all") || (("," + c.dataset.tags + ",").indexOf("," + f + ",") >= 0);
+          var searchMatch = !q || name.indexOf(q) >= 0 || desc.indexOf(q) >= 0;
+          var show = tagMatch && searchMatch;
           c.style.display = show ? "" : "none";
           if (show) visible++;
         });
         document.getElementById("filter-empty").style.display = visible ? "none" : "block";
+        searchClear.style.display = q ? "block" : "none";
+      }
+
+      bar.addEventListener("click", function (e) {
+        var b = e.target.closest("button"); if (!b) return;
+        bar.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); });
+        b.classList.add("on");
+        currentFilter = b.dataset.f;
+        applyFilters();
+      });
+
+      searchInput.addEventListener("input", applyFilters);
+      searchClear.addEventListener("click", function () {
+        searchInput.value = ""; applyFilters(); searchInput.focus();
       });
     })();
   </script>

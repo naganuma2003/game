@@ -32,7 +32,7 @@
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     }
     .card {
-      display: flex; flex-direction: column;
+      display: flex; flex-direction: column; position: relative;
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 16px; padding: 22px 20px;
@@ -44,6 +44,15 @@
       background: rgba(255,255,255,0.09);
       box-shadow: 0 12px 30px rgba(0,0,0,0.4);
     }
+    .fav-btn {
+      position: absolute; top: 10px; right: 12px;
+      background: none; border: none; font-size: 18px; line-height: 1;
+      cursor: pointer; padding: 4px; opacity: 0.25;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .fav-btn:hover { opacity: 1; transform: scale(1.25); }
+    .card.faved .fav-btn { opacity: 1; }
+    .card.faved { border-color: rgba(255,210,0,0.35); }
     .icon { font-size: 44px; line-height: 1; margin-bottom: 14px; }
     .name { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
     .desc { font-size: 13px; opacity: 0.75; line-height: 1.5; }
@@ -301,6 +310,7 @@
         <span class="fb-sep"></span>
         <button data-f="card">🃏 カードゲーム</button>
         <button data-f="board">♟ ボードゲーム</button>
+        <button data-f="fav">⭐ お気に入り</button>
         <span class="fb-sep"></span>
         <span class="fb-label">並び順:</span>
         <button data-s="asc">↑ 昇順</button>
@@ -2225,6 +2235,32 @@
         var t = TAGS[(nameEl ? nameEl.textContent : "").trim()];
         c.dataset.tags = t ? t.join(",") : "solo,duo,multi"; // 未登録は常に表示
       });
+      var FAVES_KEY = 'ng-game-faves';
+      var faves = new Set(JSON.parse(localStorage.getItem(FAVES_KEY) || '[]'));
+      function saveFaves() { localStorage.setItem(FAVES_KEY, JSON.stringify([...faves])); }
+
+      // 各カードに⭐ボタンを追加
+      cards.forEach(function(card) {
+        var gameName = (card.querySelector('.name') || {}).textContent || '';
+        gameName = gameName.trim();
+        var btn = document.createElement('button');
+        btn.className = 'fav-btn';
+        btn.setAttribute('aria-label', 'お気に入り');
+        btn.textContent = faves.has(gameName) ? '⭐' : '☆';
+        if (faves.has(gameName)) card.classList.add('faved');
+        btn.addEventListener('click', function(e) {
+          e.preventDefault(); e.stopPropagation();
+          if (faves.has(gameName)) {
+            faves.delete(gameName); btn.textContent = '☆'; card.classList.remove('faved');
+          } else {
+            faves.add(gameName); btn.textContent = '⭐'; card.classList.add('faved');
+          }
+          saveFaves();
+          if (currentFilter === 'fav') applyFilters();
+        });
+        card.appendChild(btn);
+      });
+
       var bar = document.getElementById("filterbar");
       var searchInput = document.getElementById("game-search");
       var searchClear = document.getElementById("search-clear");
@@ -2256,7 +2292,7 @@
         cards.forEach(function (c) {
           var name = (c.querySelector(".name") ? c.querySelector(".name").textContent : "").toLowerCase();
           var desc = (c.querySelector(".desc") ? c.querySelector(".desc").textContent : "").toLowerCase();
-          var tagMatch = (f === "all") || (("," + c.dataset.tags + ",").indexOf("," + f + ",") >= 0);
+          var tagMatch = (f === "all") || (f === "fav" ? faves.has((c.querySelector(".name")||{}).textContent.trim()) : ("," + c.dataset.tags + ",").indexOf("," + f + ",") >= 0);
           var searchMatch = !q || name.indexOf(q) >= 0 || desc.indexOf(q) >= 0;
           var show = tagMatch && searchMatch;
           c.style.display = show ? "" : "none";

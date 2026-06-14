@@ -55,6 +55,7 @@
     puzzle15: "games/15puzzle.html",
     speed: "games/speed.html",
     uno: "games/uno.html",
+    bomberman: "games/bomberman.html",
   };
 
   function randomCode() {

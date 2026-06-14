@@ -526,7 +526,7 @@ function backToSetup() {
 /* ===== Bomb Game ===== */
 const BOMB_ICON='💣';
 const INSULTS=['ドンマイ！次がんばろ','あちゃー、引いちゃったか〜','今日の運、全部ここで使ったね','爆死。でも顔は無事でよかった','持ってるねぇ〜（悪い意味で）','うわっ、センスないわ〜','やっぱりお前か（笑）','引きの弱さは才能だね','みんな見た？こいつだよ','罰ゲーム確定。逃げられません','罰ゲーム2倍！おめでとう','今のは効いた…罰ゲーム2倍ね','見事すぎる爆死、罰ゲーム2倍だ'];
-let bover=false, bpicks=0, bbtns=[];
+let bover=false, bpicks=0, bbtns=[], bombPosition=-1;
 
 document.getElementById('chiku').addEventListener('change',()=>{
   document.getElementById('chikuState').textContent=document.getElementById('chiku').checked?'ON':'OFF';
@@ -544,6 +544,7 @@ function buildBomb() {
   bover=false; bpicks=0; document.getElementById('bpicks').textContent='0';
   document.getElementById('bstatus').textContent='赤いボタンを押せ';
   document.getElementById('bstatus').className='bstatus';
+  bombPosition=Math.floor(Math.random()*16);
   for(let i=0;i<16;i++){
     const slot=document.createElement('div'); slot.className='bslot';
     const b=document.createElement('button');
@@ -558,8 +559,7 @@ function bpick(i,b) {
   if(bover||b.disabled) return;
   b.disabled=true; b.classList.add('bpressed');
   const mark=b.querySelector('.bmark');
-  const remaining=16-bpicks;
-  const isBomb=(remaining<=1);
+  const isBomb=(i===bombPosition);
   if(isBomb){
     b.classList.add('bbomb'); mark.textContent=BOMB_ICON;
     document.getElementById('bstatus').textContent='💥 ドカーン！ 大爆発';

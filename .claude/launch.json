@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "game",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-l", "5174", "C:\\Users\\nagan\\OneDrive\\Claude\\game"],
+      "port": 5174
+    },
+    {
+      "name": "mahjong-yaku",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-l", "5173", "C:\\Users\\nagan\\OneDrive\\Claude\\mahjong-yaku"],
+      "port": 5173
+    }
+  ]
+}

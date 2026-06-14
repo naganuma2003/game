@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNO</title>
+<style>
+:root{--bg:#0e0e18;--surf:#1a1a28;--gold:#c9a030;--gold2:#f0d060;--txt:#e8e8f0;--dim:#555;--red:#e0473a;--grn:#4ec05e;
+  --cr:#e0473a;--cb:#3e87d6;--cg:#4ec05e;--cy:#e0c34a;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:56px 10px 32px}
+.back{position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.25)}
+
+/* SETUP */
+#setup{width:100%;max-width:360px;margin-top:12px;background:var(--surf);border-radius:16px;padding:22px 18px}
+#setup h1{font-size:22px;text-align:center;color:var(--gold);margin-bottom:2px}
+.subtitle{font-size:11px;color:var(--dim);text-align:center;margin-bottom:18px}
+.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.form-row label{font-size:11px;color:var(--gold2)}
+.form-row select{background:#141420;border:1px solid #333;color:var(--txt);padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit}
+.start-btn{width:100%;padding:11px;background:var(--gold);color:#111;border:none;border-radius:10px;font:700 15px 'Segoe UI',sans-serif;cursor:pointer}
+.start-btn:hover{background:var(--gold2)}
+.rules-box{margin-top:14px;padding:11px;background:rgba(255,255,255,.04);border-radius:8px;font-size:11px;color:var(--dim);line-height:1.7}
+.rules-box b{color:var(--txt)}
+
+/* GAME */
+#game{display:none;width:100%;max-width:520px;flex-direction:column;align-items:center;gap:10px}
+
+/* Opponents */
+.opponents{width:100%;display:flex;flex-direction:column;gap:6px}
+.opp-row{background:var(--surf);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:10px;position:relative}
+.opp-name{font-size:12px;font-weight:700;min-width:50px}
+.opp-count{font-size:11px;color:var(--dim);margin-left:auto;flex-shrink:0}
+.opp-backs{display:flex;gap:3px;flex-wrap:wrap;flex:1}
+.card-back{width:28px;height:40px;border-radius:4px;background:#1a3a6a;border:2px solid #2a5aaa;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.uno-badge{background:var(--red);color:#fff;font:700 10px 'Segoe UI',sans-serif;padding:2px 6px;border-radius:99px;margin-left:4px}
+.turn-arrow{font-size:14px;margin-right:4px;color:var(--gold)}
+
+/* Center */
+.center-area{width:100%;display:flex;align-items:center;justify-content:center;gap:16px;padding:10px 0}
+.pile-col{display:flex;flex-direction:column;align-items:center;gap:4px}
+.pile-lbl{font-size:10px;color:var(--dim)}
+.draw-pile{width:64px;height:90px;border-radius:8px;background:#1a3a6a;border:2px solid #2a5aaa;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .1s;font-size:26px}
+.draw-pile:hover{transform:scale(1.05)}
+.draw-pile:active{transform:scale(.97)}
+.draw-pile .pile-count{font-size:11px;color:#8ab;margin-top:2px}
+.color-ind{width:38px;height:38px;border-radius:50%;border:3px solid rgba(255,255,255,.3);transition:background .3s;flex-shrink:0}
+.color-lbl{font-size:9px;color:var(--dim);margin-top:2px}
+
+/* Card element */
+.card-el{width:64px;height:90px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;border:3px solid rgba(255,255,255,.25);cursor:default;flex-shrink:0;position:relative;user-select:none}
+.card-el.wild-card{background:linear-gradient(135deg,var(--cr) 25%,var(--cb) 25%,var(--cb) 50%,var(--cg) 50%,var(--cg) 75%,var(--cy) 75%);border-color:rgba(255,255,255,.5)}
+.card-el .cv{font-size:22px;line-height:1;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,.5)}
+.card-el .cl{font-size:10px;color:rgba(255,255,255,.75);margin-top:1px}
+.card-el .ctl{position:absolute;top:4px;left:6px;font-size:9px;color:rgba(255,255,255,.8);font-weight:900}
+.card-el .cbr{position:absolute;bottom:4px;right:6px;font-size:9px;color:rgba(255,255,255,.8);font-weight:900}
+
+/* Player hand */
+.hand-area{width:100%}
+.hand-lbl{font-size:11px;color:var(--dim);text-align:center;margin-bottom:6px}
+.hand-row{display:flex;gap:5px;overflow-x:auto;padding:4px 2px 8px;justify-content:flex-start}
+.hand-row::-webkit-scrollbar{height:4px}
+.hand-row::-webkit-scrollbar-track{background:#111}
+.hand-row::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+.hcard{width:60px;height:84px;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;border:3px solid rgba(255,255,255,.2);cursor:pointer;flex-shrink:0;position:relative;transition:transform .12s,border-color .12s,box-shadow .12s;user-select:none}
+.hcard:hover{transform:translateY(-8px);border-color:rgba(255,255,255,.7);box-shadow:0 8px 20px rgba(0,0,0,.5)}
+.hcard.disabled{opacity:.4;cursor:not-allowed;filter:grayscale(.5)}
+.hcard.disabled:hover{transform:none;border-color:rgba(255,255,255,.2);box-shadow:none}
+.hcard.wild-card{background:linear-gradient(135deg,var(--cr) 25%,var(--cb) 25%,var(--cb) 50%,var(--cg) 50%,var(--cg) 75%,var(--cy) 75%);border-color:rgba(255,255,255,.4)}
+.hcard .cv{font-size:20px;line-height:1;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,.5)}
+.hcard .cl{font-size:9px;color:rgba(255,255,255,.75);margin-top:1px}
+.hcard .ctlh{position:absolute;top:3px;left:5px;font-size:8px;color:rgba(255,255,255,.8);font-weight:900}
+.hcard .cbrh{position:absolute;bottom:3px;right:5px;font-size:8px;color:rgba(255,255,255,.8);font-weight:900}
+
+/* Bottom buttons */
+.btns-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.btn{padding:9px 18px;border-radius:8px;font:700 13px 'Segoe UI',sans-serif;cursor:pointer;border:none;transition:all .12s}
+.btn.primary{background:var(--gold);color:#111}
+.btn.primary:hover{background:var(--gold2)}
+.btn.secondary{background:#2a2a3e;color:var(--txt)}
+.btn.secondary:hover{background:#34344e}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.uno-btn{background:var(--red);color:#fff;font-size:15px;font-weight:900}
+.btn.uno-btn:hover{background:#ff5555}
+
+#status{font-size:12px;min-height:18px;text-align:center;color:var(--dim);width:100%}
+
+/* Color picker */
+#colorpick{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.82);align-items:center;justify-content:center;padding:16px}
+.cp-card{background:var(--surf);border-radius:16px;padding:22px 20px;max-width:320px;width:100%;text-align:center}
+.cp-card h3{color:var(--gold);margin-bottom:14px;font-size:16px}
+.cp-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cp-btn{padding:18px 10px;border-radius:10px;border:none;font:900 18px 'Segoe UI',sans-serif;color:#fff;cursor:pointer;transition:transform .1s;text-shadow:1px 1px 3px rgba(0,0,0,.4)}
+.cp-btn:hover{transform:scale(1.06)}
+
+/* Win screen */
+#winscreen{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:16px}
+.win-card{background:var(--surf);border-radius:16px;padding:24px 20px;max-width:340px;width:100%;text-align:center}
+.win-card h2{font-size:22px;color:var(--gold);margin-bottom:8px}
+.win-msg{font-size:14px;color:var(--txt);margin-bottom:18px}
+.win-btns{display:flex;gap:8px;justify-content:center}
+.win-btns button{padding:10px 22px;border-radius:8px;font:700 14px 'Segoe UI',sans-serif;cursor:pointer;border:none}
+.win-btns .again{background:var(--gold);color:#111}
+.win-btns .home{background:#2a2a3e;color:var(--txt)}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← 一覧に戻る</a>
+
+<section id="setup">
+  <h1>🃏 UNO</h1>
+  <p class="subtitle">ウノ — 手札をなくした人の勝ち！ 2〜6人</p>
+  <div class="form-row">
+    <label>人数（あなた + CPU）</label>
+    <select id="sel-players">
+      <option value="2">2人（CPU 1体）</option>
+      <option value="3" selected>3人（CPU 2体）</option>
+      <option value="4">4人（CPU 3体）</option>
+      <option value="5">5人（CPU 4体）</option>
+      <option value="6">6人（CPU 5体）</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label>CPUの強さ</label>
+    <select id="sel-diff">
+      <option value="easy">弱い</option>
+      <option value="normal" selected>ふつう</option>
+      <option value="hard">強い</option>
+    </select>
+  </div>
+  <button class="start-btn" onclick="startGame()">ゲームスタート</button>
+  <div class="rules-box">
+    <b>ルール：</b>各プレイヤーに7枚配り、場のカードと同じ色か数字（または記号）のカードを出せる。出せない場合は山札からドロー。<b>手札が残り1枚</b>になったら「UNO！」宣言（忘れると2枚ドロー）。最初に手札をなくした人の勝ち。<br>
+    <b>特殊カード：</b>⊘スキップ / ⇄リバース / +2ドロー2 / 🌈ワイルド（色指定）/ +4ワイルドドロー4
+  </div>
+</section>
+
+<div id="game">
+  <div class="opponents" id="opponents"></div>
+
+  <div class="center-area">
+    <div class="pile-col">
+      <div class="pile-lbl">山札</div>
+      <div class="draw-pile" id="draw-pile" onclick="humanDraw()">
+        🂠<div class="pile-count" id="deck-count">108</div>
+      </div>
+    </div>
+    <div class="pile-col">
+      <div class="pile-lbl">捨て札</div>
+      <div id="discard-top"></div>
+    </div>
+    <div class="pile-col">
+      <div class="pile-lbl">現在の色</div>
+      <div class="color-ind" id="color-ind"></div>
+      <div class="color-lbl" id="color-lbl">赤</div>
+    </div>
+  </div>
+
+  <div id="status">ゲーム開始</div>
+
+  <div class="hand-area">
+    <div class="hand-lbl">あなたの手札（<span id="hand-count">7</span>枚）</div>
+    <div class="hand-row" id="hand-row"></div>
+  </div>
+
+  <div class="btns-row">
+    <button class="btn primary" id="draw-btn" onclick="humanDraw()">ドロー</button>
+    <button class="btn uno-btn" id="uno-btn" onclick="callUno()">UNO！</button>
+  </div>
+</div>
+
+<div id="colorpick">
+  <div class="cp-card">
+    <h3>色を選んでください</h3>
+    <div class="cp-btns">
+      <button class="cp-btn" style="background:var(--cr)" onclick="pickColor('red')">赤</button>
+      <button class="cp-btn" style="background:var(--cb)" onclick="pickColor('blue')">青</button>
+      <button class="cp-btn" style="background:var(--cg)" onclick="pickColor('green')">緑</button>
+      <button class="cp-btn" style="background:var(--cy);color:#333" onclick="pickColor('yellow')">黄</button>
+    </div>
+  </div>
+</div>
+
+<div id="winscreen">
+  <div class="win-card">
+    <h2 id="win-title">勝者！</h2>
+    <div class="win-msg" id="win-msg"></div>
+    <div class="win-btns">
+      <button class="again" onclick="location.reload()">もう一度</button>
+      <button class="home" onclick="location.href='../index.html'">一覧へ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS = ['red','blue','green','yellow'];
+const COL_NAMES = {red:'赤',blue:'青',green:'緑',yellow:'黄'};
+const COL_CSS = {red:'var(--cr)',blue:'var(--cb)',green:'var(--cg)',yellow:'var(--cy)'};
+const COL_DARK = {red:'#6a1212',blue:'#0d2d5a',green:'#0d3a14',yellow:'#5a4a00'};
+
+let G = {};
+
+function makeDeck() {
+  const deck = [];
+  for (const c of COLORS) {
+    deck.push({c, t:'num', v:0});
+    for (let v = 1; v <= 9; v++) { deck.push({c,t:'num',v}); deck.push({c,t:'num',v}); }
+    for (let i=0;i<2;i++) { deck.push({c,t:'skip',v:'⊘'}); deck.push({c,t:'rev',v:'⇄'}); deck.push({c,t:'draw2',v:'+2'}); }
+  }
+  for (let i=0;i<4;i++) { deck.push({c:'wild',t:'wild',v:'🌈'}); deck.push({c:'wild',t:'wild4',v:'+4'}); }
+  return deck;
+}
+
+function shuffle(d) {
+  d = [...d];
+  for (let i = d.length-1; i > 0; i--) {
+    const j = 0|Math.random()*(i+1);
+    [d[i],d[j]] = [d[j],d[i]];
+  }
+  return d;
+}
+
+function canPlay(card) {
+  if (card.t==='wild' || card.t==='wild4') return true;
+  const top = G.discard[G.discard.length-1];
+  if (card.c === G.curColor) return true;
+  if (card.t==='num' && top.t==='num' && card.v === top.v) return true;
+  if (card.t!=='num' && card.t === top.t) return true;
+  return false;
+}
+
+function drawFromPile(pi, n=1) {
+  for (let i=0; i<n; i++) {
+    if (!G.deck.length) reshuffle();
+    if (G.deck.length) G.hands[pi].push(G.deck.pop());
+  }
+}
+
+function reshuffle() {
+  if (G.discard.length <= 1) return;
+  const top = G.discard.pop();
+  G.deck = shuffle([...G.discard]);
+  G.discard = [top];
+}
+
+function advanceTurn() {
+  G.cur = (G.cur + G.dir + G.numP) % G.numP;
+}
+
+function playCard(pi, idx) {
+  const card = G.hands[pi].splice(idx, 1)[0];
+  G.discard.push(card);
+  if (card.t !== 'wild' && card.t !== 'wild4') G.curColor = card.c;
+  checkUno(pi);
+  applyEffect(card, pi);
+}
+
+function applyEffect(card, pi) {
+  const n = G.numP;
+  if (card.t==='skip') {
+    advanceTurn();
+  } else if (card.t==='rev') {
+    G.dir *= -1;
+    if (n === 2) advanceTurn();
+  } else if (card.t==='draw2') {
+    const np = (G.cur + G.dir + n) % n;
+    drawFromPile(np, 2);
+    checkUno(np);
+    advanceTurn();
+  } else if (card.t==='wild4') {
+    const np = (G.cur + G.dir + n) % n;
+    drawFromPile(np, 4);
+    checkUno(np);
+    advanceTurn();
+  }
+  // wild: color chosen before advancing
+}
+
+function checkUno(pi) {
+  if (G.hands[pi].length === 1) {
+    G.uno[pi] = true;
+  } else if (G.hands[pi].length !== 1) {
+    G.uno[pi] = false;
+  }
+}
+
+function checkWin(pi) {
+  if (G.hands[pi].length === 0) {
+    showWin(pi);
+    return true;
+  }
+  return false;
+}
+
+function cardHTML(card, facedown=false, clickIdx=-1) {
+  if (facedown) {
+    return `<div class="card-el" style="background:#1a3a6a;border-color:#2a5aaa;width:64px;height:90px">
+      <div style="font-size:24px">🂠</div></div>`;
+  }
+  const isWild = card.t==='wild' || card.t==='wild4';
+  const bg = isWild ? '' : `background:${COL_CSS[card.c]};border-color:rgba(255,255,255,.4)`;
+  const cls = isWild ? 'wild-card' : '';
+  const label = card.t==='num' ? card.v : card.v;
+  const name = card.t==='wild'?'ワイルド':card.t==='wild4'?'W+4':card.t==='skip'?'スキップ':card.t==='rev'?'リバース':card.t==='draw2'?'ドロー2':'';
+  return `<div class="card-el ${cls}" style="${bg}">
+    <div class="ctlh" style="font-size:9px">${label}</div>
+    <div class="cv">${label}</div>
+    <div class="cl">${name}</div>
+    <div class="cbrh" style="font-size:9px">${label}</div>
+  </div>`;
+}
+
+function hcardHTML(card, idx, playable) {
+  const isWild = card.t==='wild' || card.t==='wild4';
+  const bg = isWild ? '' : `background:${COL_CSS[card.c]};border-color:rgba(255,255,255,.4)`;
+  const cls = (isWild?'wild-card ':'')+(!playable?' disabled':'');
+  const label = card.t==='num' ? card.v : card.v;
+  const name = card.t==='wild'?'ワイルド':card.t==='wild4'?'W+4':card.t==='skip'?'スキップ':card.t==='rev'?'リバース':card.t==='draw2'?'ドロー2':'';
+  const onclick = playable ? `onclick="humanPlay(${idx})"` : '';
+  return `<div class="hcard ${cls}" style="${bg}" ${onclick} title="${name}">
+    <div class="ctlh">${label}</div>
+    <div class="cv">${label}</div>
+    <div class="cl">${name}</div>
+    <div class="cbrh">${label}</div>
+  </div>`;
+}
+
+function startGame() {
+  const numP = +document.getElementById('sel-players').value;
+  const diff = document.getElementById('sel-diff').value;
+  initLocalGame(numP, diff);
+}
+
+function initLocalGame(numP, diff) {
+  const deck = shuffle(makeDeck());
+  const hands = Array.from({length:numP}, (_,i) => deck.splice(0,7));
+  // Find first non-wild card for discard
+  let startIdx = deck.findIndex(c => c.t!=='wild' && c.t!=='wild4');
+  if (startIdx < 0) startIdx = 0;
+  const firstCard = deck.splice(startIdx, 1)[0];
+  G = {
+    numP, diff,
+    names: ['あなた', ...Array.from({length:numP-1},(_,i)=>`CPU${i+1}`)],
+    hands, deck, discard: [firstCard],
+    curColor: firstCard.c,
+    dir: 1, cur: 0,
+    drawPending: 0, phase: 'play',
+    uno: Array(numP).fill(false),
+    unoCalled: false,
+    drewThisTurn: false,
+  };
+  // Apply first card effect (but don't advance for wild - already filtered)
+  if (firstCard.t === 'skip') { advanceTurn(); }
+  else if (firstCard.t === 'rev') { G.dir = -1; }
+  else if (firstCard.t === 'draw2') { drawFromPile(0, 2); }
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('game').style.display = 'flex';
+  renderAll();
+  scheduleTurn();
+}
+
+function scheduleTurn() {
+  if (G.phase === 'color') return; // waiting for color pick
+  if (G.cur === 0) {
+    // Human turn
+    setStatus('あなたのターン');
+    enableButtons(true);
+  } else {
+    enableButtons(false);
+    setStatus(`${G.names[G.cur]} が考え中…`);
+    setTimeout(cpuPlay, 800);
+  }
+}
+
+function enableButtons(on) {
+  document.getElementById('draw-btn').disabled = !on;
+  document.getElementById('uno-btn').disabled = !on;
+  document.getElementById('draw-pile').style.cursor = on ? 'pointer' : 'default';
+}
+
+function setStatus(txt) {
+  document.getElementById('status').textContent = txt;
+}
+
+function humanPlay(idx) {
+  if (G.cur !== 0 || G.phase !== 'play') return;
+  const card = G.hands[0][idx];
+  if (!canPlay(card)) { setStatus('そのカードは出せません'); return; }
+
+  // Check UNO penalty: had 2 cards, playing one → should have called UNO but didn't
+  if (G.hands[0].length === 2 && !G.unoCalled) {
+    // No auto-penalty here; let UNO button handle it
+  }
+
+  if (ONLINE && roomSend) {
+    roomSend({t:'play', idx});
+    return;
+  }
+
+  doPlay(0, idx);
+}
+
+function doPlay(pi, idx) {
+  const card = G.hands[pi][idx];
+  playCard(pi, idx);
+  renderAll();
+  if (checkWin(pi)) return;
+
+  if (card.t === 'wild' || card.t === 'wild4') {
+    if (pi === 0) {
+      G.phase = 'color';
+      document.getElementById('colorpick').style.display = 'flex';
+    } else {
+      // CPU picks color
+      const chosen = cpuChooseColor(pi);
+      G.curColor = chosen;
+      advanceTurn();
+      renderAll();
+      scheduleTurn();
+    }
+  } else {
+    advanceTurn();
+    G.unoCalled = false;
+    G.drewThisTurn = false;
+    renderAll();
+    scheduleTurn();
+  }
+}
+
+function pickColor(c) {
+  document.getElementById('colorpick').style.display = 'none';
+  G.curColor = c;
+  G.phase = 'play';
+  if (ONLINE && roomSend) {
+    roomSend({t:'color', c});
+    return;
+  }
+  advanceTurn();
+  G.unoCalled = false;
+  G.drewThisTurn = false;
+  renderAll();
+  scheduleTurn();
+}
+
+function humanDraw() {
+  if (G.cur !== 0 || G.phase !== 'play') return;
+  if (G.drewThisTurn) { setStatus('すでにドロー済みです。カードを出すか、パスしてください'); return; }
+
+  if (ONLINE && roomSend) {
+    roomSend({t:'draw'});
+    return;
+  }
+
+  drawFromPile(0, 1);
+  G.drewThisTurn = true;
+  checkUno(0);
+  renderAll();
+  // If drawn card is playable, let human decide; otherwise auto-advance
+  const drawnCard = G.hands[0][G.hands[0].length-1];
+  if (!canPlay(drawnCard)) {
+    setStatus('出せるカードがありません。ターンをパスします');
+    setTimeout(() => {
+      advanceTurn();
+      G.drewThisTurn = false;
+      G.unoCalled = false;
+      renderAll();
+      scheduleTurn();
+    }, 1000);
+  } else {
+    setStatus('ドローしたカードを出せます');
+  }
+}
+
+function callUno() {
+  if (G.cur !== 0) return;
+  G.unoCalled = true;
+  G.uno[0] = (G.hands[0].length === 1);
+  setStatus('UNO！');
+}
+
+function cpuPlay() {
+  if (G.cur === 0) return;
+  const pi = G.cur;
+  const hand = G.hands[pi];
+
+  // Find playable cards
+  const playable = hand.map((c,i)=>({c,i})).filter(x=>canPlay(x.c));
+
+  if (!playable.length) {
+    // Draw
+    drawFromPile(pi, 1);
+    checkUno(pi);
+    setStatus(`${G.names[pi]} がドロー`);
+    advanceTurn();
+    G.drewThisTurn = false;
+    renderAll();
+    setTimeout(() => scheduleTurn(), 400);
+    return;
+  }
+
+  // Choose card based on difficulty
+  let chosen;
+  if (G.diff === 'easy') {
+    chosen = playable[0|Math.random()*playable.length];
+  } else if (G.diff === 'normal') {
+    // Prefer action, then number, then wild
+    const actions = playable.filter(x=>x.c.t!=='num'&&x.c.t!=='wild'&&x.c.t!=='wild4');
+    const nums = playable.filter(x=>x.c.t==='num');
+    const wilds = playable.filter(x=>x.c.t==='wild'||x.c.t==='wild4');
+    if (actions.length) chosen = actions[0|Math.random()*actions.length];
+    else if (nums.length) chosen = nums[0|Math.random()*nums.length];
+    else chosen = wilds[0|Math.random()*wilds.length];
+  } else {
+    // Hard: strategic
+    const minCards = Math.min(...G.hands.map((h,i)=>i!==pi?h.length:999));
+    const oppHasLow = minCards <= 2;
+    // Use wild4 when opponent low on cards
+    const wild4s = playable.filter(x=>x.c.t==='wild4');
+    const draw2s = playable.filter(x=>x.c.t==='draw2');
+    const skips = playable.filter(x=>x.c.t==='skip'||x.c.t==='rev');
+    const nums = playable.filter(x=>x.c.t==='num');
+    const wilds = playable.filter(x=>x.c.t==='wild');
+    if (oppHasLow && wild4s.length) chosen = wild4s[0];
+    else if (oppHasLow && draw2s.length) chosen = draw2s[0];
+    else if (skips.length) chosen = skips[0|Math.random()*skips.length];
+    else if (draw2s.length) chosen = draw2s[0];
+    else if (nums.length) chosen = nums[0|Math.random()*nums.length];
+    else if (wilds.length) chosen = wilds[0];
+    else chosen = wild4s[0];
+  }
+
+  if (!chosen) chosen = playable[0];
+
+  // UNO auto-call for CPU
+  if (hand.length === 2) G.uno[pi] = true;
+
+  setStatus(`${G.names[pi]} がカードを出した`);
+  doPlay(pi, chosen.i);
+}
+
+function cpuChooseColor(pi) {
+  // Count colors in CPU hand
+  const counts = {red:0,blue:0,green:0,yellow:0};
+  for (const c of G.hands[pi]) {
+    if (c.c !== 'wild') counts[c.c] = (counts[c.c]||0)+1;
+  }
+  // If hard mode: pick color opponent has least of
+  if (G.diff === 'hard') {
+    // Find opponent with fewest cards
+    let oppIdx = -1, minC = 999;
+    for (let i=0;i<G.numP;i++) {
+      if (i!==pi && G.hands[i].length < minC) { minC=G.hands[i].length; oppIdx=i; }
+    }
+    if (oppIdx >= 0) {
+      const oppCounts = {red:0,blue:0,green:0,yellow:0};
+      for (const c of G.hands[oppIdx]) if (c.c!=='wild') oppCounts[c.c]=(oppCounts[c.c]||0)+1;
+      // Pick color opp has least of (among colors CPU also has)
+      const myCols = COLORS.filter(c=>counts[c]>0);
+      if (myCols.length) {
+        myCols.sort((a,b)=>oppCounts[a]-oppCounts[b]);
+        return myCols[0];
+      }
+    }
+  }
+  // Pick color CPU has most of
+  return COLORS.reduce((a,b)=>counts[a]>=counts[b]?a:b);
+}
+
+function renderAll() {
+  renderOpponents();
+  renderCenter();
+  renderHand();
+  updateColorInd();
+}
+
+function renderOpponents() {
+  const el = document.getElementById('opponents');
+  el.innerHTML = '';
+  for (let i = 1; i < G.numP; i++) {
+    const isTurn = G.cur === i;
+    const div = document.createElement('div');
+    div.className = 'opp-row';
+    const backs = Math.min(G.hands[i].length, 10);
+    let backHTML = '';
+    for (let b=0;b<backs;b++) backHTML += `<div class="card-back">🂠</div>`;
+    const unoBadge = G.uno[i] ? '<span class="uno-badge">UNO!</span>' : '';
+    div.innerHTML = `
+      <span class="turn-arrow">${isTurn?'▶':' '}</span>
+      <span class="opp-name" style="color:${isTurn?'var(--gold2)':'var(--txt)'}">${G.names[i]}${unoBadge}</span>
+      <div class="opp-backs">${backHTML}</div>
+      <span class="opp-count">${G.hands[i].length}枚</span>
+    `;
+    el.appendChild(div);
+  }
+}
+
+function renderCenter() {
+  const top = G.discard[G.discard.length-1];
+  const el = document.getElementById('discard-top');
+  if (!top) { el.innerHTML=''; return; }
+  const isWild = top.t==='wild'||top.t==='wild4';
+  const bg = isWild ? '' : `background:${COL_CSS[top.c]};border-color:rgba(255,255,255,.4)`;
+  const cls = isWild ? 'wild-card' : '';
+  const label = top.t==='num'?top.v:top.v;
+  const name = top.t==='wild'?'ワイルド':top.t==='wild4'?'W+4':top.t==='skip'?'⊘':top.t==='rev'?'⇄':top.t==='draw2'?'+2':'';
+  el.innerHTML = `<div class="card-el ${cls}" style="${bg}">
+    <div class="ctlh">${label}</div><div class="cv">${label}</div><div class="cl">${name}</div><div class="cbrh">${label}</div>
+  </div>`;
+  document.getElementById('deck-count').textContent = G.deck.length;
+}
+
+function renderHand() {
+  const row = document.getElementById('hand-row');
+  const isMyTurn = G.cur === 0 && G.phase === 'play';
+  row.innerHTML = '';
+  for (let i=0;i<G.hands[0].length;i++) {
+    const card = G.hands[0][i];
+    const playable = isMyTurn && canPlay(card);
+    row.innerHTML += hcardHTML(card, i, playable);
+  }
+  document.getElementById('hand-count').textContent = G.hands[0].length;
+  // UNO badge for human
+  const unoBadge = G.uno[0] ? ' 🔴UNO!' : '';
+  document.querySelector('.hand-lbl').textContent = `あなたの手札（${G.hands[0].length}枚）${unoBadge}`;
+}
+
+function updateColorInd() {
+  const ind = document.getElementById('color-ind');
+  const lbl = document.getElementById('color-lbl');
+  ind.style.background = COL_CSS[G.curColor] || '#888';
+  lbl.textContent = COL_NAMES[G.curColor] || '';
+}
+
+function showWin(pi) {
+  G.phase = 'done';
+  const name = G.names[pi];
+  document.getElementById('win-title').textContent = pi===0 ? '🎉 あなたの勝ち！' : `${name} の勝ち！`;
+  document.getElementById('win-msg').textContent = pi===0 ? 'おめでとうございます！' : `${name} が最初に手札をなくしました`;
+  document.getElementById('winscreen').style.display = 'flex';
+}
+
+// ── Online support ────────────────────────────────────────────────────────────
+let ONLINE = false, MYSEAT = -1, roomSend = null;
+
+function initOnlineGame(n, handData, deckData, discardData, curColor, cur, dir) {
+  G = {
+    numP: n,
+    diff: 'normal',
+    names: Array.from({length:n}, (_,i) => i===MYSEAT?'あなた':`Player${i+1}`),
+    hands: handData.map(h=>[...h]),
+    deck: [...deckData],
+    discard: [...discardData],
+    curColor: curColor,
+    dir: dir, cur: cur,
+    drawPending: 0, phase: 'play',
+    uno: Array(n).fill(false),
+    unoCalled: false,
+    drewThisTurn: false,
+  };
+}
+
+OnlineRoom.init({
+  gameId: 'uno',
+  minPlayers: 2,
+  maxPlayers: 6,
+  note: '最初に手札をなくした人の勝ち。2〜6人',
+  onStart: (seat, n, send) => {
+    ONLINE = true; MYSEAT = seat; roomSend = send;
+    document.getElementById('setup').style.display = 'none';
+    if (seat === 0) {
+      // Host deals
+      const deck = shuffle(makeDeck());
+      const hands = Array.from({length:n}, () => deck.splice(0,7));
+      let startIdx = deck.findIndex(c => c.t!=='wild'&&c.t!=='wild4');
+      if (startIdx < 0) startIdx = 0;
+      const firstCard = deck.splice(startIdx, 1)[0];
+      initOnlineGame(n, hands, deck, [firstCard], firstCard.c, 0, 1);
+      document.getElementById('game').style.display = 'flex';
+      renderAll(); scheduleTurn();
+      roomSend({t:'init',
+        hands: G.hands,
+        deck: G.deck,
+        discard: G.discard,
+        curColor: G.curColor,
+        cur: G.cur,
+        dir: G.dir,
+      });
+    }
+  },
+  onMessage: (from, msg) => {
+    if (msg.t === 'init') {
+      initOnlineGame(msg.hands.length, msg.hands, msg.deck, msg.discard, msg.curColor, msg.cur, msg.dir);
+      G.names[MYSEAT] = 'あなた';
+      document.getElementById('game').style.display = 'flex';
+      document.getElementById('setup').style.display = 'none';
+      renderAll(); scheduleTurn();
+    } else if (msg.t === 'play') {
+      const pi = from;
+      const card = G.hands[pi][msg.idx];
+      playCard(pi, msg.idx);
+      renderAll();
+      if (checkWin(pi)) return;
+      if (card.t === 'wild' || card.t === 'wild4') {
+        if (pi === MYSEAT) {
+          G.phase = 'color';
+          document.getElementById('colorpick').style.display = 'flex';
+        }
+        // else wait for color message
+      } else {
+        advanceTurn();
+        G.drewThisTurn = false;
+        G.unoCalled = false;
+        renderAll();
+        scheduleTurn();
+      }
+    } else if (msg.t === 'color') {
+      G.curColor = msg.c;
+      G.phase = 'play';
+      advanceTurn();
+      G.drewThisTurn = false;
+      G.unoCalled = false;
+      renderAll();
+      scheduleTurn();
+    } else if (msg.t === 'draw') {
+      const pi = from;
+      drawFromPile(pi, 1);
+      checkUno(pi);
+      const drawnCard = G.hands[pi][G.hands[pi].length-1];
+      if (!canPlay(drawnCard)) {
+        advanceTurn();
+        G.drewThisTurn = false;
+        G.unoCalled = false;
+      } else {
+        G.drewThisTurn = true;
+        if (pi === MYSEAT) setStatus('ドローしたカードを出せます');
+      }
+      renderAll();
+      if (pi !== MYSEAT || !canPlay(drawnCard)) scheduleTurn();
+    }
+  },
+  getState: () => ({
+    deck: G.deck, hands: G.hands, discard: G.discard,
+    curColor: G.curColor, cur: G.cur, dir: G.dir, numP: G.numP
+  }),
+  applyState: (o) => {
+    ONLINE = true; MYSEAT = o.seat; roomSend = o.send;
+    const s = o.state;
+    initOnlineGame(s.numP, s.hands, s.deck, s.discard, s.curColor, s.cur, s.dir);
+    G.names[MYSEAT] = 'あなた';
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('game').style.display = 'flex';
+    renderAll(); scheduleTurn();
+  }
+});
+</script>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js?v=7"></script>
+<script src="../shared/online-room.js?v=7"></script>
+<script src="../shared/firebase-counter.js"></script>
+</body>
+</html>

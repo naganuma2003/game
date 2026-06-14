@@ -53,6 +53,8 @@
     blokus: "games/blokus.html",
     poker: "games/poker.html",
     puzzle15: "games/15puzzle.html",
+    speed: "games/speed.html",
+    uno: "games/uno.html",
   };
 
   function randomCode() {

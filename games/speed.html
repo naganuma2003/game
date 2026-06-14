@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>スピード</title>
+<style>
+:root{--bg:#0e0e18;--surf:#1a1a28;--gold:#c9a030;--gold2:#f0d060;--txt:#e8e8f0;--dim:#555;--red:#e05050;--grn:#3dba6a;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:56px 10px 32px}
+.back{position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.25)}
+
+/* SETUP */
+#setup{width:100%;max-width:360px;margin-top:12px;background:var(--surf);border-radius:16px;padding:22px 18px}
+#setup h1{font-size:24px;text-align:center;color:var(--gold);margin-bottom:2px}
+.subtitle{font-size:11px;color:var(--dim);text-align:center;margin-bottom:18px}
+.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.form-row label{font-size:11px;color:var(--gold2)}
+.form-row select{background:#141420;border:1px solid #333;color:var(--txt);padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit}
+.start-btn{width:100%;padding:11px;background:var(--gold);color:#111;border:none;border-radius:10px;font:700 15px 'Segoe UI',sans-serif;cursor:pointer}
+.start-btn:hover{background:var(--gold2)}
+.rules-box{margin-top:14px;padding:11px;background:rgba(255,255,255,.04);border-radius:8px;font-size:11px;color:var(--dim);line-height:1.7}
+.rules-box b{color:var(--txt)}
+
+/* GAME */
+#game{display:none;width:100%;max-width:560px;flex-direction:column;align-items:center;gap:8px}
+
+/* Card elements */
+.card{width:52px;height:74px;border-radius:8px;border:2px solid #2e2e44;background:#1e1e30;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;user-select:none;transition:all .12s}
+.card.back{background:#242436;border-color:#2e2e44;cursor:default}
+.card.back::after{content:'🂠';font-size:28px;opacity:.18}
+.card.sm{width:36px;height:52px;font-size:11px;border-radius:6px}
+.card.sm.back::after{font-size:20px}
+.card span{line-height:1;text-align:center}
+
+/* CPU area */
+.cpu-area{width:100%;background:var(--surf);border-radius:12px;padding:8px 12px;display:flex;flex-direction:column;gap:6px}
+.cpu-info{display:flex;gap:10px;align-items:center;font-size:11px;color:var(--dim)}
+.pile-count{display:flex;align-items:center;gap:4px}
+.pile-icon{width:28px;height:40px;border-radius:5px;background:#242436;border:1px solid #2e2e44;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--dim)}
+.hand-row{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+
+/* Center area */
+.center-area{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0}
+.repl-pile{width:42px;height:60px;border-radius:7px;background:#18182a;border:2px dashed #2e2e44;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dim);cursor:default;flex-shrink:0}
+.repl-pile.has-cards{border-color:#3e3e5a;background:#20203a}
+.center-pile{width:64px;height:90px;border-radius:10px;border:3px solid #3e3e5a;background:#20203a;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;flex-shrink:0;position:relative}
+.center-pile.valid{border-color:var(--grn);box-shadow:0 0 14px rgba(61,186,106,.45);background:#1a2c1e}
+.center-pile.valid:hover{box-shadow:0 0 22px rgba(61,186,106,.65)}
+.center-pile .card{pointer-events:none;width:52px;height:82px;border:none;background:transparent}
+.center-pile-label{position:absolute;bottom:3px;font-size:8px;color:var(--dim)}
+.center-piles{display:flex;gap:12px;align-items:center}
+.vs-label{font-size:18px;font-weight:900;color:var(--dim)}
+
+/* Player area */
+.player-area{width:100%;background:var(--surf);border-radius:12px;padding:8px 12px;display:flex;flex-direction:column;gap:6px}
+.player-info{display:flex;gap:10px;align-items:center;font-size:11px;color:var(--dim)}
+.player-hand{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+.hand-card{cursor:pointer;transition:all .15s}
+.hand-card:hover{transform:translateY(-4px);border-color:var(--gold)}
+.hand-card.selected{border-color:var(--gold2);background:#302808;transform:translateY(-6px);box-shadow:0 6px 16px rgba(201,160,48,.4)}
+.hand-card.playable{border-color:#4e4e6a}
+
+/* Bottom controls */
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;font-size:12px;color:var(--dim)}
+.speed-btn{padding:9px 22px;background:var(--gold);color:#111;border:none;border-radius:9px;font:700 14px 'Segoe UI',sans-serif;cursor:pointer;transition:all .15s}
+.speed-btn:hover:not(:disabled){background:var(--gold2)}
+.speed-btn:disabled{opacity:.35;cursor:default}
+.sel-info{font-size:11px;color:var(--dim)}
+#status-msg{font-size:12px;min-height:18px;text-align:center;color:var(--dim)}
+
+/* Keyboard hint */
+.kb-hint{font-size:10px;color:#3a3a50;text-align:center}
+
+/* Online lobby */
+#online-ui{display:none;width:100%;max-width:360px;background:var(--surf);border-radius:14px;padding:18px;margin-top:10px;text-align:center}
+#online-ui h3{color:var(--gold);margin-bottom:10px;font-size:16px}
+#online-ui .room-code{font-size:36px;font-weight:900;letter-spacing:6px;color:var(--gold2);margin:10px 0}
+#online-ui .ol-status{font-size:12px;color:var(--dim);margin-bottom:10px}
+#online-ui .ol-input{display:flex;gap:6px;margin-bottom:8px}
+#online-ui input{flex:1;background:#141420;border:1px solid #333;color:var(--txt);padding:8px 10px;border-radius:8px;font-size:18px;font-family:inherit;letter-spacing:4px;text-align:center}
+#online-ui button{padding:8px 16px;border-radius:8px;font:700 13px 'Segoe UI',sans-serif;cursor:pointer;border:none;background:var(--gold);color:#111}
+
+/* Overlay */
+#overlay{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:16px}
+.ov-card{background:var(--surf);border-radius:16px;padding:26px 22px;max-width:320px;width:100%;text-align:center}
+.ov-card h2{font-size:26px;font-weight:900;color:var(--gold);margin-bottom:8px}
+.ov-card p{font-size:14px;color:var(--dim);margin-bottom:20px}
+.ov-btns{display:flex;gap:8px;justify-content:center}
+.ov-btns button{padding:10px 22px;border-radius:8px;font:700 14px 'Segoe UI',sans-serif;cursor:pointer;border:none}
+.ov-btns .again{background:var(--gold);color:#111}
+.ov-btns .home{background:#2a2a3e;color:var(--txt)}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">← 一覧に戻る</a>
+
+<!-- SETUP -->
+<section id="setup">
+  <h1>🃏 スピード</h1>
+  <p class="subtitle">2人同時出しカードゲーム</p>
+  <div class="form-row">
+    <label>モード</label>
+    <select id="sel-mode">
+      <option value="cpu">CPU対戦</option>
+      <option value="online">オンライン（2人）</option>
+    </select>
+  </div>
+  <div class="form-row" id="diff-row">
+    <label>CPUの強さ</label>
+    <select id="sel-diff">
+      <option value="easy">弱い (1.5秒/枚)</option>
+      <option value="normal" selected>ふつう (0.7秒/枚)</option>
+      <option value="hard">強い (0.3秒/枚)</option>
+    </select>
+  </div>
+  <button class="start-btn" id="start-btn">ゲームスタート</button>
+  <div class="rules-box">
+    <b>ルール：</b>各自の手札から中央2つの山に交互なしで同時にカードを出す。<br>
+    出せるカード: 山のトップと<b>数字が1つ差</b>のカード。AはKの次またはKはAの前もOK（ラップアラウンド）。<br>
+    手札が減ったら山札から補充（最大5枚）。<b>手札と山札が両方空になったら勝ち！</b><br>
+    行き詰まったら「スピード！」ボタンで各中央山に補充カードを1枚ずつ追加。
+  </div>
+</section>
+
+<!-- Online lobby is injected by online-room.js -->
+
+<!-- GAME -->
+<div id="game">
+  <!-- CPU area -->
+  <div class="cpu-area">
+    <div class="cpu-info">
+      <div class="pile-count"><div class="pile-icon" id="cpu-pile-icon">🂠</div><span id="cpu-pile-count">山：10</span></div>
+      <span id="cpu-hand-count">手札：5</span>
+    </div>
+    <div class="hand-row" id="cpu-hand"></div>
+  </div>
+
+  <!-- Center -->
+  <div class="center-area">
+    <div class="repl-pile" id="repl-left" title="補充山（左）">補充<br>左</div>
+    <div class="center-piles">
+      <div class="center-pile" id="center-left" onclick="clickCenter(0)">
+        <span class="center-pile-label">左</span>
+      </div>
+      <div class="vs-label">VS</div>
+      <div class="center-pile" id="center-right" onclick="clickCenter(1)">
+        <span class="center-pile-label">右</span>
+      </div>
+    </div>
+    <div class="repl-pile" id="repl-right" title="補充山（右）">補充<br>右</div>
+  </div>
+
+  <div id="status-msg">カードを選んで中央に出そう</div>
+
+  <!-- Player area -->
+  <div class="player-area">
+    <div class="hand-row" id="player-hand"></div>
+    <div class="player-info">
+      <div class="pile-count"><div class="pile-icon">🂠</div><span id="player-pile-count">山：10</span></div>
+      <span id="player-hand-count">手札：5</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="speed-btn" id="speed-btn" onclick="doFlip()">スピード！</button>
+    <span class="sel-info" id="sel-info">選択: -</span>
+  </div>
+  <div class="kb-hint">キー: 1-5 で手札選択 / A・D で左右の山に出す</div>
+</div>
+
+<!-- OVERLAY -->
+<div id="overlay">
+  <div class="ov-card">
+    <h2 id="ov-title">あなたの勝ち！</h2>
+    <p id="ov-msg">おめでとうございます</p>
+    <div class="ov-btns">
+      <button class="again" onclick="restartGame()">もう一度</button>
+      <button class="home" onclick="location.href='../index.html'">一覧へ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== CONSTANTS ==========
+const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const SUITS = ['♠','♥','♦','♣'];
+const SUIT_COL = ['#eee','#e05050','#e05050','#eee'];
+
+// ========== GAME STATE ==========
+let G = {
+  hands: [[], []],       // [p0=player, p1=cpu/opponent]
+  piles: [[], []],       // draw piles
+  center: [[], []],      // center discard piles
+  repl: [[], []],        // replacement piles
+  selected: -1,          // player's selected hand index
+  won: null,             // 0=player, 1=cpu/opp
+  diff: 'normal',
+  online: false,
+  mySeat: 0,
+  cpuTimer: null,
+  stuckCheckTimer: null,
+};
+
+// ========== CARD UTILS ==========
+function makeCard(r, s){ return {r, s}; }
+
+function cardHTML(card, facedown=false, small=false) {
+  const sm = small ? ' sm' : '';
+  if (!card || facedown) return `<div class="card back${sm}"></div>`;
+  const r = RANKS[card.r], s = SUITS[card.s], col = SUIT_COL[card.s];
+  return `<div class="card${sm}"><span style="color:${col}">${r}<br>${s}</span></div>`;
+}
+
+function canPlay(card, topCard) {
+  if (!topCard) return false;
+  const diff = Math.abs(card.r - topCard.r);
+  return diff === 1 || diff === 12; // 12 = A(0) and K(12) wrap
+}
+
+function shuffle(arr) {
+  arr = [...arr];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ========== SETUP ==========
+document.getElementById('sel-mode').addEventListener('change', function(){
+  document.getElementById('diff-row').style.display = this.value === 'cpu' ? '' : 'none';
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  const mode = document.getElementById('sel-mode').value;
+  if (mode === 'online') {
+    startOnlineMode();
+  } else {
+    G.diff = document.getElementById('sel-diff').value;
+    G.online = false;
+    initGame();
+  }
+});
+
+// ========== GAME INIT ==========
+function buildDeck() {
+  const deck = [];
+  for (let s = 0; s < 4; s++)
+    for (let r = 0; r < 13; r++)
+      deck.push(makeCard(r, s));
+  return shuffle(deck);
+}
+
+function initGame(p0pile, p1pile, p0hand, p1hand, centerCards, replCards) {
+  clearCpuTimer();
+  clearTimeout(G.stuckCheckTimer);
+  G.selected = -1;
+  G.won = null;
+
+  if (p0pile !== undefined) {
+    // Online: state provided by host
+    G.piles = [p0pile, p1pile];
+    G.hands = [p0hand, p1hand];
+    G.center = [centerCards[0], centerCards[1]];
+    G.repl = [replCards[0], replCards[1]];
+  } else {
+    // Offline: build deck
+    const deck = buildDeck();
+    let idx = 0;
+    // 20 cards each for draw piles
+    G.piles = [deck.slice(idx, idx+20), deck.slice(idx+20, idx+40)];
+    idx += 40;
+    // 5 replacement cards each
+    G.repl = [deck.slice(idx, idx+5), deck.slice(idx+5, idx+10)];
+    idx += 10;
+    // 1 center starter card each
+    G.center = [[deck[idx]], [deck[idx+1]]];
+    idx += 2;
+    // Each player draws 5 into hand
+    G.hands = [G.piles[0].splice(0, 5), G.piles[1].splice(0, 5)];
+  }
+
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('game').style.display = 'flex';
+  document.getElementById('overlay').style.display = 'none';
+
+  render();
+  scheduleStuckCheck();
+  if (!G.online) scheduleCpu();
+}
+
+function restartGame() {
+  document.getElementById('overlay').style.display = 'none';
+  if (G.online) {
+    location.reload();
+  } else {
+    initGame();
+  }
+}
+
+// ========== RENDERING ==========
+function render() {
+  renderCenter();
+  renderCpuArea();
+  renderPlayerHand();
+  renderInfo();
+}
+
+function renderCenter() {
+  // Replacement piles
+  const rl = document.getElementById('repl-left');
+  const rr = document.getElementById('repl-right');
+  const lc = G.repl[0].length, rc = G.repl[1].length;
+  rl.classList.toggle('has-cards', lc > 0);
+  rl.innerHTML = lc > 0 ? `<div style="font-size:11px;color:var(--dim)">${lc}</div>` : `補充<br>左`;
+  rr.classList.toggle('has-cards', rc > 0);
+  rr.innerHTML = rc > 0 ? `<div style="font-size:11px;color:var(--dim)">${rc}</div>` : `補充<br>右`;
+
+  // Center piles
+  const myHand = G.hands[G.online ? G.mySeat : 0];
+  const sel = G.selected >= 0 ? myHand[G.selected] : null;
+
+  for (let i = 0; i < 2; i++) {
+    const el = document.getElementById(i === 0 ? 'center-left' : 'center-right');
+    const top = G.center[i].length > 0 ? G.center[i][G.center[i].length - 1] : null;
+    const isValid = sel && top && canPlay(sel, top);
+    el.classList.toggle('valid', !!isValid);
+    el.innerHTML = top ? cardHTML(top, false) : `<span style="font-size:10px;color:var(--dim)">空</span>`;
+    el.innerHTML += `<span class="center-pile-label">${i === 0 ? '左' : '右'}</span>`;
+  }
+}
+
+function renderCpuArea() {
+  const cpuIdx = G.online ? (1 - G.mySeat) : 1;
+  const hand = G.hands[cpuIdx];
+  const pile = G.piles[cpuIdx];
+  document.getElementById('cpu-pile-count').textContent = `山：${pile.length}`;
+  document.getElementById('cpu-hand-count').textContent = `手札：${hand.length}`;
+
+  const el = document.getElementById('cpu-hand');
+  el.innerHTML = hand.map(() => cardHTML(null, true, true)).join('');
+}
+
+function renderPlayerHand() {
+  const myIdx = G.online ? G.mySeat : 0;
+  const hand = G.hands[myIdx];
+  const el = document.getElementById('player-hand');
+  el.innerHTML = '';
+  hand.forEach((card, i) => {
+    const top0 = G.center[0].length > 0 ? G.center[0][G.center[0].length - 1] : null;
+    const top1 = G.center[1].length > 0 ? G.center[1][G.center[1].length - 1] : null;
+    const playable = (top0 && canPlay(card, top0)) || (top1 && canPlay(card, top1));
+    const div = document.createElement('div');
+    div.className = 'card hand-card' + (i === G.selected ? ' selected' : '') + (playable ? ' playable' : '');
+    const col = SUIT_COL[card.s];
+    div.innerHTML = `<span style="color:${col}">${RANKS[card.r]}<br>${SUITS[card.s]}</span>`;
+    div.addEventListener('click', () => selectCard(i));
+    el.appendChild(div);
+  });
+}
+
+function renderInfo() {
+  const myIdx = G.online ? G.mySeat : 0;
+  const pile = G.piles[myIdx];
+  const hand = G.hands[myIdx];
+  document.getElementById('player-pile-count').textContent = `山：${pile.length}`;
+  document.getElementById('player-hand-count').textContent = `手札：${hand.length}`;
+  const selCard = G.selected >= 0 ? hand[G.selected] : null;
+  document.getElementById('sel-info').textContent =
+    selCard ? `選択: ${RANKS[selCard.r]}${SUITS[selCard.s]}` : '選択: -';
+
+  // Speed button: only active when nobody can play
+  const canAny = canAnyonePlay();
+  const speedBtn = document.getElementById('speed-btn');
+  speedBtn.disabled = canAny || G.repl[0].length === 0 && G.repl[1].length === 0;
+}
+
+// ========== GAMEPLAY ==========
+function selectCard(idx) {
+  if (G.won !== null) return;
+  const myIdx = G.online ? G.mySeat : 0;
+  if (idx >= G.hands[myIdx].length) return;
+  G.selected = G.selected === idx ? -1 : idx;
+  render();
+}
+
+function clickCenter(pileIdx) {
+  if (G.won !== null) return;
+  if (G.selected < 0) {
+    setStatus('カードを選んでください');
+    return;
+  }
+  const myIdx = G.online ? G.mySeat : 0;
+  const hand = G.hands[myIdx];
+  if (G.selected >= hand.length) return;
+  const card = hand[G.selected];
+  const top = G.center[pileIdx].length > 0 ? G.center[pileIdx][G.center[pileIdx].length - 1] : null;
+  if (!top || !canPlay(card, top)) {
+    setStatus('そのカードはここに出せません');
+    return;
+  }
+  if (G.online) {
+    roomSend({t:'play', slot: G.selected, pile: pileIdx});
+  } else {
+    applyPlay(myIdx, G.selected, pileIdx);
+    if (checkWin()) return;
+    scheduleCpu();
+    scheduleStuckCheck();
+  }
+}
+
+function applyPlay(playerIdx, slot, pileIdx) {
+  const hand = G.hands[playerIdx];
+  const card = hand.splice(slot, 1)[0];
+  G.center[pileIdx].push(card);
+  // Refill hand from draw pile
+  while (hand.length < 5 && G.piles[playerIdx].length > 0) {
+    hand.push(G.piles[playerIdx].shift());
+  }
+  if (playerIdx === (G.online ? G.mySeat : 0)) {
+    G.selected = -1;
+  }
+  render();
+}
+
+function doFlip() {
+  if (G.won !== null) return;
+  if (canAnyonePlay()) { setStatus('まだ出せるカードがあります'); return; }
+  if (G.repl[0].length === 0 && G.repl[1].length === 0) { setStatus('補充山がありません'); return; }
+  if (G.online) {
+    roomSend({t:'flip'});
+  } else {
+    applyFlip();
+    scheduleStuckCheck();
+  }
+}
+
+function applyFlip() {
+  if (G.repl[0].length > 0) G.center[0].push(G.repl[0].pop());
+  if (G.repl[1].length > 0) G.center[1].push(G.repl[1].pop());
+  G.selected = -1;
+  render();
+  setStatus('補充カードを追加しました');
+}
+
+function canAnyonePlay() {
+  for (let pi = 0; pi < 2; pi++) {
+    for (const card of G.hands[pi]) {
+      for (let ci = 0; ci < 2; ci++) {
+        const top = G.center[ci].length > 0 ? G.center[ci][G.center[ci].length - 1] : null;
+        if (top && canPlay(card, top)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function setStatus(msg) {
+  document.getElementById('status-msg').textContent = msg;
+}
+
+// ========== WIN ==========
+function checkWin() {
+  for (let pi = 0; pi < 2; pi++) {
+    if (G.hands[pi].length === 0 && G.piles[pi].length === 0) {
+      G.won = pi;
+      showWin(pi);
+      return true;
+    }
+  }
+  return false;
+}
+
+function showWin(winner) {
+  clearCpuTimer();
+  clearTimeout(G.stuckCheckTimer);
+  let title, msg;
+  if (G.online) {
+    const iAm = G.mySeat;
+    title = winner === iAm ? 'あなたの勝ち！' : '相手の勝ち！';
+    msg = winner === iAm ? 'おめでとうございます🎉' : '残念、次は頑張ろう';
+  } else {
+    title = winner === 0 ? 'あなたの勝ち！' : 'CPUの勝ち！';
+    msg = winner === 0 ? 'おめでとうございます🎉' : '残念、次は頑張ろう';
+  }
+  document.getElementById('ov-title').textContent = title;
+  document.getElementById('ov-msg').textContent = msg;
+  document.getElementById('overlay').style.display = 'flex';
+}
+
+// ========== CPU ==========
+function clearCpuTimer() {
+  if (G.cpuTimer) { clearTimeout(G.cpuTimer); G.cpuTimer = null; }
+}
+
+function cpuDelay() {
+  return G.diff === 'easy' ? 1200 + Math.random()*600
+       : G.diff === 'normal' ? 500 + Math.random()*400
+       : 200 + Math.random()*200;
+}
+
+function scheduleCpu() {
+  if (G.online || G.won !== null) return;
+  clearCpuTimer();
+  G.cpuTimer = setTimeout(doCpuTurn, cpuDelay());
+}
+
+function doCpuTurn() {
+  if (G.won !== null || G.online) return;
+  // Find a valid play
+  const cpuHand = G.hands[1];
+  const plays = [];
+  for (let slot = 0; slot < cpuHand.length; slot++) {
+    for (let pile = 0; pile < 2; pile++) {
+      const top = G.center[pile].length > 0 ? G.center[pile][G.center[pile].length - 1] : null;
+      if (top && canPlay(cpuHand[slot], top)) plays.push({slot, pile});
+    }
+  }
+  if (plays.length > 0) {
+    const pick = plays[Math.floor(Math.random() * plays.length)];
+    applyPlay(1, pick.slot, pick.pile);
+    if (!checkWin()) {
+      scheduleCpu();
+      scheduleStuckCheck();
+    }
+  } else {
+    scheduleCpu(); // retry soon
+  }
+}
+
+// ========== STUCK CHECK ==========
+function scheduleStuckCheck() {
+  clearTimeout(G.stuckCheckTimer);
+  G.stuckCheckTimer = setTimeout(() => {
+    if (G.won !== null || G.online) return;
+    if (!canAnyonePlay()) {
+      setStatus('行き詰まり！「スピード！」で補充してください');
+      renderInfo(); // re-enable button
+    }
+  }, 800);
+}
+
+// ========== KEYBOARD ==========
+document.addEventListener('keydown', e => {
+  if (G.won !== null || document.getElementById('game').style.display !== 'flex') return;
+  const k = e.key;
+  if (k >= '1' && k <= '5') {
+    e.preventDefault();
+    selectCard(parseInt(k) - 1);
+  } else if (k === 'a' || k === 'A') {
+    e.preventDefault();
+    clickCenter(0);
+  } else if (k === 'd' || k === 'D') {
+    e.preventDefault();
+    clickCenter(1);
+  }
+});
+
+// ========== ONLINE ==========
+let roomSend = () => {};
+// Called from setup button when online mode selected
+function startOnlineMode() {
+  document.getElementById('setup').style.display = 'none';
+  // Trigger online-btn injected by OnlineRoom
+  const btn = document.getElementById('online-btn');
+  if (btn) btn.click();
+}
+</script>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js?v=7"></script>
+<script src="../shared/online-room.js?v=7"></script>
+<script>
+OnlineRoom.init({
+  gameId: 'speed',
+  minPlayers: 2,
+  maxPlayers: 2,
+  note: '2人同時出し！手札と山札を先に空にした方が勝ち。',
+  onStart(seat, nPlayers, send) {
+    G.mySeat = seat;
+    G.online = true;
+    roomSend = send;
+    document.getElementById('setup').style.display = 'none';
+    if (seat === 0) {
+      // Host deals the game
+      const deck = buildDeck();
+      let idx = 0;
+      const p0pile = deck.slice(idx, idx+20); idx += 20;
+      const p1pile = deck.slice(idx, idx+20); idx += 20;
+      const repl0 = deck.slice(idx, idx+5); idx += 5;
+      const repl1 = deck.slice(idx, idx+5); idx += 5;
+      const c0 = [deck[idx]]; idx++;
+      const c1 = [deck[idx]]; idx++;
+      const p0hand = p0pile.splice(0, 5);
+      const p1hand = p1pile.splice(0, 5);
+      send({t:'init',
+        p0pile, p1pile, p0hand, p1hand,
+        center:[c0, c1], repl:[repl0, repl1]
+      });
+    }
+  },
+  onMessage(fromSeat, msg) {
+    if (msg.t === 'init') {
+      // Both clients use identical canonical indexing:
+      // G.piles[0]/G.hands[0] = seat 0's cards; G.piles[1]/G.hands[1] = seat 1's cards
+      // mySeat tells the renderer which to show at the bottom
+      G.piles = [msg.p0pile, msg.p1pile];
+      G.hands = [msg.p0hand, msg.p1hand];
+      G.center = msg.center;
+      G.repl = msg.repl;
+      G.won = null;
+      G.selected = -1;
+      document.getElementById('game').style.display = 'flex';
+      document.getElementById('overlay').style.display = 'none';
+      render();
+    } else if (msg.t === 'play') {
+      // fromSeat maps directly to pile/hand index
+      applyPlay(fromSeat, msg.slot, msg.pile);
+      if (checkWin()) return;
+      scheduleStuckCheck();
+    } else if (msg.t === 'flip') {
+      applyFlip();
+      scheduleStuckCheck();
+    } else if (msg.t === 'win') {
+      G.won = fromSeat;
+      showWin(fromSeat);
+    }
+  },
+});
+</script>
+</body>
+</html>

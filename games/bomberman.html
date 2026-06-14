@@ -53,19 +53,20 @@
     #game-wrap { position: relative; display: inline-block; line-height: 0; }
     canvas { display: block; border-radius: 6px; max-width: 100%; cursor: pointer; touch-action: none; }
 
+    #game-ctrl {
+      display: flex; gap: 10px; justify-content: center; margin-bottom: 8px;
+    }
     #pause-btn {
-      position: absolute; top: 8px; right: 8px;
-      width: 40px; height: 40px; border-radius: 50%;
+      padding: 7px 16px; border-radius: 20px;
       background: rgba(0,0,0,0.55); border: 1.5px solid rgba(255,255,255,0.28);
-      color: #fff; font-size: 18px; cursor: pointer; display: none;
-      align-items: center; justify-content: center;
+      color: #fff; font-size: 15px; cursor: pointer; display: none;
+      align-items: center; gap: 5px;
       -webkit-tap-highlight-color: transparent; touch-action: none;
     }
     #restart-btn {
-      position: absolute; bottom: 26%; left: 50%; transform: translateX(-50%);
-      padding: 11px 30px; border-radius: 28px; white-space: nowrap;
+      padding: 7px 16px; border-radius: 20px; white-space: nowrap;
       background: rgba(30,50,140,0.88); border: 1.5px solid rgba(100,140,240,0.7);
-      color: #aac4ff; font: bold 15px "Segoe UI",sans-serif;
+      color: #aac4ff; font: bold 14px "Segoe UI",sans-serif;
       cursor: pointer; display: none;
       -webkit-tap-highlight-color: transparent;
     }
@@ -119,10 +120,12 @@
   <div class="hi">🏆 <span class="hv" id="hsc">0</span></div>
 </div>
 
+<div id="game-ctrl">
+  <button id="pause-btn">⏸ 一時停止</button>
+  <button id="restart-btn">↺ 最初から</button>
+</div>
 <div id="game-wrap">
   <canvas id="c"></canvas>
-  <button id="pause-btn">⏸</button>
-  <button id="restart-btn">↺ 最初から</button>
 </div>
 
 
@@ -209,7 +212,7 @@ cv.addEventListener('touchend', e => { e.preventDefault(); onAction(e.changedTou
 function togglePause() {
   if (state !== ST.PLAY) return;
   paused = !paused;
-  document.getElementById('pause-btn').textContent = paused ? '▶' : '⏸';
+  document.getElementById('pause-btn').textContent = paused ? '▶ 再開' : '⏸ 一時停止';
 }
 
 function syncUI() {
@@ -218,8 +221,8 @@ function syncUI() {
   const pb = document.getElementById('pause-btn');
   const rb = document.getElementById('restart-btn');
   pb.style.display = isPlay ? 'flex' : 'none';
-  rb.style.display = isResult && !onlineMode ? 'block' : 'none';
-  if (!isPlay) { paused = false; pb.textContent = '⏸'; }
+  rb.style.display = (isPlay || isResult) && !onlineMode ? 'flex' : 'none';
+  if (!isPlay) { paused = false; pb.textContent = '⏸ 一時停止'; }
 }
 
 document.getElementById('pause-btn').addEventListener('click', e => { e.stopPropagation(); togglePause(); });
@@ -331,7 +334,7 @@ function go() {
   pl = {
     px: p1SpawnX, py: p1SpawnY,
     spd: 2.5,
-    maxB: 1, actB: 0,
+    maxB: 2, actB: 0,
     fire: 1,
     lives: 3,
     inv: 0,
@@ -346,7 +349,7 @@ function go() {
     p2 = {
       px: p2SpawnX, py: p2SpawnY,
       spd: cpuMode ? cpuSpd : 2.5,
-      maxB: 1, actB: 0, fire: 1,
+      maxB: 2, actB: 0, fire: 1,
       lives: 3, inv: 0, dead: 0, alive: true, dir: 2
     };
     if (cpuMode) { cpuNextTx=corners[1][0]; cpuNextTy=corners[1][1]; cpuBombCD=2; }

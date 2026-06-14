@@ -301,6 +301,10 @@
         <span class="fb-sep"></span>
         <button data-f="card">🃏 カードゲーム</button>
         <button data-f="board">♟ ボードゲーム</button>
+        <span class="fb-sep"></span>
+        <span class="fb-label">並び順:</span>
+        <button data-s="asc">↑ 昇順</button>
+        <button data-s="desc">↓ 降順</button>
       </div>
       <div class="grid">
         <div class="card">
@@ -2225,6 +2229,25 @@
       var searchInput = document.getElementById("game-search");
       var searchClear = document.getElementById("search-clear");
       var currentFilter = "all";
+      var currentSort = null;
+      var originalOrder = cards.slice();
+      var gameGrid = document.querySelector(".col-games .grid");
+
+      function applySort() {
+        var sorted;
+        if (currentSort === "asc") {
+          sorted = cards.slice().sort(function (a, b) {
+            return a.querySelector(".name").textContent.localeCompare(b.querySelector(".name").textContent, "ja");
+          });
+        } else if (currentSort === "desc") {
+          sorted = cards.slice().sort(function (a, b) {
+            return b.querySelector(".name").textContent.localeCompare(a.querySelector(".name").textContent, "ja");
+          });
+        } else {
+          sorted = originalOrder.slice();
+        }
+        sorted.forEach(function (card) { gameGrid.appendChild(card); });
+      }
 
       function applyFilters() {
         var q = searchInput.value.trim().toLowerCase();
@@ -2244,10 +2267,25 @@
       }
 
       bar.addEventListener("click", function (e) {
-        var b = e.target.closest("button"); if (!b) return;
-        bar.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); });
+        var b = e.target.closest("button[data-f]"); if (!b) return;
+        bar.querySelectorAll("button[data-f]").forEach(function (x) { x.classList.remove("on"); });
         b.classList.add("on");
         currentFilter = b.dataset.f;
+        applyFilters();
+      });
+
+      bar.addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-s]"); if (!b) return;
+        var s = b.dataset.s;
+        if (currentSort === s) {
+          currentSort = null;
+          bar.querySelectorAll("button[data-s]").forEach(function (x) { x.classList.remove("on"); });
+        } else {
+          currentSort = s;
+          bar.querySelectorAll("button[data-s]").forEach(function (x) { x.classList.remove("on"); });
+          b.classList.add("on");
+        }
+        applySort();
         applyFilters();
       });
 

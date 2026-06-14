@@ -71,7 +71,7 @@ function autoKick(){if(!ONLINE||!OnlineRoom.isHost()||mode!=='pvp'||matched.size
   }else{
     setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&matched.size<N&&turn===a&&isAutoSeat(a)&&!busy)OnlineRoom.send({k:'skip'});},800);
   }}
-function checkEnd(){if(matched.size===N){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='クリア！ <b>'+moves+'回</b>でそろえました 🎉';else{const max=Math.max(...score);const winners=score.map((v,i)=>v===max?i+1:null).filter(x=>x);const r=winners.length>1?'引き分け（P'+winners.join(', P')+'）':'プレイヤー'+winners[0]+'の勝ち！';const sc=score.map((v,i)=>'P'+(i+1)+': '+v).join(' / ');s.innerHTML='<b>'+r+'</b>（'+sc+'）';}}}
+function checkEnd(){if(matched.size===N){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='クリア！ <b>'+moves+'回</b>でそろえました 🎉';else{const max=Math.max(...score);const winners=score.map((v,i)=>v===max?i+1:null).filter(x=>x);const r=winners.length>1?'引き分け（P'+winners.join(', P')+'）':'プレイヤー'+winners[0]+'の勝ち！';const sc=score.map((v,i)=>'P'+(i+1)+': '+v).join(' / ');s.innerHTML='<b>'+r+'</b>（'+sc+'）';try{if(ONLINE&&window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}}}
 document.getElementById('reset').addEventListener('click',init);
 document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.getElementById('np').style.display=mode==='pvp'?'flex':'none';init();});
 document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});

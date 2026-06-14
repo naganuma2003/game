@@ -157,7 +157,8 @@ function _record(id){const c=CATS.find(x=>x.id===id);if(!c||scores()[c.id]!==und
 function finish(){over=true;updateRollBtn();
   if(np===1){document.getElementById('ov-s').textContent='合計 '+grandTotal()+' 点'+(grandTotal()>=200?'（ハイスコア級！）':'');}
   else{const totals=allScores.map((_,p)=>grandTotal(p));const max=Math.max(...totals);const winners=totals.map((v,i)=>v===max?i+1:null).filter(x=>x);const r=winners.length>1?'引き分け（P'+winners.join(', P')+'）':'プレイヤー'+winners[0]+'の勝ち！';const det=totals.map((v,i)=>'P'+(i+1)+': '+v+'点').join(' / ');document.getElementById('ov-s').innerHTML=r+'<br><span style="font-size:13px">'+det+'</span>';}
-  document.getElementById('over').classList.add('show');}
+  document.getElementById('over').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
 document.getElementById('roll').addEventListener('click',roll);
 document.getElementById('again').addEventListener('click',()=>{if(ONLINE)return;init();});
 document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>{x.classList.remove('on');x.style.borderColor='#3a3326';x.style.color='var(--sub)';});b.classList.add('on');b.style.borderColor='var(--gold)';b.style.color='var(--gold)';init();});

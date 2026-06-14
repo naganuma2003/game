@@ -56,6 +56,12 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:23px;letter-spacing:.18em;
 .handoff .s{font-size:13px;margin-bottom:16px}
 .win button,.handoff button{background:var(--gold);border:none;color:#13402A;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
 .hidden{display:none!important}
+@media (max-width:480px){
+  .bc{min-width:0;font-size:min(3.8vw,13px)}
+  .card{width:34px;height:48px}
+  .card .crn{font-size:10px}
+  .card .big{font-size:12px}
+}
 </style>
 </head>
 <body>
@@ -247,7 +253,8 @@ function endGame(){gameOver=true;
   const myRank=finished.indexOf(meSeat)+1;
   document.getElementById('wint').textContent=(ONLINE||gmode==='cpu')?('あなたは '+myRank+'位'+(myRank===1?' 🎉':'')):'結果';
   document.getElementById('winrk').innerHTML=html;
-  document.getElementById('winov').classList.add('show');}
+  document.getElementById('winov').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
 document.getElementById('pass').addEventListener('click',()=>{if(!canAct())return;
   if(legalCards(turn).length){msg('出せるカードがあります（パスできません）');return;}emit({k:'pass'});});
 function newGame(){if(ONLINE)return;init();}

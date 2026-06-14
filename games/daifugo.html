@@ -49,6 +49,14 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:22px;letter-spacing:.12em;
 .handoff .s{font-size:13px;margin-bottom:16px}
 .handoff button{background:var(--gold);border:none;color:#123040;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
 .hidden{display:none!important}
+
+@media(max-width:480px){
+  .card{width:36px;height:51px}
+  .card .crn{font-size:10px}
+  .card .big{font-size:14px}
+  .card.mini{width:24px;height:34px}
+  .actions{flex-wrap:wrap}
+}
 </style></head><body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 <h1>大富豪</h1><div class="sub">DAIFUGO — 8切り・革命あり</div>
@@ -212,7 +220,8 @@ function checkGameEnd(force){const active=[...Array(np).keys()].filter(p=>hands[
 function showResult(){const titles=rankTitles(np);let html='';finished.forEach((p,i)=>{html+=(titles[i]||(i+1)+'位')+'：'+NAMES[p]+'<br>';});
   const meSeat=ONLINE?MYSEAT:0;const myRank=finished.indexOf(meSeat);
   document.getElementById('wint').textContent=(ONLINE||gmode==='cpu')?('あなたは '+(titles[myRank]||'—')):'結果';
-  document.getElementById('winrank').innerHTML=html;document.getElementById('winov').classList.add('show');}
+  document.getElementById('winrank').innerHTML=html;document.getElementById('winov').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
 /* ---- input relay ---- */
 function emit(a){if(ONLINE){if(turn!==MYSEAT)return;roomSend(a);}else doAction(a);}
 function doAction(a){if(a.k==='play')_play(turn,a.idxs);else if(a.k==='pass')_pass(turn);}

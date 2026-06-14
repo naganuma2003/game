@@ -56,6 +56,11 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:20px;letter-spacing:.14em;
 .rule{width:min(94vw,440px);margin-top:12px;font-size:10.5px;line-height:1.7;color:var(--sub);border-top:1px solid var(--line);padding-top:8px}
 .rule b{color:var(--txt)}
 .hidden{display:none!important}
+@media (max-width:480px){
+  .card{width:34px;height:51px}
+  .card .ico{font-size:16px}
+  .side .info{min-width:60px;font-size:10px}
+}
 </style>
 </head>
 <body>
@@ -283,6 +288,7 @@ function showResult(title,winner,pts){
     const b=document.createElement('button');b.textContent='次の月へ';b.onclick=nextRound;btns.appendChild(b);
   }
   $('over').classList.add('show');
+  if(roundNo>=rounds){try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
 }
 function showDecision(p,t){
   render();const ov=$('over'),tt=$('ov-t'),d=$('ov-d'),btns=$('ov-btns');

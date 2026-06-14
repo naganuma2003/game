@@ -293,21 +293,6 @@ function handleMsg(from,msg){
   }
 }
 
-OnlineRoom.init({
-  gameId:'puzzle15',minPlayers:2,maxPlayers:2,
-  note:'同じパズルを先に解いた人の勝ち（競争モード）',
-  onStart:(seat,n,send)=>onStart(seat,n,send),
-  onMessage:(from,msg)=>handleMsg(from,msg),
-  getState:()=>({tiles:[...tiles],N}),
-  applyState:(o)=>{
-    ONLINE=true;MYSEAT=o.seat;roomSend=o.send;raceOver=false;
-    document.querySelector('.size-row').style.display='none';
-    const s=o.state;N=s.N;
-    tiles=[...s.tiles];moveCount=0;timerSec=0;started=false;
-    render();createRaceStatus('ゲームに参加しました。次のラウンドを待機中…');
-  }
-});
-
 // ===== AI SOLVER (IDA* + greedy fallback) =====
 let aiInterval = null;
 const _SLIM = 600000;
@@ -443,5 +428,21 @@ newGame();
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=7"></script>
 <script src="../shared/online-room.js?v=7"></script>
+<script>
+OnlineRoom.init({
+  gameId:'puzzle15',minPlayers:2,maxPlayers:2,
+  note:'同じパズルを先に解いた人の勝ち（競争モード）',
+  onStart:(seat,n,send)=>onStart(seat,n,send),
+  onMessage:(from,msg)=>handleMsg(from,msg),
+  getState:()=>({tiles:[...tiles],N}),
+  applyState:(o)=>{
+    ONLINE=true;MYSEAT=o.seat;roomSend=o.send;raceOver=false;
+    document.querySelector('.size-row').style.display='none';
+    const s=o.state;N=s.N;
+    tiles=[...s.tiles];moveCount=0;timerSec=0;started=false;
+    render();createRaceStatus('ゲームに参加しました。次のラウンドを待機中…');
+  }
+});
+</script>
 </body>
 </html>

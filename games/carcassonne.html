@@ -248,6 +248,7 @@ let mode = 'pvp2';
 let myOnlineSeat = -1;
 let onlineSend = null;
 let isOnlineGame = false;
+let onlineNcpus = 0;
 
 // Viewport / pan
 let viewOX = 0, viewOY = 0;
@@ -847,9 +848,10 @@ function nextTurn() {
   updateMsg();
   drawCurrentTile();
 
-  if (!isOnlineGame && mode === 'solo' && state.turn !== 0) {
-    setTimeout(doCPUTurn, 500);
-  }
+  const cpuTurn = isOnlineGame
+    ? (myOnlineSeat === 0 && onlineNcpus > 0 && state.turn >= state.nPlayers - onlineNcpus)
+    : (!isOnlineGame && mode === 'solo' && state.turn !== 0);
+  if (cpuTurn) setTimeout(doCPUTurn, 500);
 }
 
 function hasAnyValidPlacement(tile) {
@@ -867,23 +869,22 @@ function hasAnyValidPlacement(tile) {
 /* ===== CPU AI ===== */
 function doCPUTurn() {
   if (!state || state.phase !== 'place') return;
-  if (isOnlineGame) return;
 
-  // Find valid placements for all rotations
   const moves = [];
   for (let rot = 0; rot < 4; rot++) {
     for (const key of Object.keys(state.board)) {
       const { x, y } = parseKey(key);
       for (let d = 0; d < 4; d++) {
         const nx = x + DX[d], ny = y + DY[d];
-        if (canPlace(state.currentTile, rot, nx, ny)) {
-          moves.push({ x: nx, y: ny, rot });
-        }
+        if (canPlace(state.currentTile, rot, nx, ny)) moves.push({ x: nx, y: ny, rot });
       }
     }
   }
 
-  if (moves.length === 0) { nextTurn(); return; }
+  if (moves.length === 0) {
+    if (isOnlineGame) onlineSend({ type: 'skip-meeple' }); else nextTurn();
+    return;
+  }
   const pick = moves[Math.floor(Math.random() * moves.length)];
   currentRot = pick.rot;
   computeValidMoves();
@@ -891,27 +892,23 @@ function doCPUTurn() {
   drawCurrentTile();
 
   setTimeout(() => {
-    applyPlace(pick.x, pick.y, pick.rot);
-    // CPU meeple placement
+    if (isOnlineGame) {
+      onlineSend({ type: 'place', x: pick.x, y: pick.y, rot: pick.rot });
+    } else {
+      applyPlace(pick.x, pick.y, pick.rot);
+    }
     setTimeout(() => {
       if (state.phase !== 'meeple') return;
       const dirs = getMeepleDirs(pick.x, pick.y);
       const valid = dirs.filter(d => !d.disabled);
-      if (valid.length > 0 && state.meeples[state.turn] > 0 && Math.random() < 0.4) {
-        const chosen = valid[Math.floor(Math.random() * valid.length)];
-        if (isOnlineGame) {
-          onlineSend({ type: 'meeple', dir: chosen.dir });
-        } else {
-          applyMeeple(chosen.dir);
-        }
+      const chooseDir = valid.length > 0 && state.meeples[state.turn] > 0 && Math.random() < 0.4
+        ? valid[Math.floor(Math.random() * valid.length)].dir : null;
+      if (isOnlineGame) {
+        onlineSend(chooseDir ? { type: 'meeple', dir: chooseDir } : { type: 'skip-meeple' });
       } else {
-        if (isOnlineGame) {
-          onlineSend({ type: 'skip-meeple' });
-        } else {
-          applyMeeple(null);
-        }
+        applyMeeple(chooseDir);
       }
-    }, 300);
+    }, 400);
   }, 400);
 }
 
@@ -1368,18 +1365,20 @@ startGame();
 <script>
 OnlineRoom.init({
   gameId: 'carcassonne',
-  minPlayers: 2,
+  minPlayers: 1,
   maxPlayers: 4,
-  note: '2〜4人対戦',
-  onStart(seat, nPlayers, send) {
+  note: '2〜4人対戦（CPU追加可）',
+  onStart(seat, nPlayers, send, nCpus) {
     isOnlineGame = true;
     myOnlineSeat = seat;
     onlineSend = send;
+    onlineNcpus = nCpus || 0;
     document.getElementById('modes').style.display = 'none';
     initGame(nPlayers);
     drawCurrentTile();
-    if (seat === 0 && mode === 'solo') {
-      // don't run CPU
+    // If host and CPU seats exist, trigger first CPU turn if needed
+    if (seat === 0 && onlineNcpus > 0 && state.turn >= nPlayers - onlineNcpus) {
+      setTimeout(doCPUTurn, 500);
     }
   },
   onMessage(fromSeat, msg) {

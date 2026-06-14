@@ -411,7 +411,7 @@
       showRoom(code);
       const cpuTxt = nCpus > 0 ? ` / CPU×${nCpus}` : '';
       showBadge('🌐 オンライン（あなたはP' + (seat + 1) + cpuTxt + '）');
-      try { cfg.onStart && cfg.onStart(seat, n, send); } catch (e) { console.error(e); }
+      try { cfg.onStart && cfg.onStart(seat, n, send, nCpus); } catch (e) { console.error(e); }
     }
     // 再接続用セッションは localStorage に保存（タブを閉じても残る。60分で失効）
     const SESSION_TTL = 60 * 60 * 1000;

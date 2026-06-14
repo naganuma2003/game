@@ -69,8 +69,8 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 .hcard.wild-card{background:linear-gradient(135deg,var(--cr) 25%,var(--cb) 25%,var(--cb) 50%,var(--cg) 50%,var(--cg) 75%,var(--cy) 75%);border-color:rgba(255,255,255,.4)}
 .hcard .cv{font-size:20px;line-height:1;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,.5)}
 .hcard .cl{font-size:9px;color:rgba(255,255,255,.75);margin-top:1px}
-.hcard .ctlh{position:absolute;top:3px;left:5px;font-size:8px;color:rgba(255,255,255,.8);font-weight:900}
-.hcard .cbrh{position:absolute;bottom:3px;right:5px;font-size:8px;color:rgba(255,255,255,.8);font-weight:900}
+.hcard .ctlh,.card-el .ctlh{position:absolute;top:3px;left:5px;font-size:8px;color:rgba(255,255,255,.8);font-weight:900}
+.hcard .cbrh,.card-el .cbrh{position:absolute;bottom:3px;right:5px;font-size:8px;color:rgba(255,255,255,.8);font-weight:900}
 
 /* Bottom buttons */
 .btns-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
@@ -257,23 +257,19 @@ function playCard(pi, idx) {
 
 function applyEffect(card, pi) {
   const n = G.numP;
-  if (card.t==='skip') {
-    advanceTurn();
-  } else if (card.t==='rev') {
+  // Note: G.cur is still pi here. We only handle side-effects (draws, direction).
+  // Turn advancement is handled entirely by doPlay / pickColor.
+  if (card.t==='rev') {
     G.dir *= -1;
-    if (n === 2) advanceTurn();
   } else if (card.t==='draw2') {
     const np = (G.cur + G.dir + n) % n;
     drawFromPile(np, 2);
     checkUno(np);
-    advanceTurn();
   } else if (card.t==='wild4') {
     const np = (G.cur + G.dir + n) % n;
     drawFromPile(np, 4);
     checkUno(np);
-    advanceTurn();
   }
-  // wild: color chosen before advancing
 }
 
 function checkUno(pi) {
@@ -407,19 +403,28 @@ function doPlay(pi, idx) {
   if (checkWin(pi)) return;
 
   if (card.t === 'wild' || card.t === 'wild4') {
+    // Advance past pi, then if wild4 also skip the penalized player
+    advanceTurn(); // move from pi to pi+1 (wild: that's the next player; wild4: pi+1 is penalized)
+    if (card.t === 'wild4') advanceTurn(); // skip penalized player
     if (pi === 0) {
+      // Human played wild — show color picker BEFORE final scheduleTurn
+      // But we already advanced; save where we landed and wait for pickColor
       G.phase = 'color';
       document.getElementById('colorpick').style.display = 'flex';
     } else {
-      // CPU picks color
       const chosen = cpuChooseColor(pi);
       G.curColor = chosen;
-      advanceTurn();
+      G.unoCalled = false;
+      G.drewThisTurn = false;
       renderAll();
       scheduleTurn();
     }
   } else {
-    advanceTurn();
+    // For skip/rev(2P)/draw2: applyEffect already set direction; we skip next if needed
+    advanceTurn(); // move from pi to next
+    if (card.t === 'skip' || card.t === 'draw2' || (card.t === 'rev' && G.numP === 2)) {
+      advanceTurn(); // skip one more
+    }
     G.unoCalled = false;
     G.drewThisTurn = false;
     renderAll();
@@ -435,7 +440,7 @@ function pickColor(c) {
     roomSend({t:'color', c});
     return;
   }
-  advanceTurn();
+  // Turn was already advanced by doPlay before showing color picker
   G.unoCalled = false;
   G.drewThisTurn = false;
   renderAll();
@@ -701,13 +706,19 @@ OnlineRoom.init({
       renderAll();
       if (checkWin(pi)) return;
       if (card.t === 'wild' || card.t === 'wild4') {
+        // Advance past pi; wild4 also skips penalized player
+        advanceTurn();
+        if (card.t === 'wild4') advanceTurn();
         if (pi === MYSEAT) {
           G.phase = 'color';
           document.getElementById('colorpick').style.display = 'flex';
         }
-        // else wait for color message
+        // else wait for color message from the sender
       } else {
         advanceTurn();
+        if (card.t === 'skip' || card.t === 'draw2' || (card.t === 'rev' && G.numP === 2)) {
+          advanceTurn();
+        }
         G.drewThisTurn = false;
         G.unoCalled = false;
         renderAll();
@@ -716,7 +727,7 @@ OnlineRoom.init({
     } else if (msg.t === 'color') {
       G.curColor = msg.c;
       G.phase = 'play';
-      advanceTurn();
+      // Turn was already advanced in the 'play' handler
       G.drewThisTurn = false;
       G.unoCalled = false;
       renderAll();

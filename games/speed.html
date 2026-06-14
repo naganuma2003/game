@@ -339,7 +339,7 @@ function renderCpuArea() {
   document.getElementById('cpu-hand-count').textContent = `手札：${hand.length}`;
 
   const el = document.getElementById('cpu-hand');
-  el.innerHTML = hand.map(() => cardHTML(null, true, true)).join('');
+  el.innerHTML = hand.map(card => cardHTML(card, false, true)).join('');
 }
 
 function renderPlayerHand() {

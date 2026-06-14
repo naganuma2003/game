@@ -52,7 +52,16 @@ h1{font-size:22px;color:var(--gold);margin-bottom:6px;text-align:center}
 #win-box p{color:var(--dim);font-size:14px;margin-bottom:20px}
 #win-box .gbtn{margin:4px}
 
-/* Timer done */
+/* Opponent peek */
+#opp-peek{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.78);align-items:center;justify-content:center}
+#opp-peek.show{display:flex}
+.opp-peek-box{background:var(--surf);border-radius:16px;padding:20px;text-align:center;cursor:pointer}
+.opp-peek-box h3{color:var(--gold2);font-size:15px;margin-bottom:10px}
+.opp-peek-box .oppsub{font-size:11px;color:var(--dim);margin-top:8px}
+#opp-mini-board{display:inline-grid;gap:3px;padding:8px;background:rgba(255,255,255,.04);border-radius:10px}
+.opp-tile{display:flex;align-items:center;justify-content:center;border-radius:6px;font-weight:800;background:linear-gradient(135deg,#252538,#1e1e30);border:1px solid rgba(255,255,255,.08);color:var(--txt)}
+.opp-tile.empty{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.04)}
+.opp-tile.correct{background:linear-gradient(135deg,#1a3a1a,#162816);border-color:rgba(78,192,94,.3);color:#4ec05e}
 </style>
 </head>
 <body>
@@ -83,6 +92,15 @@ h1{font-size:22px;color:var(--gold);margin-bottom:6px;text-align:center}
   <button class="gbtn secondary" id="ai-slow-btn" onclick="startAI(500)">AI(遅)</button>
   <button class="gbtn secondary" id="ai-fast-btn" onclick="startAI(100)">AI(速)</button>
   <button class="gbtn secondary" id="ai-stop-btn" onclick="stopAI()" style="display:none">停止</button>
+</div>
+
+<div id="opp-peek">
+  <div class="opp-peek-box" onclick="document.getElementById('opp-peek').classList.remove('show')">
+    <h3>📸 相手の盤面</h3>
+    <div id="opp-mini-board"></div>
+    <div class="oppsub" id="opp-peek-info"></div>
+    <div class="oppsub" style="margin-top:4px;color:#666">タップで閉じる（5秒後に自動で閉じます）</div>
+  </div>
 </div>
 
 <div id="win">
@@ -195,6 +213,7 @@ function clickTile(idx){
 function win(){
   stopAI();
   clearInterval(timerInt);
+  clearInterval(peekInterval);
   if(ONLINE){
     if(raceOver)return;
     raceOver=true;
@@ -248,6 +267,37 @@ function showHint(){
 
 // ===== ONLINE RACE MODE =====
 let ONLINE=false,MYSEAT=0,roomSend=null,raceOver=false;
+let peekInterval=null,peekCloseTimer=null;
+
+function startPeekInterval(){
+  clearInterval(peekInterval);
+  peekInterval=setInterval(()=>{
+    if(raceOver){clearInterval(peekInterval);return;}
+    roomSend({t:'peek',tiles:[...tiles],moves:moveCount,n:N});
+  },60000);
+}
+
+function showOpponentBoard(oppTiles,oppMoves,oppN){
+  const mini=document.getElementById('opp-mini-board');
+  const cs=Math.min(Math.floor((240-16-3*(oppN-1))/oppN),52);
+  mini.style.gridTemplateColumns=`repeat(${oppN},${cs}px)`;
+  mini.style.gridTemplateRows=`repeat(${oppN},${cs}px)`;
+  mini.innerHTML='';
+  oppTiles.forEach((v,i)=>{
+    const el=document.createElement('div');
+    el.className='opp-tile'+(v===0?' empty':v===i+1?' correct':'');
+    el.style.width=cs+'px';el.style.height=cs+'px';
+    el.style.fontSize=cs*0.38+'px';
+    if(v!==0)el.textContent=v;
+    mini.appendChild(el);
+  });
+  const solved=oppTiles.filter((v,i)=>v!==0&&v===i+1).length;
+  document.getElementById('opp-peek-info').textContent=`${oppMoves}手・${solved}/${oppN*oppN-1}マス完成`;
+  const peek=document.getElementById('opp-peek');
+  peek.classList.add('show');
+  clearTimeout(peekCloseTimer);
+  peekCloseTimer=setTimeout(()=>peek.classList.remove('show'),5000);
+}
 
 function onStart(seat,n,send){
   stopAI();
@@ -258,7 +308,9 @@ function onStart(seat,n,send){
   if(seat===0){
     const t=shuffle(makeSolved());
     tiles=[...t];
+    render();createRaceStatus('スタート！先に揃えた方の勝ち');
     send({t:'start',tiles:t});
+    startPeekInterval();
   } else {
     document.getElementById('board').innerHTML='';
     document.getElementById('status-race')||createRaceStatus('対戦相手を待機中…');
@@ -280,8 +332,12 @@ function handleMsg(from,msg){
     document.getElementById('moves').textContent='0';
     document.getElementById('timer').textContent='0:00';
     render();createRaceStatus('スタート！先に揃えた方の勝ち');
+    startPeekInterval();
+  } else if(msg.t==='peek'){
+    showOpponentBoard(msg.tiles,msg.moves,msg.n||N);
   } else if(msg.t==='done'){
     if(raceOver)return;raceOver=true;
+    clearInterval(peekInterval);
     clearInterval(timerInt);
     const myWin=from===MYSEAT;
     const m=Math.floor(msg.sec/60),s=msg.sec%60;

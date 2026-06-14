@@ -356,7 +356,7 @@ function initLocalGame(numP, diff) {
 }
 
 function scheduleTurn() {
-  if (G.phase === 'color') return; // waiting for color pick
+  if (G.phase === 'color' || G.phase === 'done') return;
   if (G.cur === 0) {
     // Human turn
     setStatus('あなたのターン');
@@ -449,7 +449,15 @@ function pickColor(c) {
 
 function humanDraw() {
   if (G.cur !== 0 || G.phase !== 'play') return;
-  if (G.drewThisTurn) { setStatus('すでにドロー済みです。カードを出すか、パスしてください'); return; }
+  if (G.drewThisTurn) {
+    // 2回目のクリックでパス
+    advanceTurn();
+    G.drewThisTurn = false;
+    G.unoCalled = false;
+    renderAll();
+    scheduleTurn();
+    return;
+  }
 
   if (ONLINE && roomSend) {
     roomSend({t:'draw'});
@@ -472,7 +480,7 @@ function humanDraw() {
       scheduleTurn();
     }, 1000);
   } else {
-    setStatus('ドローしたカードを出せます');
+    setStatus('ドローしたカードを出せます（パスは山札を再クリック）');
   }
 }
 
@@ -484,7 +492,7 @@ function callUno() {
 }
 
 function cpuPlay() {
-  if (G.cur === 0) return;
+  if (G.cur === 0 || G.phase === 'done') return;
   const pi = G.cur;
   const hand = G.hands[pi];
 

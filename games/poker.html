@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>テキサスホールデム</title>
 <style>
 :root{--bg:#0a1a0a;--surf:#111e11;--gold:#c9a030;--gold2:#f0d060;--txt:#e8f0e8;--dim:#557755;
@@ -89,6 +89,12 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 #win-box .win-btns button{padding:9px 20px;border:none;border-radius:10px;font:700 13px 'Segoe UI',sans-serif;cursor:pointer}
 .btn-next{background:var(--gold);color:#111}
 .btn-quit{background:#333;color:var(--txt)}
+
+@media (max-width:480px){
+  .opp{min-width:90px;padding:7px 8px}
+  .card{width:38px;height:54px;font-size:13px}
+  .card.sm{width:28px;height:40px;font-size:10px}
+}
 </style>
 </head>
 <body>

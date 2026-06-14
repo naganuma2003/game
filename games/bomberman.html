@@ -178,7 +178,15 @@ function onAction(e) {
     if (onlineMode && !isHost) return;
     placeBomb(); return;
   }
-  if (state === ST.CLEAR || state === ST.OVER) { state = ST.TITLE; onlineMode=false; cpuMode=false; p2=null; return; }
+  if (state === ST.CLEAR || state === ST.OVER) {
+    if (cx_ !== null && drawResult._rbx !== undefined) {
+      const {_rbx,_rby,_rbw,_rbh} = drawResult;
+      if (cx_>=_rbx && cx_<=_rbx+_rbw && cy_>=_rby && cy_<=_rby+_rbh) {
+        go(); return;
+      }
+    }
+    state = ST.TITLE; onlineMode=false; cpuMode=false; p2=null; return;
+  }
 
   if (state === ST.TITLE) {
     if (cx_ !== null && drawTitle._cbx !== undefined) {
@@ -245,13 +253,19 @@ function tile(c, r) {
 }
 
 // ─── ゲーム開始 ──────────────────────────────────────────────────────────────
+let p1SpawnX = T, p1SpawnY = T, p2SpawnX = 0, p2SpawnY = 0;
+
 function go() {
   clearInterval(tickId);
   buildMap();
   const d = CFG[diff];
 
+  // 4コーナーをシャッフルしてスポーン位置を決定
+  const corners = shuffle([[1,1],[COLS-2,1],[1,ROWS-2],[COLS-2,ROWS-2]]);
+  p1SpawnX = corners[0][0]*T; p1SpawnY = corners[0][1]*T;
+
   pl = {
-    px: T, py: T,
+    px: p1SpawnX, py: p1SpawnY,
     spd: 2.5,
     maxB: 1, actB: 0,
     fire: 1,
@@ -263,20 +277,24 @@ function go() {
   };
 
   if (onlineMode || cpuMode) {
+    p2SpawnX = corners[1][0]*T; p2SpawnY = corners[1][1]*T;
     const cpuSpd = [2.0, 2.6, 3.3][diff];
     p2 = {
-      px: (COLS-2)*T, py: (ROWS-2)*T,
+      px: p2SpawnX, py: p2SpawnY,
       spd: cpuMode ? cpuSpd : 2.5,
       maxB: 1, actB: 0, fire: 1,
       lives: 3, inv: 0, dead: 0, alive: true, dir: 2
     };
-    if (cpuMode) { cpuNextTx=COLS-2; cpuNextTy=ROWS-2; cpuBombCD=2; }
+    if (cpuMode) { cpuNextTx=corners[1][0]; cpuNextTy=corners[1][1]; cpuBombCD=2; }
   } else {
     p2 = null;
   }
 
-  const ep = [[COLS-2,1],[1,ROWS-2],[COLS-2,ROWS-2],
-              [Math.floor(COLS/2),1],[Math.floor(COLS/2),ROWS-2]];
+  // 敵はプレイヤーが使わなかったコーナー＋中央付近
+  const usedIdx = (onlineMode||cpuMode) ? 2 : 1;
+  const freeCorners = corners.slice(usedIdx);
+  const midSpots = [[Math.floor(COLS/2),1],[Math.floor(COLS/2),ROWS-2]];
+  const ep = [...freeCorners, ...midSpots];
   const numEns = cpuMode ? 0 : d.en;
   ens = ep.slice(0, numEns).map(([ec,er]) => ({
     tx:ec, ty:er, px:ec*T, py:er*T,
@@ -729,7 +747,7 @@ function hurt() {
   if (pl.lives<=0) {
     pl.alive=false; pl.dead=1.4;
   } else {
-    pl.px=T; pl.py=T; pl.inv=2.5;
+    pl.px=p1SpawnX; pl.py=p1SpawnY; pl.inv=2.5;
   }
   updHUD();
 }
@@ -738,7 +756,7 @@ function hurt2() {
   if (!p2) return;
   p2.lives--;
   if (p2.lives<=0) { p2.alive=false; p2.dead=1.4; }
-  else { p2.px=(COLS-2)*T; p2.py=T; p2.inv=2.5; }
+  else { p2.px=p2SpawnX; p2.py=p2SpawnY; p2.inv=2.5; }
   updHUD();
 }
 
@@ -1181,7 +1199,7 @@ function drawResult(won) {
   cx.fillStyle='rgba(0,0,0,.58)';
   cx.fillRect(0,0,cv.width,cv.height);
   const W=cv.width, H=cv.height;
-  const bw=Math.min(W*.84,380), bh=T*5.5;
+  const bw=Math.min(W*.84,380), bh=T*7;
   const bx=(W-bw)/2, by=H/2-bh/2;
 
   cx.fillStyle=won?'rgba(10,40,10,.9)':'rgba(40,10,10,.9)';
@@ -1193,28 +1211,38 @@ function drawResult(won) {
 
   // アイコン
   cx.font=`${T*1.2}px serif`;
-  cx.fillText(won?'🎉':'💥', W/2, by+bh*.22);
+  cx.fillText(won?'🎉':'💥', W/2, by+bh*.15);
 
   // タイトル
   cx.fillStyle=won?'#7dd4a0':'#e06060';
   cx.font=`bold ${T*.8}px "Segoe UI",sans-serif`;
   cx.shadowBlur=12; cx.shadowColor=won?'rgba(80,200,80,.6)':'rgba(200,60,60,.6)';
-  cx.fillText(won?'クリア！':'ゲームオーバー', W/2, by+bh*.46);
+  cx.fillText(won?'クリア！':'ゲームオーバー', W/2, by+bh*.32);
   cx.shadowBlur=0;
 
   // スコア
   cx.fillStyle='#fff';
   cx.font=`${T*.5}px "Segoe UI",sans-serif`;
-  cx.fillText(`スコア: ${score}`, W/2, by+bh*.64);
+  cx.fillText(`スコア: ${score}`, W/2, by+bh*.46);
   cx.fillStyle='#ffdd44';
   cx.font=`${T*.42}px "Segoe UI",sans-serif`;
-  cx.fillText(`🏆 ベスト: ${hisc}`, W/2, by+bh*.78);
+  cx.fillText(`🏆 ベスト: ${hisc}`, W/2, by+bh*.57);
+
+  // 最初からボタン
+  const rbw=bw*.62, rbx=(W-rbw)/2, rby=by+bh*.66, rbh=T*1.3;
+  cx.fillStyle='rgba(40,60,140,0.45)';
+  rrect(rbx,rby,rbw,rbh,T*.2); cx.fill();
+  cx.strokeStyle='rgba(100,140,240,0.7)'; cx.lineWidth=1.5;
+  rrect(rbx,rby,rbw,rbh,T*.2); cx.stroke();
+  cx.fillStyle='#aac4ff'; cx.font=`bold ${T*.52}px "Segoe UI",sans-serif`;
+  cx.fillText('↺ 最初から', W/2, rby+rbh/2);
+  drawResult._rbx=rbx; drawResult._rby=rby; drawResult._rbw=rbw; drawResult._rbh=rbh;
 
   // 点滅テキスト
   if (Math.floor(Date.now()/580)%2===0) {
-    cx.fillStyle='rgba(200,220,255,.8)';
-    cx.font=`${T*.38}px "Segoe UI",sans-serif`;
-    cx.fillText('クリック / スペースでタイトルへ', W/2, by+bh*.92);
+    cx.fillStyle='rgba(200,220,255,.7)';
+    cx.font=`${T*.36}px "Segoe UI",sans-serif`;
+    cx.fillText('クリック / スペースでタイトルへ', W/2, by+bh*.9);
   }
 }
 

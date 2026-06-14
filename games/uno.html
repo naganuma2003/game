@@ -362,14 +362,31 @@ function initLocalGame(numP, diff) {
   scheduleTurn();
 }
 
+// The seat the local player controls: 0 in local play, my online seat online.
+function meSeat() { return ONLINE ? MYSEAT : 0; }
+
 function scheduleTurn() {
   if (G.phase === 'color' || G.phase === 'done') return;
-  if (G.cur === 0) {
-    // Human turn
+  const me = meSeat();
+  const mine = G.cur === me;
+  if (ONLINE && window.OnlineRoom && OnlineRoom.setTurn) OnlineRoom.setTurn(mine);
+
+  if (mine) {
+    // My turn
     setStatus('あなたのターン');
     enableButtons(true);
+    return;
+  }
+
+  enableButtons(false);
+  if (ONLINE) {
+    setStatus(`${G.names[G.cur]} のターン`);
+    // Host drives CPU seats and disconnected players so the turn advances.
+    if (window.OnlineRoom && OnlineRoom.isHost && OnlineRoom.isHost()
+        && OnlineRoom.isAuto && OnlineRoom.isAuto(G.cur)) {
+      setTimeout(() => onlineCpuMove(G.cur), 800);
+    }
   } else {
-    enableButtons(false);
     setStatus(`${G.names[G.cur]} が考え中…`);
     setTimeout(cpuPlay, 800);
   }
@@ -386,21 +403,17 @@ function setStatus(txt) {
 }
 
 function humanPlay(idx) {
-  if (G.cur !== 0 || G.phase !== 'play') return;
-  const card = G.hands[0][idx];
+  const me = meSeat();
+  if (G.cur !== me || G.phase !== 'play') return;
+  const card = G.hands[me][idx];
   if (!canPlay(card)) { setStatus('そのカードは出せません'); return; }
-
-  // Check UNO penalty: had 2 cards, playing one → should have called UNO but didn't
-  if (G.hands[0].length === 2 && !G.unoCalled) {
-    // No auto-penalty here; let UNO button handle it
-  }
 
   if (ONLINE && roomSend) {
     roomSend({t:'play', idx});
     return;
   }
 
-  doPlay(0, idx);
+  doPlay(me, idx);
 }
 
 function doPlay(pi, idx) {
@@ -455,9 +468,11 @@ function pickColor(c) {
 }
 
 function humanDraw() {
-  if (G.cur !== 0 || G.phase !== 'play') return;
+  const me = meSeat();
+  if (G.cur !== me || G.phase !== 'play') return;
   if (G.drewThisTurn) {
     // 2回目のクリックでパス
+    if (ONLINE && roomSend) { roomSend({t:'pass'}); return; }
     advanceTurn();
     G.drewThisTurn = false;
     G.unoCalled = false;
@@ -492,31 +507,20 @@ function humanDraw() {
 }
 
 function callUno() {
-  if (G.cur !== 0) return;
+  const me = meSeat();
+  if (G.cur !== me) return;
   G.unoCalled = true;
-  G.uno[0] = (G.hands[0].length === 1);
+  G.uno[me] = (G.hands[me].length === 1);
   setStatus('UNO！');
 }
 
-function cpuPlay() {
-  if (G.cur === 0 || G.phase === 'done') return;
-  const pi = G.cur;
+// Decide a CPU's move from the current state. Returns {action:'draw'} or
+// {action:'play', idx}. Shared by local play (cpuPlay) and online play
+// (onlineCpuMove) so both compute identically.
+function cpuDecide(pi) {
   const hand = G.hands[pi];
-
-  // Find playable cards
   const playable = hand.map((c,i)=>({c,i})).filter(x=>canPlay(x.c));
-
-  if (!playable.length) {
-    // Draw
-    drawFromPile(pi, 1);
-    checkUno(pi);
-    setStatus(`${G.names[pi]} がドロー`);
-    advanceTurn();
-    G.drewThisTurn = false;
-    renderAll();
-    setTimeout(() => scheduleTurn(), 400);
-    return;
-  }
+  if (!playable.length) return {action:'draw'};
 
   // Choose card based on difficulty
   let chosen;
@@ -548,14 +552,51 @@ function cpuPlay() {
     else if (wilds.length) chosen = wilds[0];
     else chosen = wild4s[0];
   }
-
   if (!chosen) chosen = playable[0];
+  return {action:'play', idx:chosen.i};
+}
+
+function cpuPlay() {
+  if (G.cur === 0 || G.phase === 'done') return;
+  const pi = G.cur;
+  const dec = cpuDecide(pi);
+
+  if (dec.action === 'draw') {
+    drawFromPile(pi, 1);
+    checkUno(pi);
+    setStatus(`${G.names[pi]} がドロー`);
+    advanceTurn();
+    G.drewThisTurn = false;
+    renderAll();
+    setTimeout(() => scheduleTurn(), 400);
+    return;
+  }
 
   // UNO auto-call for CPU
-  if (hand.length === 2) G.uno[pi] = true;
+  if (G.hands[pi].length === 2) G.uno[pi] = true;
 
   setStatus(`${G.names[pi]} がカードを出した`);
-  doPlay(pi, chosen.i);
+  doPlay(pi, dec.idx);
+}
+
+// Online: the host drives any seat nobody is sitting at (CPU seats and
+// disconnected players), sending the action over the wire so every client
+// applies it in the same order. Only the host runs this.
+function onlineCpuMove(pi) {
+  if (!ONLINE || G.phase === 'done') return;
+  if (G.cur !== pi) return;
+  if (!(window.OnlineRoom && OnlineRoom.isHost && OnlineRoom.isHost())) return;
+  if (!(OnlineRoom.isAuto && OnlineRoom.isAuto(pi))) return;
+  const dec = cpuDecide(pi);
+  if (dec.action === 'draw') { roomSend({t:'draw'}); return; }
+  const card = G.hands[pi][dec.idx];
+  roomSend({t:'play', idx:dec.idx});
+  if (card.t === 'wild' || card.t === 'wild4') {
+    // Color is deterministic from the (now identical) post-play state, so send
+    // it immediately after the play to avoid any window where the next seat
+    // could act before the color is set.
+    roomSend({t:'color', c: cpuChooseColor(pi)});
+  }
 }
 
 function cpuChooseColor(pi) {
@@ -596,7 +637,9 @@ function renderAll() {
 function renderOpponents() {
   const el = document.getElementById('opponents');
   el.innerHTML = '';
-  for (let i = 1; i < G.numP; i++) {
+  const me = meSeat();
+  for (let i = 0; i < G.numP; i++) {
+    if (i === me) continue;
     const isTurn = G.cur === i;
     const div = document.createElement('div');
     div.className = 'opp-row';
@@ -630,18 +673,19 @@ function renderCenter() {
 }
 
 function renderHand() {
+  const me = meSeat();
   const row = document.getElementById('hand-row');
-  const isMyTurn = G.cur === 0 && G.phase === 'play';
+  const isMyTurn = G.cur === me && G.phase === 'play';
   row.innerHTML = '';
-  for (let i=0;i<G.hands[0].length;i++) {
-    const card = G.hands[0][i];
+  for (let i=0;i<G.hands[me].length;i++) {
+    const card = G.hands[me][i];
     const playable = isMyTurn && canPlay(card);
     row.innerHTML += hcardHTML(card, i, playable);
   }
-  document.getElementById('hand-count').textContent = G.hands[0].length;
+  document.getElementById('hand-count').textContent = G.hands[me].length;
   // UNO badge for human
-  const unoBadge = G.uno[0] ? ' 🔴UNO!' : '';
-  document.querySelector('.hand-lbl').textContent = `あなたの手札（${G.hands[0].length}枚）${unoBadge}`;
+  const unoBadge = G.uno[me] ? ' 🔴UNO!' : '';
+  document.querySelector('.hand-lbl').textContent = `あなたの手札（${G.hands[me].length}枚）${unoBadge}`;
 }
 
 function updateColorInd() {
@@ -716,7 +760,9 @@ OnlineRoom.init({
       document.getElementById('setup').style.display = 'none';
       renderAll(); scheduleTurn();
     } else if (msg.t === 'play') {
-      const pi = from;
+      // UNO is strictly turn-based: the actor is always the current player.
+      // (The sender's seat `from` is the host when it drives a CPU seat.)
+      const pi = G.cur;
       const card = G.hands[pi][msg.idx];
       playCard(pi, msg.idx);
       renderAll();
@@ -749,7 +795,7 @@ OnlineRoom.init({
       renderAll();
       scheduleTurn();
     } else if (msg.t === 'draw') {
-      const pi = from;
+      const pi = G.cur;
       drawFromPile(pi, 1);
       checkUno(pi);
       const drawnCard = G.hands[pi][G.hands[pi].length-1];
@@ -763,6 +809,13 @@ OnlineRoom.init({
       }
       renderAll();
       if (pi !== MYSEAT || !canPlay(drawnCard)) scheduleTurn();
+    } else if (msg.t === 'pass') {
+      // Player drew a playable card but chose to pass.
+      advanceTurn();
+      G.drewThisTurn = false;
+      G.unoCalled = false;
+      renderAll();
+      scheduleTurn();
     }
   },
   getState: () => ({

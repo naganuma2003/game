@@ -717,6 +717,12 @@
           <div class="desc">6穴リボルバーに弾を装填。順番に引き金を引け。最後まで生き残れ！2〜6人・不特定多数。</div>
           <div class="tagrow"><a class="tag" href="games/russian-roulette.html">プレイする →</a><button class="tag tag-rule" onclick="document.getElementById('rule-russian').classList.add('show')">📖 ルール</button></div></div>
 
+        <div class="card">
+          <div class="icon">💣</div>
+          <div class="name">ボム 1/16</div>
+          <div class="desc">16個の赤いボタンに爆弾が1個。順番に押して最後の1個を引いたら大爆発！罰ゲームはきみだ。</div>
+          <div class="tagrow"><a class="tag" href="games/bomb.html">プレイする →</a></div></div>
+
             </div>
       <p class="filter-empty" id="filter-empty">この人数で遊べるゲームはありません</p>
     </div>
@@ -2176,6 +2182,7 @@
         <a href="games/tictactoe.html?online=1&_v=2&create=1"><div style="display:inline-grid;grid-template-columns:repeat(3,1fr);gap:1px;width:24px;height:24px;background:#8a93a8;padding:1px;border-radius:3px;font-weight:900;font-size:7px;flex-shrink:0"><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;color:#5b9bd5">O</span><span style="background:#1b2334"></span><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;color:#e0473a">X</span><span style="background:#1b2334"></span><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;color:#e0473a">X</span><span style="background:#1b2334"></span><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;color:#5b9bd5">O</span><span style="background:#1b2334"></span><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;color:#e0473a">X</span></div><span>三目並べ</span></a>
         <a href="games/chinchiro.html?online=1&_v=2&create=1">🎲<span>チンチロ</span></a>
         <a href="games/yacht.html?online=1&_v=2&create=1"><span style="font-size:14px;letter-spacing:0;line-height:1">🎲🎲🎲🎲🎲</span><span>ヨット</span></a>
+        <a href="games/bomberman.html?online=1&_v=2&create=1">💣<span>ボンバーマン</span></a>
       </div>
     </div>
   </div>
@@ -2212,7 +2219,8 @@
         "ウノ": ["duo", "multi", "card"],
         "スピード": ["duo", "card"],
         "ボンバーマン": ["solo", "duo"],
-        "ロシアンルーレット": ["multi"]
+        "ロシアンルーレット": ["multi"],
+        "ボム 1/16": ["multi"]
       };
       var cards = [].slice.call(document.querySelectorAll(".col-games .grid .card"));
       cards.forEach(function (c) {

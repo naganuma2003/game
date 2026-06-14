@@ -537,7 +537,7 @@
           <div class="icon"><svg width="40" height="46" viewBox="0 0 40 46"><defs><linearGradient id="shogi-fill" x1="0.3" y1="0" x2="0.7" y2="1"><stop offset="0%" stop-color="#f5e090"/><stop offset="100%" stop-color="#c8940c"/></linearGradient></defs><polygon points="20,2 31.2,8.7 38,44 2,44 8.8,8.7" fill="url(#shogi-fill)" stroke="#6b4210" stroke-width="1.2" stroke-linejoin="round"/><text x="20" y="26" text-anchor="middle" font-size="13" font-weight="900" fill="#1a0800" font-family="'Hiragino Mincho ProN',serif">王</text><text x="20" y="39" text-anchor="middle" font-size="13" font-weight="900" fill="#1a0800" font-family="'Hiragino Mincho ProN',serif">将</text></svg></div>
           <div class="name">将棋</div>
           <div class="desc">本将棋。成り・持ち駒・詰み判定。AIアシスタント＆一手戻る。</div>
-          <div class="tagrow"><a class="tag" href="games/shogi.html">プレイする →</a><a class="tag tag-online" href="games/shogi.html?online=1&_v=2">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/shogi.html">プレイする →</a><a class="tag tag-online" href="games/shogi.html?online=1&_v=2">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-shogi').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon" style="position:relative;width:80px;height:44px">
@@ -559,7 +559,7 @@
           </div>
           <div class="name">テキサスホールデム</div>
           <div class="desc">手札2枚＋コミュニティ5枚で最強の役を作るポーカー。ベット・コール・レイズで戦う。2〜6人。</div>
-          <div class="tagrow"><a class="tag" href="games/poker.html">プレイする →</a><a class="tag tag-online" href="games/poker.html?online=1&_v=2&create=1">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/poker.html">プレイする →</a><a class="tag tag-online" href="games/poker.html?online=1&_v=2&create=1">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-texas').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon" style="position:relative;width:64px;height:44px">
@@ -569,7 +569,7 @@
           </div>
           <div class="name">ウノ</div>
           <div class="desc">色と数字を合わせてカードを出し切れ！スキップ・リバース・ドロー2・ワイルドで逆転。2〜6人。</div>
-          <div class="tagrow"><a class="tag" href="games/uno.html">プレイする →</a><a class="tag tag-online" href="games/uno.html?online=1&_v=2&create=1">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/uno.html">プレイする →</a><a class="tag tag-online" href="games/uno.html?online=1&_v=2&create=1">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-uno').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon" style="position:relative;width:80px;height:44px">
@@ -579,7 +579,7 @@
           </div>
           <div class="name">スピード</div>
           <div class="desc">2人同時出し！手札と山札を先に空にした方が勝ち。1つ差の数字カードを素早く積め。オンライン対応。</div>
-          <div class="tagrow"><a class="tag" href="games/speed.html">プレイする →</a><a class="tag tag-online" href="games/speed.html?online=1&_v=2&create=1">🌐 オンライン</a></div></div>
+          <div class="tagrow"><a class="tag" href="games/speed.html">プレイする →</a><a class="tag tag-online" href="games/speed.html?online=1&_v=2&create=1">🌐 オンライン</a><button class="tag tag-rule" onclick="document.getElementById('rule-speed').classList.add('show')">📖 ルール</button></div></div>
 
         <div class="card">
           <div class="icon" style="width:42px;height:42px"><svg width="42" height="42" viewBox="0 0 42 42" style="display:block">
@@ -1461,6 +1461,100 @@
       </ul>
       <h3>戦略</h3>
       <p>7に近いカードを手元に残して相手の展開を妨害するのが定石。パスの使いどころが勝負の分かれ目。</p>
+    </div>
+  </div>
+
+  <!-- 将棋 ルールモーダル -->
+  <div id="rule-shogi" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-shogi').classList.remove('show')">×</button>
+      <h2>♟ 将棋 ルール</h2>
+      <h3>目的</h3>
+      <p>相手の「王将（玉将）」を動けなくする（詰み）と勝ち。</p>
+      <h3>駒の種類と動き</h3>
+      <ul>
+        <li><b>王将・玉将</b>：全方向に1マス。</li>
+        <li><b>飛車</b>：縦横に何マスでも。成ると「龍王」で斜め1マスも追加。</li>
+        <li><b>角行</b>：斜めに何マスでも。成ると「龍馬」で縦横1マスも追加。</li>
+        <li><b>金将</b>：前・横・斜め前に1マス。</li>
+        <li><b>銀将</b>：前と斜めに1マス。成ると金将と同じ動き。</li>
+        <li><b>桂馬</b>：前方2マス先に斜め1マス（L字）。成ると金将と同じ。</li>
+        <li><b>香車</b>：前方に何マスでも。成ると金将と同じ。</li>
+        <li><b>歩兵</b>：前に1マス。成ると「と金」（金将と同じ動き）。</li>
+      </ul>
+      <h3>持ち駒</h3>
+      <p>取った駒は自分の持ち駒になり、好きなマスに打って使える（制限あり）。</p>
+      <h3>成り</h3>
+      <p>相手陣（最奥3段）に入ったとき、または出たときに「成る」ことができる。</p>
+    </div>
+  </div>
+
+  <!-- テキサスホールデム ルールモーダル -->
+  <div id="rule-texas" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-texas').classList.remove('show')">×</button>
+      <h2>🃏 テキサスホールデム ルール</h2>
+      <h3>目的</h3>
+      <p>手札2枚＋場の共有カード（コミュニティ）5枚の中から5枚を選んで最強の役を作る。</p>
+      <h3>ゲームの流れ</h3>
+      <ul>
+        <li><b>プリフロップ</b>：手札2枚が配られベット。</li>
+        <li><b>フロップ</b>：コミュニティ3枚公開→ベット。</li>
+        <li><b>ターン</b>：コミュニティ4枚目公開→ベット。</li>
+        <li><b>リバー</b>：コミュニティ5枚目公開→最終ベット。</li>
+        <li><b>ショーダウン</b>：残ったプレイヤーで手役を比べて勝負。</li>
+      </ul>
+      <h3>ベットの選択肢</h3>
+      <ul>
+        <li><b>フォールド</b>：降りる。<b>チェック</b>：パス（追加なし）。</li>
+        <li><b>コール</b>：相手と同額を出す。<b>レイズ</b>：上乗せして賭ける。</li>
+      </ul>
+      <h3>役の強さ（弱→強）</h3>
+      <p>ハイカード→ワンペア→ツーペア→スリーカード→ストレート→フラッシュ→フルハウス→フォーカード→ストレートフラッシュ→ロイヤルフラッシュ</p>
+    </div>
+  </div>
+
+  <!-- ウノ ルールモーダル -->
+  <div id="rule-uno" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-uno').classList.remove('show')">×</button>
+      <h2>🎴 ウノ ルール</h2>
+      <h3>目的</h3>
+      <p>手札を全て出し切った人が勝ち。最後の1枚になったら「UNO！」と宣言する。</p>
+      <h3>基本ルール</h3>
+      <ul>
+        <li>場の一番上のカードと同じ「色」か「数字/記号」のカードを出せる。</li>
+        <li>出せるカードがなければ山札から1枚引く。</li>
+      </ul>
+      <h3>アクションカード</h3>
+      <ul>
+        <li><b>スキップ</b>：次のプレイヤーの手番を飛ばす。</li>
+        <li><b>リバース</b>：順番を逆回りにする。</li>
+        <li><b>ドロー2</b>：次のプレイヤーが2枚引いて手番スキップ。</li>
+        <li><b>ワイルド</b>：任意の色を指定して出せる。</li>
+        <li><b>ワイルドドロー4</b>：色を指定＋次のプレイヤーが4枚引いてスキップ。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- スピード ルールモーダル -->
+  <div id="rule-speed" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-speed').classList.remove('show')">×</button>
+      <h2>🃏 スピード ルール</h2>
+      <h3>目的</h3>
+      <p>手札と山札を先に全て出し切った方が勝ち。</p>
+      <h3>基本ルール</h3>
+      <ul>
+        <li>2人が同時に、場の2つの積み札のどちらかに出せるカードを出す（ターン制なし）。</li>
+        <li>場のカードより1つ上か1つ下の数字のカードを出せる（例：場に7→6か8が出せる）。</li>
+        <li>Aは最大（K→A）と最小（A→2）の両方に対応。</li>
+      </ul>
+      <h3>スタック（詰まり）</h3>
+      <ul>
+        <li>双方が出せるカードない場合、山札から1枚ずつ場に出してリスタート。</li>
+        <li>山札も尽きたら手札の先頭を出す。</li>
+      </ul>
     </div>
   </div>
 

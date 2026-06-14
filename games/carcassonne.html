@@ -475,8 +475,10 @@ function dirToEdge(dir) {
 }
 
 function checkCityComplete(x, y, edgeIdx) {
-  // BFS over city
+  // BFS over city — track *destination* entries before enqueueing to avoid
+  // the single-element-group bug where the entry edge blocks its own neighbour.
   const visited = new Set();
+  visited.add(`${x},${y},${edgeIdx}`);
   const queue = [{ x, y, edge: edgeIdx }];
   const tiles = new Set();
   const meeples = [];
@@ -485,9 +487,6 @@ function checkCityComplete(x, y, edgeIdx) {
 
   while (queue.length) {
     const { x: cx, y: cy, edge } = queue.shift();
-    const key = `${cx},${cy},${edge}`;
-    if (visited.has(key)) continue;
-    visited.add(key);
 
     const cell = state.board[posKey(cx, cy)];
     if (!cell) { complete = false; continue; }
@@ -512,10 +511,10 @@ function checkCityComplete(x, y, edgeIdx) {
     }
 
     for (const g of group) {
-      const gkey = `${cx},${cy},${g}`;
-      if (!visited.has(gkey)) {
-        visited.add(gkey);
-        const nx = cx + DX[g], ny = cy + DY[g];
+      const nx = cx + DX[g], ny = cy + DY[g];
+      const destKey = `${nx},${ny},${OPPE[g]}`;
+      if (!visited.has(destKey)) {
+        visited.add(destKey);
         queue.push({ x: nx, y: ny, edge: OPPE[g] });
       }
     }
@@ -526,6 +525,7 @@ function checkCityComplete(x, y, edgeIdx) {
 
 function checkRoadComplete(x, y, edgeIdx) {
   const visited = new Set();
+  visited.add(`${x},${y},${edgeIdx}`);
   const queue = [{ x, y, edge: edgeIdx }];
   const tiles = new Set();
   const meeples = [];
@@ -533,9 +533,6 @@ function checkRoadComplete(x, y, edgeIdx) {
 
   while (queue.length) {
     const { x: cx, y: cy, edge } = queue.shift();
-    const key = `${cx},${cy},${edge}`;
-    if (visited.has(key)) continue;
-    visited.add(key);
 
     const cell = state.board[posKey(cx, cy)];
     if (!cell) { complete = false; continue; }
@@ -543,9 +540,8 @@ function checkRoadComplete(x, y, edgeIdx) {
     const rotated = getRotatedTile(cell.tile, cell.rot);
     const group = rotated.roadGroups.find(g => g.includes(edge));
     if (!group) {
-      // Road ends here (terminal: junction or dead end)
+      // Road terminates here (junction dead-end)
       tiles.add(posKey(cx, cy));
-      // Capture meeple if on this tile's road
       if (cell.meeple) {
         const m = cell.meeple;
         if (m.dir === 'C' || dirToEdge(m.dir) === edge) {
@@ -568,10 +564,10 @@ function checkRoadComplete(x, y, edgeIdx) {
     }
 
     for (const g of group) {
-      const gkey = `${cx},${cy},${g}`;
-      if (!visited.has(gkey)) {
-        visited.add(gkey);
-        const nx = cx + DX[g], ny = cy + DY[g];
+      const nx = cx + DX[g], ny = cy + DY[g];
+      const destKey = `${nx},${ny},${OPPE[g]}`;
+      if (!visited.has(destKey)) {
+        visited.add(destKey);
         queue.push({ x: nx, y: ny, edge: OPPE[g] });
       }
     }
@@ -787,8 +783,8 @@ function applyPlace(x, y, rot) {
   lastPlacedPos = { x, y };
   placingPhase = true;
 
-  scoreCompletedFeatures(x, y);
-
+  // Scoring happens AFTER meeple placement (correct Carcassonne rule order),
+  // so occupancy check in showMeeplePanel sees the true board state.
   renderAll();
   updateHUD();
   showMeeplePanel(x, y);
@@ -801,12 +797,14 @@ function applyMeeple(dir) {
   const cell = state.board[posKey(x, y)];
   if (!cell) return;
 
-  if (dir !== null && state.meeples[state.turn] > 0) {
+  if (dir !== null && state.meeples[state.turn] > 0 && !isFeatureOccupied(x, y, dir)) {
     cell.meeple = { seat: state.turn, dir };
     state.meeples[state.turn]--;
-    // Re-check scoring after meeple placed (shouldn't score immediately, but consistency)
   }
 
+  scoreCompletedFeatures(x, y);
+  renderAll();
+  updateHUD();
   nextTurn();
 }
 

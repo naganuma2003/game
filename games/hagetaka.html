@@ -164,7 +164,7 @@ let G = {};
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
 
 function resolveRound(prize, bids) {
-  const dir = prize > 0 ? -1 : 1;
+  const dir = prize > 0 ? 1 : -1;
   const uniq = [...new Set(bids.map(b=>b.card))].sort((a,b)=>(b-a)*dir);
   for (const v of uniq) {
     const w = bids.filter(b=>b.card===v);

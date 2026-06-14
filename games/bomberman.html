@@ -475,6 +475,7 @@ function updateUI() {
 // ======= Drawing =======
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!map) { drawStartScreen(); return; }
   drawMap();
   drawPowerups();
   drawExplosions();
@@ -482,6 +483,20 @@ function draw() {
   drawEnemies();
   drawPlayer();
   if (gameState !== 'playing') drawOverlay();
+}
+
+function drawStartScreen() {
+  ctx.fillStyle = '#1e2e18';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.font = `bold ${TILE*1.8}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('💣', canvas.width/2, canvas.height/2 - TILE*0.5);
+  ctx.font = `bold ${TILE*0.65}px "Segoe UI", sans-serif`;
+  ctx.fillStyle = '#9cc4ff';
+  ctx.fillText('ゲームスタートを押してね', canvas.width/2, canvas.height/2 + TILE*0.9);
+  ctx.restore();
 }
 
 function drawMap() {

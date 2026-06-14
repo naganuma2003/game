@@ -425,7 +425,7 @@ function doPlay(pi, idx) {
   if (card.t === 'wild' || card.t === 'wild4') {
     // Advance past pi, then if wild4 also skip the penalized player
     advanceTurn(); // move from pi to pi+1 (wild: that's the next player; wild4: pi+1 is penalized)
-    if (card.t === 'wild4') advanceTurn(); // skip penalized player
+    if (card.t === 'wild4' && G.numP > 2) advanceTurn(); // skip penalized player (3+ only)
     if (pi === 0) {
       // Human played wild — show color picker BEFORE final scheduleTurn
       // But we already advanced; save where we landed and wait for pickColor
@@ -440,10 +440,12 @@ function doPlay(pi, idx) {
       scheduleTurn();
     }
   } else {
-    // For skip/rev(2P)/draw2: applyEffect already set direction; we skip next if needed
-    advanceTurn(); // move from pi to next
-    if (card.t === 'skip' || card.t === 'draw2' || (card.t === 'rev' && G.numP === 2)) {
-      advanceTurn(); // skip one more
+    // applyEffect already handled draws/direction. Advance one seat.
+    advanceTurn();
+    // With 3+ players, skip/draw2 also skip the affected player. In a 2-player
+    // game we never skip back to ourselves — every card passes the turn.
+    if (G.numP > 2 && (card.t === 'skip' || card.t === 'draw2')) {
+      advanceTurn();
     }
     G.unoCalled = false;
     G.drewThisTurn = false;
@@ -768,9 +770,9 @@ OnlineRoom.init({
       renderAll();
       if (checkWin(pi)) return;
       if (card.t === 'wild' || card.t === 'wild4') {
-        // Advance past pi; wild4 also skips penalized player
+        // Advance past pi; wild4 also skips penalized player (3+ only)
         advanceTurn();
-        if (card.t === 'wild4') advanceTurn();
+        if (card.t === 'wild4' && G.numP > 2) advanceTurn();
         if (pi === MYSEAT) {
           G.phase = 'color';
           document.getElementById('colorpick').style.display = 'flex';
@@ -778,7 +780,7 @@ OnlineRoom.init({
         // else wait for color message from the sender
       } else {
         advanceTurn();
-        if (card.t === 'skip' || card.t === 'draw2' || (card.t === 'rev' && G.numP === 2)) {
+        if (G.numP > 2 && (card.t === 'skip' || card.t === 'draw2')) {
           advanceTurn();
         }
         G.drewThisTurn = false;

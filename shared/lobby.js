@@ -50,6 +50,9 @@
     hagetaka: "games/hagetaka.html",
     nimmt: "games/nimmt.html",
     algo: "games/algo.html",
+    blokus: "games/blokus.html",
+    poker: "games/poker.html",
+    puzzle15: "games/15puzzle.html",
   };
 
   function randomCode() {

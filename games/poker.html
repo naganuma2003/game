@@ -254,6 +254,7 @@ function compareKey(a,b){
 const PHASES=['preflop','flop','turn','river','showdown'];
 const PHASE_NAMES={preflop:'プリフロップ',flop:'フロップ',turn:'ターン',river:'リバー',showdown:'ショーダウン'};
 let G={};
+let ONLINE=false,MYSEAT=0,roomSend=null;
 
 function startGame(){
   const numP=+document.getElementById('sel-p').value;
@@ -320,6 +321,47 @@ function dealHand(){
   setTimeout(()=>nextAction(),300);
 }
 
+function dealFromDeck(deck){
+  G.hand++;
+  const n=G.numP;
+  const alive=G.chips.map((c,i)=>c>0?i:-1).filter(i=>i>=0);
+  if(alive.length<2){
+    const winner=alive[0]??0;
+    showWinScreen(winner,`ゲーム終了！ ${G.names[winner]} の勝ち！`,`チップ: ${G.chips[winner]}`);
+    return;
+  }
+  do{ G.dealer=(G.dealer+1)%n; }while(G.chips[G.dealer]<=0);
+  G.deck=[...deck];
+  G.community=[];
+  G.hole=Array.from({length:n},()=>[]);
+  G.folded=Array(n).fill(false);
+  G.bets=Array(n).fill(0);
+  G.pot=0;
+  G.phase='preflop';
+  G.actionDone=Array(n).fill(false);
+  G.lastRaise=G.bb;
+  for(let i=0;i<2;i++) for(let p=0;p<n;p++){
+    if(G.chips[p]>0) G.hole[p].push(G.deck.pop());
+  }
+  const alv=alive;
+  const sbIdx=alv[(alv.indexOf(G.dealer)+1)%alv.length];
+  const bbIdx=alv[(alv.indexOf(G.dealer)+2)%alv.length];
+  postBlind(sbIdx,G.sb);
+  postBlind(bbIdx,G.bb);
+  G.currentBet=G.bb;G.lastRaise=G.bb;
+  G.actionDone[bbIdx]=false;
+  G.cur=alv[(alv.indexOf(bbIdx)+1)%alv.length];
+  G.sbIdx=sbIdx;G.bbIdx=bbIdx;
+  document.getElementById('win-overlay').classList.remove('show');
+  renderAll();
+  setTimeout(()=>nextAction(),300);
+}
+
+function sendDeck(){
+  const deck=makeDeck();shuffle(deck);
+  roomSend({t:'deck',deck});
+}
+
 function postBlind(pi,amount){
   const actual=Math.min(amount,G.chips[pi]);
   G.chips[pi]-=actual;
@@ -354,17 +396,28 @@ function nextAction(){
   }
   G.cur=cur;
 
-  if(G.cur===0){
-    // Human's turn
+  const myTurn=ONLINE?(G.cur===MYSEAT):(G.cur===0);
+  if(myTurn){
+    renderAll();renderActions();
+  } else if(!ONLINE){
+    renderAll();setTimeout(()=>cpuAct(G.cur),700);
+  } else if(OnlineRoom.isHost()&&OnlineRoom.isAuto(G.cur)){
     renderAll();
-    renderActions();
+    document.getElementById('status').textContent=G.names[G.cur]+'が考え中…';
+    setTimeout(()=>cpuActOnline(G.cur),700);
   } else {
     renderAll();
-    setTimeout(()=>cpuAct(G.cur),700);
+    document.getElementById('status').textContent=G.names[G.cur]+'の番…';
+    hideActions();
   }
 }
 
 function act(type){
+  if(ONLINE){
+    const amt=type==='raise'?parseInt(document.getElementById('raise-amt').value)||G.bb:0;
+    roomSend({t:'act',pi:MYSEAT,action:type,amount:amt});
+    hideActions();return;
+  }
   const pi=0;
   const maxBet=Math.max(...G.bets);
   const toCall=maxBet-G.bets[pi];
@@ -461,6 +514,53 @@ function cpuAct(pi){
   setTimeout(nextAction,400);
 }
 
+function cpuActOnline(pi){
+  const maxBet=Math.max(...G.bets);
+  const toCall=maxBet-G.bets[pi];
+  const myChips=G.chips[pi];
+  const hand=bestHand(G.hole[pi],G.community);
+  const strength=hand.rank;
+  let action;
+  const r=Math.random();
+  const str=strength/8;
+  const bluff=r<0.15;
+  const effective=bluff?1:str;
+  if(toCall===0){action=effective>0.4?'raise':'check';}
+  else{const odds=toCall/(G.pot+toCall);action=(effective>odds+0.05)?(r<effective*0.5?'raise':'call'):'fold';}
+  const raiseAmt=action==='raise'?Math.max(G.lastRaise,G.bb)*2:0;
+  roomSend({t:'act',pi,action,amount:raiseAmt});
+}
+
+function applyActOnline(pi,action,amount){
+  const maxBet=Math.max(...G.bets);
+  const toCall=maxBet-G.bets[pi];
+  const myChips=G.chips[pi];
+  if(action==='fold'){G.folded[pi]=true;G.actionDone[pi]=true;}
+  else if(action==='check'){G.actionDone[pi]=true;}
+  else if(action==='call'){
+    const c=Math.min(toCall,myChips);
+    G.chips[pi]-=c;G.bets[pi]+=c;G.pot+=c;G.actionDone[pi]=true;
+  }
+  else if(action==='raise'){
+    const total=maxBet+Math.max(amount,G.lastRaise);
+    const pay=Math.min(total-G.bets[pi],myChips);
+    if(pay>0){G.chips[pi]-=pay;G.bets[pi]+=pay;G.pot+=pay;
+      G.lastRaise=Math.max(amount,G.lastRaise);G.currentBet=G.bets[pi];
+      G.actionDone=G.actionDone.map((_,i)=>i===pi);}
+    G.actionDone[pi]=true;
+  }
+  else if(action==='allin'){
+    const pay=myChips;
+    G.chips[pi]=0;G.bets[pi]+=pay;G.pot+=pay;
+    if(G.bets[pi]>maxBet){G.lastRaise=G.bets[pi]-maxBet;
+      G.actionDone=G.actionDone.map((_,i)=>i===pi);}
+    G.actionDone[pi]=true;
+  }
+  G.cur=(G.cur+1)%G.numP;
+  renderAll();
+  setTimeout(nextAction,400);
+}
+
 function advancePhase(){
   const phases=['preflop','flop','turn','river','showdown'];
   const idx=phases.indexOf(G.phase);
@@ -511,6 +611,12 @@ function awardPot(winners,hands){
     winners.length===1?`${names} の勝ち！`:`${names} のチョップ！`,
     (handName?`役: ${handName}\n`:'')+desc
   );
+  if(ONLINE&&OnlineRoom.isHost()){
+    setTimeout(()=>{
+      const alive=G.chips.map((c,i)=>c>0?i:-1).filter(i=>i>=0);
+      if(alive.length>=2) sendDeck();
+    },5000);
+  }
 }
 
 function showWinScreen(winner,title,desc){
@@ -520,6 +626,7 @@ function showWinScreen(winner,title,desc){
 }
 
 function nextHand(){
+  if(ONLINE)return;
   document.getElementById('win-overlay').classList.remove('show');
   // Remove busted players
   const alive=G.chips.map((c,i)=>c>0?i:-1).filter(i=>i>=0);
@@ -537,15 +644,17 @@ function renderAll(showHoles=false){
 }
 
 function renderOpp(showAll=false){
+  const mySeat=ONLINE?MYSEAT:0;
   const row=document.getElementById('opp-row');
   row.innerHTML='';
-  for(let pi=1;pi<G.numP;pi++){
+  for(let pi=0;pi<G.numP;pi++){
+    if(pi===mySeat)continue;
     const el=document.createElement('div');
-    el.className='opp'+(pi===G.dealer?' dealer':'')+(pi===G.cur&&G.cur!==0?' active':'')+(G.folded[pi]?' folded':'');
+    el.className='opp'+(pi===G.dealer?' dealer':'')+(pi===G.cur&&pi!==mySeat?' active':'')+(G.folded[pi]?' folded':'');
     const cards=showAll||G.phase==='showdown'
       ?G.hole[pi].map(c=>cardHTML(c,true)).join('')
       :G.hole[pi].map(()=>cardHTML('back',true)).join('');
-    const handName=(showAll||G.phase==='showdown')&&!G.folded[pi]?`<div style="font-size:10px;color:var(--gold2);margin-top:2px">${bestHand(G.hole[pi],G.community).name}</div>`:'';
+    const handName=(showAll||G.phase==='showdown')&&!G.folded[pi]&&G.hole[pi].length?`<div style="font-size:10px;color:var(--gold2);margin-top:2px">${bestHand(G.hole[pi],G.community).name}</div>`:'';
     el.innerHTML=`<div class="opp-name">${G.names[pi]}${G.chips[pi]===0?' (オールイン)':''}</div>
       <div class="opp-chips">💰${G.chips[pi]}</div>
       <div class="opp-bet">${G.bets[pi]>0?'BET:'+G.bets[pi]:''}</div>
@@ -563,7 +672,8 @@ function renderCommunity(){
 }
 
 function renderPlayer(){
-  const pi=0;
+  const pi=ONLINE?MYSEAT:0;
+  document.getElementById('p-name').textContent=G.names[pi];
   document.getElementById('p-chips').textContent=`💰 ${G.chips[pi]}`;
   document.getElementById('p-bet-info').textContent=G.bets[pi]>0?`ベット: ${G.bets[pi]}`:'';
   const cards=document.getElementById('p-cards');
@@ -575,7 +685,7 @@ function renderPlayer(){
 }
 
 function renderActions(){
-  const pi=0;
+  const pi=ONLINE?MYSEAT:0;
   const maxBet=Math.max(...G.bets);
   const toCall=maxBet-G.bets[pi];
   const myChips=G.chips[pi];
@@ -599,6 +709,49 @@ function hideActions(){
 
 // Init disabled
 hideActions();
+
+// ===== ONLINE =====
+OnlineRoom.init({
+  gameId:'poker',minPlayers:2,maxPlayers:6,
+  note:'テキサスホールデム（2〜6人）',
+  onStart:(seat,n,send)=>{
+    ONLINE=true;MYSEAT=seat;roomSend=send;
+    const startChips=1000,bb=Math.max(10,startChips/50|0)*2;
+    G={
+      numP:n,diff:'normal',
+      chips:Array(n).fill(startChips),
+      names:Array.from({length:n},(_,i)=>i===seat?'あなた':`Player${i+1}`),
+      dealer:0,bb,sb:bb/2,hand:0,
+    };
+    document.getElementById('setup').style.display='none';
+    document.getElementById('table').style.display='flex';
+    document.querySelector('.btn-next').style.display='none';
+    hideActions();
+    if(seat===0) setTimeout(sendDeck,500);
+    else document.getElementById('status').textContent='ホストのディールを待っています…';
+  },
+  onMessage:(from,msg)=>{
+    if(msg.t==='deck') dealFromDeck(msg.deck);
+    else if(msg.t==='act') applyActOnline(msg.pi,msg.action,msg.amount);
+  },
+  onLeft:()=>{},
+  getState:()=>({chips:[...G.chips],dealer:G.dealer,hand:G.hand,numP:G.numP}),
+  applyState:(o)=>{
+    ONLINE=true;MYSEAT=o.seat;roomSend=o.send;
+    const s=o.state,startChips=1000,bb=Math.max(10,startChips/50|0)*2;
+    G={numP:s.numP,diff:'normal',chips:[...s.chips],
+      names:Array.from({length:s.numP},(_,i)=>i===o.seat?'あなた':`Player${i+1}`),
+      dealer:s.dealer,bb,sb:bb/2,hand:s.hand};
+    document.getElementById('setup').style.display='none';
+    document.getElementById('table').style.display='flex';
+    document.querySelector('.btn-next').style.display='none';
+    hideActions();
+    document.getElementById('status').textContent='次のハンドを待っています…';
+  }
+});
 </script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js?v=7"></script>
+<script src="../shared/online-room.js?v=7"></script>
 </body>
 </html>

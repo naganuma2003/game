@@ -170,6 +170,7 @@ const DIAGS=[[-1,-1],[-1,1],[1,-1],[1,1]];
 // ===== STATE =====
 let G={};
 let HR=-1,HC=-1;
+let ONLINE=false, MYSEAT=-1, roomSend=null;
 
 function init(){
   const nh=+document.getElementById('sel-h').value;
@@ -189,6 +190,7 @@ function init(){
 }
 
 function isHuman(){return G.cur<G.nh;}
+function isMyTurn(){ return ONLINE ? G.cur===MYSEAT : G.cur<G.nh; }
 
 function buildBoard(){
   const el=document.getElementById('board');
@@ -304,20 +306,24 @@ function turn(){
     return;
   }
 
-  if(isHuman()){
+  if(isMyTurn()){
     st.innerHTML=`<span style="color:${col};font-weight:700">${name}の番</span> — タイルを選んで盤に置く`;
     renderPieces();renderBoard();
-  } else {
+  } else if(!ONLINE || (OnlineRoom.isHost()&&OnlineRoom.isAuto(pi))){
     st.innerHTML=`<span style="color:${col}">${name}</span> が考え中…`;
     G.sp=null;renderPieces();
-    setTimeout(()=>cpuTurn(pi),600);
+    if(!ONLINE||OnlineRoom.isHost()) setTimeout(()=>cpuTurn(pi),600);
+  } else {
+    st.innerHTML=`<span style="color:${col}">${name}</span> の番…`;
+    G.sp=null;renderPieces();renderBoard();
   }
 }
 
 function tryPlace(r,c){
-  if(!isHuman()||G.sp===null||G.done)return;
+  if(!isMyTurn()||G.sp===null||G.done)return;
   const cells=placeAt(curShape(),r,c);
   if(!isValid(cells,G.cur))return;
+  if(ONLINE){ roomSend({t:'place',pidx:G.sp,cells}); return; }
   doPlace(cells,G.cur,G.sp);
   HR=-1;HC=-1;
   renderBoard();renderScores();
@@ -341,29 +347,21 @@ function advance(){
 }
 
 function cpuTurn(pi){
+  if(ONLINE&&(!OnlineRoom.isHost()||!OnlineRoom.isAuto(pi)))return;
   const moves=allMoves(pi);
   if(!moves.length){
-    G.out[pi]=true;
-    renderScores();
+    if(ONLINE){ roomSend({t:'pass'}); return; }
+    G.out[pi]=true;renderScores();
     if(G.out.every(Boolean)){setTimeout(endGame,500);return;}
     if(!advance()){setTimeout(endGame,500);return;}
     setTimeout(turn,300);return;
   }
   let m;
-  if(G.diff==='easy'){
-    m=moves[Math.random()*moves.length|0];
-  } else if(G.diff==='normal'){
-    const mx=Math.max(...moves.map(x=>x.sz));
-    const big=moves.filter(x=>x.sz>=mx-1);
-    m=big[Math.random()*big.length|0];
-  } else {
-    const sc=moves.map(x=>{
-      const d=x.placed.reduce((s,[r,c])=>s+Math.abs(r-9.5)+Math.abs(c-9.5),0)/x.placed.length;
-      return{...x,score:x.sz*12-d*0.5};
-    }).sort((a,b)=>b.score-a.score);
-    const top=sc.slice(0,Math.max(1,sc.length/10|0));
-    m=top[Math.random()*top.length|0];
-  }
+  const diff=ONLINE?'normal':G.diff;
+  if(diff==='easy'){m=moves[Math.random()*moves.length|0];}
+  else if(diff==='normal'){const mx=Math.max(...moves.map(x=>x.sz));const big=moves.filter(x=>x.sz>=mx-1);m=big[Math.random()*big.length|0];}
+  else{const sc=moves.map(x=>{const d=x.placed.reduce((s,[r,c])=>s+Math.abs(r-9.5)+Math.abs(c-9.5),0)/x.placed.length;return{...x,score:x.sz*12-d*0.5};}).sort((a,b)=>b.score-a.score);const top=sc.slice(0,Math.max(1,sc.length/10|0));m=top[Math.random()*top.length|0];}
+  if(ONLINE){ roomSend({t:'place',pidx:m.pidx,cells:m.placed}); return; }
   doPlace(m.placed,pi,m.pidx);
   renderBoard();renderScores();
   if(!advance()){setTimeout(endGame,500);return;}
@@ -468,6 +466,62 @@ document.addEventListener('keydown',e=>{
   if(e.key==='r'||e.key==='R')rotate();
   if(e.key==='f'||e.key==='F')doFlip();
 });
+
+// ===== ONLINE =====
+function startOnline(seat,n,send){
+  ONLINE=true;MYSEAT=seat;roomSend=send;
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').style.display='flex';
+  G={
+    board:Array.from({length:N},()=>Array(N).fill(0)),
+    nh:0,diff:'normal',numP:n,cur:0,
+    pcs:Array.from({length:n},()=>PIECES.map(p=>({...p,used:false}))),
+    sp:null,so:0,
+    first:Array(n).fill(true),
+    out:Array(n).fill(false),
+    done:false,
+  };
+  buildBoard();renderScores();turn();
+}
+
+function getState(){
+  return{board:G.board.map(r=>[...r]),pcs:G.pcs.map(pp=>pp.map(p=>({...p,os:undefined}))),cur:G.cur,first:[...G.first],out:[...G.out],numP:G.numP};
+}
+function applyState(o){
+  ONLINE=true;MYSEAT=o.seat;roomSend=o.send;
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').style.display='flex';
+  const s=o.state;
+  G={board:s.board,numP:s.numP,nh:0,diff:'normal',cur:s.cur,
+    pcs:Array.from({length:s.numP},(_,i)=>PIECES.map((p,j)=>({...p,used:s.pcs[i][j].used}))),
+    sp:null,so:0,first:s.first,out:s.out,done:false};
+  buildBoard();renderBoard();renderScores();turn();
+}
+
+OnlineRoom.init({
+  gameId:'blokus',minPlayers:2,maxPlayers:4,
+  note:'20×20ボードにタイルを置くテリトリーゲーム',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>{
+    if(msg.t==='place'){
+      doPlace(msg.cells,from,msg.pidx);
+      HR=-1;HC=-1;
+      renderBoard();renderScores();
+      if(!advance()){setTimeout(endGame,500);return;}
+      setTimeout(turn,350);
+    } else if(msg.t==='pass'){
+      G.out[from]=true;renderScores();
+      if(G.out.every(Boolean)){setTimeout(endGame,700);return;}
+      if(!advance()){setTimeout(endGame,700);return;}
+      setTimeout(turn,700);
+    }
+  },
+  onLeft:(seat)=>{if(ONLINE)turn();},
+  getState,applyState
+});
 </script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js?v=7"></script>
+<script src="../shared/online-room.js?v=7"></script>
 </body>
 </html>

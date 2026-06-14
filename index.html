@@ -2268,22 +2268,57 @@
     })();
   </script>
 
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="shared/lobby.js?v=7"></script>
   <script>
-    // Game-agnostic join: the guest types only a number. We route to a game
-    // page carrying ?autojoin=<code>; the shared lobby there connects, learns
-    // the host's actual game, and redirects again if it differs. (Othello is
-    // just the entry probe — any game page would work.)
+    // ハブ: PeerJSで直接プローブして対応ゲームページへリダイレクト
     (function () {
       var input = document.getElementById("hub-join-code");
       var btn = document.getElementById("hub-join-btn");
       var msg = document.getElementById("hub-join-msg");
+      var ROOM_PREFIX = "ngroom-";
+
       function go() {
         var code = (input.value || "").trim();
         if (!/^\d{4}$/.test(code)) { msg.textContent = "4桁の数字を入力してください。"; return; }
+        if (typeof Peer === "undefined") {
+          msg.textContent = "通信ライブラリ読み込み中です。少し待ってから再試行してください。"; return;
+        }
         btn.disabled = true;
-        msg.textContent = "部屋に接続しています…";
-        location.href = "games/othello.html?autojoin=" + code + "&_v=2";
+        msg.textContent = "部屋を検索中…";
+
+        var peer = new Peer();
+        var settled = false;
+
+        function fail(m) {
+          msg.textContent = m;
+          btn.disabled = false;
+          try { peer.destroy(); } catch (e) {}
+        }
+
+        peer.on("open", function () {
+          var c = peer.connect(ROOM_PREFIX + code, { reliable: true });
+          c.on("data", function (m) {
+            if (settled || !m || typeof m !== "object") return;
+            if (m.t === "hello") {
+              settled = true;
+              var paths = window.OnlineLobby && window.OnlineLobby.GAME_PATHS;
+              var path = paths && paths[m.game];
+              if (!path) { fail("不明なゲームの部屋です（ID: " + m.game + "）"); return; }
+              try { peer.destroy(); } catch (e) {}
+              location.href = path + "?autojoin=" + code + "&_v=2";
+            }
+          });
+          c.on("error", function () { if (!settled) fail("接続できませんでした。番号を確認してください。"); });
+          setTimeout(function () { if (!settled) fail("応答がありません。番号を確認してください。"); }, 8000);
+        });
+        peer.on("error", function (err) {
+          var t = err && err.type;
+          if (t === "peer-unavailable") fail("その部屋番号は見つかりません。番号を確認してください。");
+          else fail("接続エラー: " + (t || "不明"));
+        });
       }
+
       btn.addEventListener("click", go);
       input.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
     })();

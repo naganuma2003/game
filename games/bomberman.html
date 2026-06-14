@@ -275,7 +275,13 @@ function canGo(npx, npy) {
     if (tile(gc,gr)!==CELL.E) return false;
     for (const b of bbs) {
       if (b.tx===gc && b.ty===gr) {
-        if (b.passable) continue;
+        if (b.passable) {
+          // 現在位置のヒットボックスが爆弾マスと重なっていれば通過許可
+          const hx1=pl.px+m, hx2=pl.px+m+sz, hy1=pl.py+m, hy2=pl.py+m+sz;
+          const btX=b.tx*T, btY=b.ty*T;
+          if (hx1<btX+T && hx2>=btX && hy1<btY+T && hy2>=btY) continue;
+          b.passable = false; // 完全に離れた瞬間に施錠
+        }
         return false;
       }
     }
@@ -300,17 +306,6 @@ function updPlayer(dt) {
     if (Math.abs(pl.px-snap) < spd+1) pl.px = snap;
     const ny = pl.py + (up?-spd:spd);
     if (canGo(pl.px,ny)) { pl.py=ny; pl.dir=up?0:2; }
-  }
-
-  // ヒットボックスが爆弾マスを完全に離れたらpassableを解除
-  const hm = 3, hsz = T-hm*2-1;
-  for (const b of bbs) {
-    if (b.passable) {
-      const hx1=pl.px+hm, hx2=pl.px+hm+hsz, hy1=pl.py+hm, hy2=pl.py+hm+hsz;
-      const btX=b.tx*T, btY=b.ty*T;
-      const overlap = hx1<btX+T && hx2>=btX && hy1<btY+T && hy2>=btY;
-      if (!overlap) b.passable = false;
-    }
   }
 
   // パワーアップ取得

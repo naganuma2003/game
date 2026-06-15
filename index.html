@@ -183,6 +183,15 @@
       display: none; padding: 2px 6px; line-height: 1; }
     .search-clear:hover { color: rgba(255,255,255,0.8); }
 
+    /* 最近プレイしたゲーム */
+    #recent-section { margin-bottom: 18px; }
+    .recent-label { font-size: 11px; color: rgba(255,255,255,.4); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 8px; }
+    .recent-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+    .recent-row::-webkit-scrollbar { display: none; }
+    .recent-chip { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 999px; padding: 5px 13px 5px 8px; text-decoration: none; color: inherit; white-space: nowrap; font-size: 13px; flex-shrink: 0; transition: background .15s, border-color .15s; }
+    .recent-chip:hover { background: rgba(255,255,255,.13); border-color: rgba(255,255,255,.25); }
+    .recent-chip .r-icon { font-size: 16px; line-height: 1; }
+
     /* フィルター */
     .filterbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; align-items: center; }
     .filterbar .fb-label { font-size: 12px; opacity: 0.65; margin-right: 2px; }
@@ -298,6 +307,10 @@
 
     <!-- ゲーム一覧 -->
     <div class="col-games">
+      <div id="recent-section" style="display:none">
+        <div class="recent-label">最近プレイしたゲーム</div>
+        <div id="recent-row" class="recent-row"></div>
+      </div>
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
         <input type="text" id="game-search" placeholder="ゲームを検索..." autocomplete="off" spellcheck="false">
@@ -2263,6 +2276,48 @@
         });
         card.appendChild(btn);
       });
+
+      // ===== 最近プレイしたゲーム =====
+      var RECENT_KEY = 'ng-game-recent';
+      var MAX_RECENT = 8;
+      function loadRecent() { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch(e) { return []; } }
+      function saveRecent(arr) { localStorage.setItem(RECENT_KEY, JSON.stringify(arr)); }
+      function recordPlay(name, icon, href) {
+        var arr = loadRecent().filter(function(x) { return x.name !== name; });
+        arr.unshift({ name: name, icon: icon, href: href });
+        if (arr.length > MAX_RECENT) arr = arr.slice(0, MAX_RECENT);
+        saveRecent(arr);
+      }
+      function renderRecent() {
+        var arr = loadRecent();
+        var sec = document.getElementById('recent-section');
+        var row = document.getElementById('recent-row');
+        if (!arr.length) { sec.style.display = 'none'; return; }
+        sec.style.display = '';
+        row.innerHTML = arr.map(function(x) {
+          return '<a class="recent-chip" href="' + x.href + '" data-name="' + x.name.replace(/"/g,'&quot;') + '">' +
+                 '<span class="r-icon">' + x.icon + '</span>' +
+                 '<span>' + x.name + '</span></a>';
+        }).join('');
+        row.querySelectorAll('.recent-chip').forEach(function(a) {
+          a.addEventListener('click', function() {
+            var item = arr.find(function(x) { return x.name === a.dataset.name; });
+            if (item) recordPlay(item.name, item.icon, item.href);
+          });
+        });
+      }
+      cards.forEach(function(card) {
+        var playLink = card.querySelector('.tagrow .tag:not(.tag-online):not(.tag-rule)');
+        if (!playLink) return;
+        var nameEl = card.querySelector('.name');
+        var iconEl = card.querySelector('.icon');
+        if (!nameEl || !iconEl) return;
+        var iconText = iconEl.childElementCount === 0 ? (iconEl.textContent.trim() || '🎮') : '🎮';
+        playLink.addEventListener('click', function() {
+          recordPlay(nameEl.textContent.trim(), iconText, playLink.getAttribute('href'));
+        });
+      });
+      renderRecent();
 
       var bar = document.getElementById("filterbar");
       var searchInput = document.getElementById("game-search");

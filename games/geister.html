@@ -93,6 +93,8 @@ svg{display:block;width:min(96vw,420px);height:auto}
 .eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
 .eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
 .eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+.assist-toggle{display:inline-flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;cursor:pointer}
+.assist-toggle input{accent-color:var(--gold,#c9a227);cursor:pointer}
 </style>
 </head>
 <body>
@@ -115,7 +117,8 @@ svg{display:block;width:min(96vw,420px);height:auto}
 <div class="bwrap"><svg id="bd"></svg></div>
 
 <div class="msg" id="msg"></div>
-<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<label class="assist-toggle"><input type="checkbox" id="assist"> AIアシスタント（最善手を表示）</label>
 <div class="foot" id="foot">
   <button id="setup-ok" class="primary" style="display:none">この配置で開始</button>
   <button id="setup-rnd" style="display:none">ランダム配置</button>
@@ -385,6 +388,27 @@ function render(){
   const eb=document.getElementById('exitbtn');
   eb.style.display=(phase==='play'&&sel&&canExit(sel)&&isHumanSide(sel.o))?'':'none';
   document.getElementById('undo').disabled=!history.length||busy||phase!=='play';
+  {
+    const bm=computeAssist();
+    if(bm){
+      // highlight source piece
+      const pcx=PAD+bm.p.c*CELL+CELL/2,pcy=PAD+bm.p.r*CELL+CELL/2;
+      const pr=document.createElementNS(NS,'circle');
+      pr.setAttribute('cx',pcx);pr.setAttribute('cy',pcy);
+      pr.setAttribute('r',CELL*0.44);
+      pr.setAttribute('fill','none');
+      pr.setAttribute('stroke','#6cd08a');pr.setAttribute('stroke-width',3);
+      hlLayer.appendChild(pr);
+      // highlight destination
+      const dcx=PAD+bm.m.c*CELL+CELL/2,dcy=PAD+bm.m.r*CELL+CELL/2;
+      const dr=document.createElementNS(NS,'circle');
+      dr.setAttribute('cx',dcx);dr.setAttribute('cy',dcy);
+      dr.setAttribute('r',CELL*0.44);
+      dr.setAttribute('fill','rgba(108,208,138,0.2)');
+      dr.setAttribute('stroke','#6cd08a');dr.setAttribute('stroke-width',2);
+      hlLayer.appendChild(dr);
+    }
+  }
   updateEval();
 }
 
@@ -647,6 +671,31 @@ document.getElementById('modes').addEventListener('click',e=>{
   document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('on'));
   b.classList.add('on');init();
 });
+
+// ===== AIアシスタント =====
+const assistEl=document.getElementById('assist');
+if(assistEl) assistEl.addEventListener('change', render);
+function computeAssist(){
+  if(!assistEl||!assistEl.checked||phase!=='play'||turn!==0||busy)return null;
+  if(typeof onet!=='undefined'&&onet)return null;
+  const mine=pieces.filter(p=>p.o===0&&!p.cap);
+  if(!mine.length)return null;
+  let bestP=null,bestM=null,bestS=-Infinity;
+  for(const p of mine){
+    for(const m of legalMovesOf(p)){
+      const q=at(m.r,m.c);
+      const savedR=p.r,savedC=p.c;
+      let savedCap=false;
+      if(q){q.cap=true;savedCap=true;}
+      p.r=m.r;p.c=m.c;
+      const s=evalScore();
+      p.r=savedR;p.c=savedC;
+      if(savedCap)q.cap=false;
+      if(s>bestS){bestS=s;bestP=p;bestM=m;}
+    }
+  }
+  return bestP&&bestM?{p:bestP,m:bestM}:null;
+}
 
 init();
 

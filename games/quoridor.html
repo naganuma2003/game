@@ -43,6 +43,8 @@ svg{display:block;width:min(95vw,440px);height:auto}
 .eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
 .eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
 .eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+.assist-toggle{display:inline-flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;cursor:pointer}
+.assist-toggle input{accent-color:var(--gold,#c9a227);cursor:pointer}
 </style></head>
 <body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
@@ -51,7 +53,8 @@ svg{display:block;width:min(95vw,440px);height:auto}
 <div class="row" id="mode"><span class="lab">対戦:</span><button data-m="cpu" class="on">CPU対戦</button><button data-m="pvp">人対人</button></div>
 <div class="row" id="lv"><span class="lab">CPU強さ:</span><button data-lv="1">弱</button><button data-lv="2" class="on">普通</button><button data-lv="3">強</button></div>
 <div class="turn" id="turn"></div>
-<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<label class="assist-toggle"><input type="checkbox" id="assist"> AIアシスタント（最善手を表示）</label>
 <div class="actbar"><button data-a="move" class="on" id="abMove">駒を進める</button><button data-a="wall" id="abWall">壁を置く</button></div>
 <div class="bwrap"><svg id="bd"></svg></div>
 <div class="stock" id="stock"></div>
@@ -202,10 +205,13 @@ function render(){
   let html='';
   const myMoves = (!over && isHuman() && action==='move') ? pawnMoves(turn) : [];
   const destSet=new Set(myMoves.map(m=>m[0]*N+m[1]));
+  const assistBest=computeAssist();
   for(let r=0;r<N;r++)for(let c=0;c<N;c++){
     const [x,y]=cxy(r,c);
     const isDest = destSet.has(r*N+c);
+    const isAssist=assistBest&&assistBest[0]===r&&assistBest[1]===c;
     html += `<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="4" class="cell${isDest?' dest':''}" data-mc="${r},${c}"/>`;
+    if(isAssist) html += `<text x="${x+CELL/2}" y="${y+CELL/2}" text-anchor="middle" dominant-baseline="central" font-size="18" fill="rgba(108,208,138,0.9)" pointer-events="none">★</text>`;
   }
   for(const w of walls){
     const [x,y]=cxy(w.r, w.c);
@@ -333,6 +339,27 @@ document.getElementById('again').addEventListener('click',init);
 document.getElementById('reset').addEventListener('click',init);
 document.getElementById('undo').addEventListener('click',()=>{if(!hist.length||ONLINE)return;let s=hist.pop();if(mode==='cpu'){while(hist.length&&JSON.parse(s).turn!==0)s=hist.pop();}restoreQ(s);setActionUI();document.getElementById('over').classList.remove('show');render();updateTurn();updateStock();});
 init();
+
+// ===== AIアシスタント =====
+const assistEl=document.getElementById('assist');
+if(assistEl) assistEl.addEventListener('change', render);
+function computeAssist(){
+  if(!assistEl||!assistEl.checked||over||!isHuman()||action!=='move')return null;
+  const moves=pawnMoves(turn);
+  if(!moves.length)return null;
+  // immediate goal
+  for(const[r,c]of moves)if(isGoal(turn,r,c))return[r,c];
+  let best=moves[0],bestS=-Infinity;
+  const savedPawn={...pawns[turn]};
+  for(const[r,c]of moves){
+    pawns[turn]={r,c};
+    const s=evalScore();
+    pawns[turn]=savedPawn;
+    const ownS=turn===0?s:-s;
+    if(ownS>bestS){bestS=ownS;best=[r,c];}
+  }
+  return best;
+}
 
 // ===== AI評価 =====
 var evalOn=false;

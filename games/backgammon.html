@@ -101,6 +101,8 @@ svg{display:block;width:min(98vw,520px);height:auto}
   border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.assist-toggle{display:inline-flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;cursor:pointer}
+.assist-toggle input{accent-color:var(--gold,#c9a227);cursor:pointer}
 .eval-row{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
 .eval-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.45);padding:3px 9px;border-radius:12px;font-size:11px;cursor:pointer;font-family:inherit;transition:.2s;white-space:nowrap}
 .eval-btn.on{border-color:var(--gold,#c9a030);color:var(--gold,#c9a030)}
@@ -132,7 +134,8 @@ svg{display:block;width:min(98vw,520px);height:auto}
 </div>
 
 <div class="msg" id="msg"></div>
-<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<label class="assist-toggle"><input type="checkbox" id="assist"> AIアシスタント（最善手を表示）</label>
 <div class="foot">
   <button id="undo">待った</button>
   <button id="reset">最初から</button>
@@ -510,6 +513,28 @@ function render(){
   document.getElementById('undo').disabled=!history.length||busy||over;
   document.getElementById('roll').disabled=busy||over||rolled||!isHumanTurn();
   renderDice();
+  {
+    const bm=computeAssist();
+    if(bm){
+      const fromPt=bm.from;
+      let ax,ay;
+      if(fromPt==='bar'){
+        ax=PAD+6*PW+BARW/2;
+        ay=turn==='w'?BH/2+30:BH/2-30;
+      }else{
+        const col=pointCol(+fromPt),x=colX(col);
+        const top=isTop(+fromPt);
+        ax=x+PW/2;
+        ay=top?PH+16:BH-PH-16;
+      }
+      const ring=document.createElementNS(NS,'circle');
+      ring.setAttribute('cx',ax);ring.setAttribute('cy',ay);
+      ring.setAttribute('r',PW/2-1);
+      ring.setAttribute('fill','rgba(108,208,138,0.25)');
+      ring.setAttribute('stroke','#6cd08a');ring.setAttribute('stroke-width',2.5);
+      layerHl.appendChild(ring);
+    }
+  }
   updateEval();
 }
 
@@ -799,6 +824,23 @@ function evalScore(){
   if(over||!pts)return 0;
   // pip count advantage: lower pip = better; positive = white advantaged
   return pipCount(B)-pipCount(W);
+}
+
+// ===== AIアシスタント =====
+const assistEl=document.getElementById('assist');
+if(assistEl) assistEl.addEventListener('change', render);
+function computeAssist(){
+  if(!assistEl||!assistEl.checked||over||busy||!isHumanTurn()||!rolled)return null;
+  const remain=remainingDice();
+  if(!remain.length)return null;
+  const{valid}=genSequences(curSt(),turn,remain);
+  if(!valid.length)return null;
+  let chosen=valid[0],bs=-Infinity;
+  for(const s of valid){
+    const v=evalSt(s.st,turn);
+    if(v>bs){bs=v;chosen=s;}
+  }
+  return chosen.moves.length?chosen.moves[0]:null;
 }
 
 init();

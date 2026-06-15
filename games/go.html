@@ -86,6 +86,8 @@ svg{display:block;width:min(96vw,440px);height:auto}
   border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.assist-toggle{display:inline-flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;cursor:pointer}
+.assist-toggle input{accent-color:var(--gold,#c9a227);cursor:pointer}
 </style>
 </head>
 <body>
@@ -114,7 +116,8 @@ svg{display:block;width:min(96vw,440px);height:auto}
 <div class="bwrap"><svg id="bd"></svg></div>
 
 <div class="msg" id="msg">黒の番です</div>
-<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<label class="assist-toggle"><input type="checkbox" id="assist"> AIアシスタント（最善手を表示）</label>
 <div class="foot" id="foot">
   <button id="pass">パス</button>
   <button id="undo">待った</button>
@@ -141,7 +144,7 @@ const KOMI=7.5;
 
 const NS='http://www.w3.org/2000/svg';
 const svg=document.getElementById('bd');
-let stoneLayer,terrLayer,cellEls=[];
+let stoneLayer,terrLayer,assistLayer,cellEls=[];
 let CELL,PAD;
 
 const idx=(r,c)=>r*N+c;
@@ -231,6 +234,7 @@ function buildBoard(){
   }
   terrLayer=document.createElementNS(NS,'g');svg.appendChild(terrLayer);
   stoneLayer=document.createElementNS(NS,'g');svg.appendChild(stoneLayer);
+  assistLayer=document.createElementNS(NS,'g');assistLayer.setAttribute('pointer-events','none');svg.appendChild(assistLayer);
   const click=document.createElementNS(NS,'g');svg.appendChild(click);
   for(let i=0;i<N*N;i++){
     const r=Math.floor(i/N),c=i%N;
@@ -257,7 +261,7 @@ function init(){
 }
 
 function render(){
-  stoneLayer.innerHTML='';terrLayer.innerHTML='';
+  stoneLayer.innerHTML='';terrLayer.innerHTML='';if(assistLayer)assistLayer.innerHTML='';
   for(let i=0;i<N*N;i++){
     if(board[i]===0)continue;
     const r=Math.floor(i/N),c=i%N;
@@ -293,6 +297,19 @@ function render(){
   document.getElementById('tm').textContent=scoring?'整地中':(turn===1?'● 黒番':'○ 白番');
   document.getElementById('undo').disabled=!history.length||busy||over||scoring;
   document.getElementById('pass').disabled=busy||over||scoring||!isHumanTurn();
+  if(assistLayer&&!scoring){
+    const bm=computeAssist();
+    if(bm!==null){
+      const ar=Math.floor(bm/N),ac=bm%N;
+      const acx=PAD+ac*CELL,acy=PAD+ar*CELL;
+      const ring=document.createElementNS(NS,'circle');
+      ring.setAttribute('cx',acx);ring.setAttribute('cy',acy);
+      ring.setAttribute('r',CELL*.46);
+      ring.setAttribute('fill','rgba(108,208,138,0.22)');
+      ring.setAttribute('stroke','#6cd08a');ring.setAttribute('stroke-width',3);
+      assistLayer.appendChild(ring);
+    }
+  }
   updateEval();
 }
 
@@ -567,6 +584,34 @@ document.getElementById('sizes').addEventListener('click',e=>{
 
 init();
 
+// ===== AIアシスタント =====
+const assistEl=document.getElementById('assist');
+if(assistEl) assistEl.addEventListener('change', render);
+function computeAssist(){
+  if(!assistEl||!assistEl.checked||over||busy||scoring)return null;
+  if(!isHumanTurn())return null;
+  const cands=[];
+  for(let i=0;i<N*N;i++){
+    if(board[i]!==0)continue;
+    const r=legalAt(i,turn);
+    if(r)cands.push({i,r});
+  }
+  if(!cands.length)return null;
+  const sign=turn===1?1:-1;
+  let best=null,bestS=-Infinity;
+  const savedBd=board;
+  for(const{i,r}of cands){
+    board=r.bd;
+    const sc=capt[turn-1];
+    capt[turn-1]+=r.caps;
+    const s=sign*evalScore();
+    capt[turn-1]=sc;
+    if(s>bestS){bestS=s;best=i;}
+  }
+  board=savedBd;
+  return best;
+}
+
 // ===== AI評価 =====
 var evalOn=false;
 function toggleEval(){
@@ -593,7 +638,7 @@ function evalScore(){
   }
   return (black-white)+(capt[0]-capt[1])*0.5;
 }
-
+</script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=7"></script>
 <script src="../shared/online-core.js?v=8"></script>

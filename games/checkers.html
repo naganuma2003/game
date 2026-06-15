@@ -89,6 +89,8 @@ svg{display:block;width:min(96vw,420px);height:auto}
 .eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
 .eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
 .eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+.assist-toggle{display:inline-flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;cursor:pointer}
+.assist-toggle input{accent-color:#c9a227;cursor:pointer}
 </style>
 </head>
 <body>
@@ -112,7 +114,8 @@ svg{display:block;width:min(96vw,420px);height:auto}
 <div class="bwrap"><svg id="bd"></svg></div>
 
 <div class="msg" id="msg"></div>
-<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<label class="assist-toggle"><input type="checkbox" id="assist"> AIアシスタント（最善手を表示）</label>
 <div class="foot">
   <button id="undo">待った</button>
   <button id="reset">最初から</button>
@@ -530,6 +533,62 @@ document.getElementById('modes').addEventListener('click',e=>{
 });
 
 init();
+
+// ===== AIアシスタント =====
+var assistEl=document.getElementById('assist');
+if(assistEl)assistEl.addEventListener('change',render);
+
+// SVG overlay elements for reco highlighting (drawn on top of olEls)
+var recoFromEl=null,recoToEl=null;
+(function(){
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('pointer-events','none');
+  recoFromEl=document.createElementNS('http://www.w3.org/2000/svg','rect');
+  recoToEl=document.createElementNS('http://www.w3.org/2000/svg','rect');
+  recoFromEl.setAttribute('width',CELL);recoFromEl.setAttribute('height',CELL);
+  recoToEl.setAttribute('width',CELL);recoToEl.setAttribute('height',CELL);
+  recoFromEl.setAttribute('fill','none');recoToEl.setAttribute('fill','none');
+  recoFromEl.setAttribute('stroke','#6cd08a');recoFromEl.setAttribute('stroke-width',3);
+  recoToEl.setAttribute('stroke','#ff4d4d');recoToEl.setAttribute('stroke-width',3);
+  recoFromEl.style.display='none';recoToEl.style.display='none';
+  g.appendChild(recoFromEl);g.appendChild(recoToEl);
+  svg.appendChild(g);
+})();
+
+function computeBestMove(){
+  if(!assistEl||!assistEl.checked||over||busy)return null;
+  if(!isHuman())return null;
+  const seqs=genSeqs(board,turn);
+  if(!seqs.length)return null;
+  // score from red(0) perspective — evalBd returns black(1) advantage, so negate for red
+  let bestSeq=null,bestScore=-Infinity;
+  for(const s of seqs){
+    const sc=turn===0?-evalBd(s.bd):evalBd(s.bd);
+    if(sc>bestScore){bestScore=sc;bestSeq=s;}
+  }
+  if(!bestSeq)return null;
+  const to=bestSeq.path[bestSeq.path.length-1];
+  return{from:bestSeq.from,to};
+}
+
+function applyRecoOverlay(){
+  recoFromEl.style.display='none';recoToEl.style.display='none';
+  if(over||busy||!isHuman()||!assistEl||!assistEl.checked)return;
+  const mv=computeBestMove();
+  if(!mv)return;
+  const rf=Math.floor(mv.from/8),cf=mv.from%8;
+  const rt=Math.floor(mv.to/8),ct=mv.to%8;
+  recoFromEl.setAttribute('x',PAD+cf*CELL);recoFromEl.setAttribute('y',PAD+rf*CELL);
+  recoToEl.setAttribute('x',PAD+ct*CELL);recoToEl.setAttribute('y',PAD+rt*CELL);
+  recoFromEl.style.display='';recoToEl.style.display='';
+}
+
+// Patch render to also draw reco overlay
+const _origRender=render;
+render=function(){
+  _origRender();
+  applyRecoOverlay();
+};
 
 // ===== AI評価 =====
 var evalOn=false;

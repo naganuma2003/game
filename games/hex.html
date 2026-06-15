@@ -103,6 +103,16 @@ svg{display:block;width:100%;height:auto}
 .eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
 .eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
 .eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+.assist-toggle{display:inline-flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;cursor:pointer}
+.assist-toggle input{accent-color:#c9a227;cursor:pointer}
+.cell .hint-score{position:absolute;font-size:10px;font-weight:800;display:none;pointer-events:none;z-index:2;top:2px;right:3px;line-height:1}
+.cell.assist .hint-score{display:block}
+.cell.rank1{box-shadow:inset 0 0 0 2px #ff4d4d}
+.cell.rank2{box-shadow:inset 0 0 0 2px #ff9e2c}
+.cell.rank3{box-shadow:inset 0 0 0 2px #ffe04d}
+.cell.rank1 .hint-score{color:#ff4d4d}
+.cell.rank2 .hint-score{color:#ff9e2c}
+.cell.rank3 .hint-score{color:#ffe04d}
 </style>
 </head>
 <body>
@@ -123,7 +133,8 @@ svg{display:block;width:100%;height:auto}
 </div>
 
 <div class="status"><div class="dot r" id="tdot"></div><span id="msg">赤の番です</span></div>
-<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<label class="assist-toggle"><input type="checkbox" id="assist"> AIアシスタント（最善手を表示）</label>
 
 <div class="wrap"><svg id="svg"></svg></div>
 
@@ -212,12 +223,48 @@ function init(){
   if(mode!=='pvp'&&Math.random()<.5){turn=Bp;busy=true;render();msg.textContent='青(CPU)の番です';setTimeout(()=>{const m=cpuMove();busy=false;history.push({bd:board.slice(),turn,last:lastIdx});place(m);},450);}
 }
 
+function computeAssist(){
+  const assistEl=document.getElementById('assist');
+  if(!assistEl||!assistEl.checked||over||busy)return null;
+  if(mode!=='pvp'&&turn!==R)return null; // only show for human turn
+  const scores=[];
+  for(let i=0;i<N*N;i++){
+    if(board[i]!==E)continue;
+    board[i]=turn;
+    const s=evalScore();
+    board[i]=E;
+    scores.push({i,s});
+  }
+  if(!scores.length)return null;
+  scores.sort((a,b)=>b.s-a.s);
+  const map=new Map();
+  for(const{i,s}of scores)map.set(i,s);
+  const uniq=[...new Set(map.values())].sort((a,b)=>b-a);
+  return{map,rankOf:s=>uniq.indexOf(s),top:scores.slice(0,3)};
+}
+
 function render(){
+  const assist=computeAssist();
   for(let i=0;i<N*N;i++){
     const el=hexEls[i];
     el.classList.toggle('r',board[i]===R);
     el.classList.toggle('b',board[i]===Bp);
     el.classList.toggle('last',i===lastIdx);
+    // clear assist classes
+    el.classList.remove('assist','rank1','rank2','rank3');
+    let hint=el.querySelector('.hint-score');
+    if(hint)hint.textContent='';
+    if(assist&&board[i]===E&&assist.map.has(i)){
+      const s=assist.map.get(i);
+      const rank=assist.rankOf(s);
+      if(rank<3){
+        if(!hint){hint=document.createElementNS('http://www.w3.org/2000/svg','text');hint.setAttribute('class','hint-score');}
+        el.classList.add('assist');
+        if(rank===0)el.classList.add('rank1');
+        else if(rank===1)el.classList.add('rank2');
+        else if(rank===2)el.classList.add('rank3');
+      }
+    }
   }
   document.getElementById('tdot').className='dot '+(turn===R?'r':'b');
   document.getElementById('undo').disabled=!history.length||busy||over;

@@ -95,6 +95,8 @@ svg{display:block;width:min(96vw,480px);height:auto}
 .eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
 .eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
 .eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+.assist-toggle{display:inline-flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;cursor:pointer}
+.assist-toggle input{accent-color:#c9a227;cursor:pointer}
 </style>
 </head>
 <body>
@@ -110,7 +112,8 @@ svg{display:block;width:min(96vw,480px);height:auto}
 </div>
 
 <div class="msg" id="msg">あなたの番です</div>
-<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<label class="assist-toggle"><input type="checkbox" id="assist"> AIアシスタント（最善手を表示）</label>
 
 <div class="bwrap"><svg id="bd"></svg></div>
 
@@ -249,6 +252,7 @@ function render(sownIdx=-1){
   }
   document.getElementById('undo').disabled=!history.length||busy||over;
   updateEval();
+  applyAssist();
 }
 
 function isHumanSide(i){
@@ -453,6 +457,59 @@ document.getElementById('modes').addEventListener('click',e=>{
 });
 
 init();
+
+// ===== AIアシスタント =====
+var assistEl=document.getElementById('assist');
+if(assistEl)assistEl.addEventListener('change',render);
+
+function computeAssist(){
+  if(!assistEl||!assistEl.checked)return null;
+  if(over||busy)return null;
+  if(turn!==0)return null; // human is always turn===0 in CPU mode
+  if(mode==='pvp')return null; // no assist in PvP
+  var legal=legalPits(0);
+  if(!legal.length)return null;
+  var results=[];
+  for(var k=0;k<legal.length;k++){
+    var idx=legal[k];
+    var nb=simulate(pits,0,idx);
+    var sc=Math.round((nb[0][6]-nb[0][13])*10); // score delta perspective: player 0 goal gain
+    // use evalBd but negate (evalBd is from CPU/p1 perspective, we want p0 perspective)
+    var bdScore=-(evalBd(nb[0]));
+    results.push({idx:idx,score:bdScore});
+  }
+  results.sort(function(a,b){return b.score-a.score;});
+  return results;
+}
+
+function applyAssist(){
+  // Clear old rank classes from all pit groups
+  for(var i=0;i<14;i++){
+    groups[i].classList.remove('assist-rank1','assist-rank2','assist-rank3');
+    var oldLbl=groups[i].querySelector('.assist-lbl');
+    if(oldLbl)oldLbl.parentNode.removeChild(oldLbl);
+  }
+  var res=computeAssist();
+  if(!res)return;
+  for(var r=0;r<Math.min(3,res.length);r++){
+    var idx=res[r].idx;
+    var rankClass='assist-rank'+(r+1);
+    groups[idx].classList.add(rankClass);
+    // Add score label near the pit
+    var cx=POS[idx][0],cy=POS[idx][1];
+    var lbl=document.createElementNS(NS,'text');
+    lbl.setAttribute('x',cx);lbl.setAttribute('y',cy-28);
+    lbl.setAttribute('text-anchor','middle');
+    lbl.setAttribute('font-size','10');lbl.setAttribute('font-weight','800');
+    lbl.setAttribute('pointer-events','none');
+    lbl.setAttribute('class','assist-lbl');
+    var colors=['#ff4d4d','#ff9e2c','#ffe04d'];
+    lbl.setAttribute('fill',colors[r]);
+    var delta=Math.round(res[r].score*10)/10;
+    lbl.textContent=(delta>0?'+':'')+delta;
+    svg.appendChild(lbl);
+  }
+}
 
 // ===== AI評価 =====
 var evalOn=false;

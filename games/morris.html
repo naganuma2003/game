@@ -37,6 +37,8 @@ svg{display:block;width:min(90vw,360px);height:auto}
 .eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
 .eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
 .eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+.assist-toggle{display:inline-flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;cursor:pointer}
+.assist-toggle input{accent-color:var(--gold,#c9a227);cursor:pointer}
 </style>
 </head>
 <body>
@@ -49,7 +51,8 @@ svg{display:block;width:min(90vw,360px);height:auto}
   <button data-m="pvp">2人</button>
 </div>
 <div class="turn" id="msg"></div>
-<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<label class="assist-toggle"><input type="checkbox" id="assist"> AIアシスタント（最善手を表示）</label>
 <div class="counts" id="counts"></div>
 <div class="bwrap"><svg id="bd"></svg></div>
 <div class="foot"><button id="undo">待った</button><button id="reset">最初から</button></div>
@@ -225,6 +228,13 @@ function render(){
     const c=document.createElementNS(NS,'circle');c.setAttribute('cx',PX(i));c.setAttribute('cy',PY(i));c.setAttribute('r',13);
     c.setAttribute('fill',board[i]===1?'var(--p1)':'var(--p2)');c.setAttribute('stroke','rgba(0,0,0,.35)');c.setAttribute('stroke-width',1.5);
     pieceLayer.appendChild(c);}
+  {
+    const bm=computeAssist();
+    if(bm){
+      dot(hlLayer,bm.to,10,'rgba(108,208,138,0.75)');
+      if(bm.from!=null)ring(hlLayer,bm.from,16,'#6cd08a',3);
+    }
+  }
   updateEval();
 }
 function ring(layer,i,r,col,w){const c=document.createElementNS(NS,'circle');c.setAttribute('cx',PX(i));c.setAttribute('cy',PY(i));c.setAttribute('r',r);c.setAttribute('fill','none');c.setAttribute('stroke',col);c.setAttribute('stroke-width',w);layer.appendChild(c);}
@@ -256,6 +266,31 @@ document.getElementById('undo').style.display='none';
 document.getElementById('modes').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;
   mode=b.dataset.m;level=b.dataset.m==='cpu1'?1:b.dataset.m==='cpu3'?3:2;
   document.querySelectorAll('#modes button').forEach(x=>x.classList.toggle('on',x===b));init();});
+// ===== AIアシスタント =====
+const assistEl=document.getElementById('assist');
+if(assistEl) assistEl.addEventListener('change', render);
+function computeAssist(){
+  if(!assistEl||!assistEl.checked||over||busy||removing)return null;
+  if(typeof ONLINE!=='undefined'&&ONLINE)return null;
+  if(!humanTurn())return null;
+  const moves=genMoves(board,turn);
+  if(!moves.length)return null;
+  const sign=turn===1?1:-1;
+  let best=null,bestS=-Infinity;
+  const savedBd=board;
+  for(const m of moves){
+    const nb=board.slice();
+    if(m.from!=null)nb[m.from]=0;
+    nb[m.to]=turn;
+    board=nb;
+    const s=sign*evalScore();
+    board=savedBd;
+    if(s>bestS){bestS=s;best=m;}
+  }
+  board=savedBd;
+  return best;
+}
+
 init();
 
 // ===== AI評価 =====

@@ -337,8 +337,8 @@ function startGame() {
 function initLocalGame(numP, diff) {
   const deck = shuffle(makeDeck());
   const hands = Array.from({length:numP}, (_,i) => deck.splice(0,7));
-  // Find first non-wild card for discard
-  let startIdx = deck.findIndex(c => c.t!=='wild' && c.t!=='wild4');
+  // Start with a plain number card (no action/wild) so the first turn is clean.
+  let startIdx = deck.findIndex(c => c.t === 'num');
   if (startIdx < 0) startIdx = 0;
   const firstCard = deck.splice(startIdx, 1)[0];
   G = {
@@ -352,10 +352,7 @@ function initLocalGame(numP, diff) {
     unoCalled: false,
     drewThisTurn: false,
   };
-  // Apply first card effect (but don't advance for wild - already filtered)
-  if (firstCard.t === 'skip') { advanceTurn(); }
-  else if (firstCard.t === 'rev') { G.dir = -1; }
-  else if (firstCard.t === 'draw2') { drawFromPile(0, 2); }
+  // First card is always a number now, so it has no start-of-game effect.
   document.getElementById('setup').style.display = 'none';
   document.getElementById('game').style.display = 'flex';
   renderAll();
@@ -425,7 +422,7 @@ function doPlay(pi, idx) {
   if (card.t === 'wild' || card.t === 'wild4') {
     // Advance past pi, then if wild4 also skip the penalized player
     advanceTurn(); // move from pi to pi+1 (wild: that's the next player; wild4: pi+1 is penalized)
-    if (card.t === 'wild4' && G.numP > 2) advanceTurn(); // skip penalized player (3+ only)
+    if (card.t === 'wild4') advanceTurn(); // wild4: penalized player is also skipped
     if (pi === 0) {
       // Human played wild — show color picker BEFORE final scheduleTurn
       // But we already advanced; save where we landed and wait for pickColor
@@ -442,9 +439,10 @@ function doPlay(pi, idx) {
   } else {
     // applyEffect already handled draws/direction. Advance one seat.
     advanceTurn();
-    // With 3+ players, skip/draw2 also skip the affected player. In a 2-player
-    // game we never skip back to ourselves — every card passes the turn.
-    if (G.numP > 2 && (card.t === 'skip' || card.t === 'draw2')) {
+    // Skip & Draw2 also skip the affected player. Reverse acts as a Skip in a
+    // 2-player game. (In all these cases a 2-player game returns to the same
+    // player, i.e. they play again — per official UNO rules.)
+    if (card.t === 'skip' || card.t === 'draw2' || (card.t === 'rev' && G.numP === 2)) {
       advanceTurn();
     }
     G.unoCalled = false;
@@ -684,8 +682,9 @@ function renderHand() {
     const playable = isMyTurn && canPlay(card);
     row.innerHTML += hcardHTML(card, i, playable);
   }
-  document.getElementById('hand-count').textContent = G.hands[me].length;
-  // UNO badge for human
+  // NOTE: #hand-count is a span *inside* .hand-lbl, so we must not overwrite
+  // .hand-lbl's textContent (that would delete the span and break later renders).
+  // Render the whole label text in one go instead.
   const unoBadge = G.uno[me] ? ' 🔴UNO!' : '';
   document.querySelector('.hand-lbl').textContent = `あなたの手札（${G.hands[me].length}枚）${unoBadge}`;
 }
@@ -738,7 +737,7 @@ OnlineRoom.init({
       // Host deals
       const deck = shuffle(makeDeck());
       const hands = Array.from({length:n}, () => deck.splice(0,7));
-      let startIdx = deck.findIndex(c => c.t!=='wild'&&c.t!=='wild4');
+      let startIdx = deck.findIndex(c => c.t === 'num');
       if (startIdx < 0) startIdx = 0;
       const firstCard = deck.splice(startIdx, 1)[0];
       initOnlineGame(n, hands, deck, [firstCard], firstCard.c, 0, 1);
@@ -770,9 +769,9 @@ OnlineRoom.init({
       renderAll();
       if (checkWin(pi)) return;
       if (card.t === 'wild' || card.t === 'wild4') {
-        // Advance past pi; wild4 also skips penalized player (3+ only)
+        // Advance past pi; wild4 also skips the penalized player
         advanceTurn();
-        if (card.t === 'wild4' && G.numP > 2) advanceTurn();
+        if (card.t === 'wild4') advanceTurn();
         if (pi === MYSEAT) {
           G.phase = 'color';
           document.getElementById('colorpick').style.display = 'flex';
@@ -780,7 +779,7 @@ OnlineRoom.init({
         // else wait for color message from the sender
       } else {
         advanceTurn();
-        if (G.numP > 2 && (card.t === 'skip' || card.t === 'draw2')) {
+        if (card.t === 'skip' || card.t === 'draw2' || (card.t === 'rev' && G.numP === 2)) {
           advanceTurn();
         }
         G.drewThisTurn = false;

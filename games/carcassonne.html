@@ -860,91 +860,169 @@ function canvasToBoard(cx, cy) {
 function drawTileOnCtx(ctx2, tile, rot, px, py, size, meeple) {
   const rotated = getRotatedTile(tile, rot);
   const edges = [rotated.n, rotated.e, rotated.s, rotated.w];
-  const h = size;
-  const w = size;
+  const h = size, w = size;
+  const mx = px + w/2, my = py + h/2;
+  const edgeD = w * 0.30;
 
-  // Background (field = green)
-  ctx2.fillStyle = '#3a7d44';
+  // --- Field: radial gradient ---
+  const fg = ctx2.createRadialGradient(mx, my, 0, mx, my, w * 0.8);
+  fg.addColorStop(0, '#70c43a');
+  fg.addColorStop(1, '#3c7018');
+  ctx2.fillStyle = fg;
   ctx2.fillRect(px, py, w, h);
 
-  // Center
+  // --- City edges (drawn first, road overlaps) ---
+  const DIRS = ['N', 'E', 'S', 'W'];
+  for (let i = 0; i < 4; i++) {
+    if (edges[i] === 'C') _drawCityEdge(ctx2, DIRS[i], px, py, w, h, edgeD);
+  }
+
+  // City center fill
   if (rotated.center === 'C') {
-    ctx2.fillStyle = '#c8873a';
+    const cg = ctx2.createRadialGradient(mx, my, 0, mx, my, w * 0.38);
+    cg.addColorStop(0, '#e2bc80');
+    cg.addColorStop(1, '#b87c38');
+    ctx2.fillStyle = cg;
     ctx2.fillRect(px + w*0.2, py + h*0.2, w*0.6, h*0.6);
-  } else if (rotated.center === 'M') {
-    ctx2.fillStyle = '#8b7355';
-    const mw = w*0.35, mh = h*0.4;
-    ctx2.fillRect(px + w*0.5 - mw/2, py + h*0.5 - mh/2, mw, mh);
-    // cross
-    ctx2.fillStyle = '#d4c4a0';
-    ctx2.fillRect(px + w*0.5 - mw*0.1, py + h*0.5 - mh*0.45, mw*0.2, mh*0.55);
-    ctx2.fillRect(px + w*0.5 - mw*0.35, py + h*0.5 - mh*0.15, mw*0.7, mh*0.18);
-  } else if (rotated.center === 'R') {
-    // Road center: draw a grey dot
-    ctx2.fillStyle = '#aaa';
+  }
+
+  // City-field boundary lines
+  ctx2.strokeStyle = '#7a5020';
+  ctx2.lineWidth = Math.max(1, w * 0.025);
+  ctx2.lineJoin = 'round';
+  if (edges[0] === 'C') { ctx2.beginPath(); ctx2.moveTo(px, py + edgeD); ctx2.lineTo(px + w, py + edgeD); ctx2.stroke(); }
+  if (edges[1] === 'C') { ctx2.beginPath(); ctx2.moveTo(px + w - edgeD, py); ctx2.lineTo(px + w - edgeD, py + h); ctx2.stroke(); }
+  if (edges[2] === 'C') { ctx2.beginPath(); ctx2.moveTo(px, py + h - edgeD); ctx2.lineTo(px + w, py + h - edgeD); ctx2.stroke(); }
+  if (edges[3] === 'C') { ctx2.beginPath(); ctx2.moveTo(px + edgeD, py); ctx2.lineTo(px + edgeD, py + h); ctx2.stroke(); }
+
+  // --- Monastery ---
+  if (rotated.center === 'M') _drawMonastery(ctx2, px, py, w, h);
+
+  // --- Road edges ---
+  const roadW = w * 0.18;
+  for (let i = 0; i < 4; i++) {
+    if (edges[i] === 'R') _drawRoadEdge(ctx2, DIRS[i], px, py, w, h, roadW);
+  }
+
+  // Road crossroads center
+  if (rotated.center === 'R') {
+    const rg = ctx2.createRadialGradient(mx, my, 0, mx, my, roadW);
+    rg.addColorStop(0, '#ecd8a0');
+    rg.addColorStop(1, '#a88850');
+    ctx2.fillStyle = rg;
     ctx2.beginPath();
-    ctx2.arc(px + w/2, py + h/2, w*0.1, 0, Math.PI*2);
+    ctx2.arc(mx, my, roadW * 0.75, 0, Math.PI * 2);
     ctx2.fill();
   }
 
-  // Draw edges
-  const edgeW = w * 0.28;
-  const edgeH = h * 0.28;
+  // --- Shield ---
+  if (tile.shield) _drawShield(ctx2, px, py, w, h);
 
-  // N edge
-  drawEdge(ctx2, edges[0], 'N', px, py, w, h, edgeW, edgeH, rotated);
-  // E edge
-  drawEdge(ctx2, edges[1], 'E', px, py, w, h, edgeW, edgeH, rotated);
-  // S edge
-  drawEdge(ctx2, edges[2], 'S', px, py, w, h, edgeW, edgeH, rotated);
-  // W edge
-  drawEdge(ctx2, edges[3], 'W', px, py, w, h, edgeW, edgeH, rotated);
-
-  // Shield
-  if (tile.shield) {
-    ctx2.fillStyle = 'rgba(0,180,255,0.8)';
-    ctx2.beginPath();
-    ctx2.arc(px + w*0.82, py + h*0.18, w*0.09, 0, Math.PI*2);
-    ctx2.fill();
-    ctx2.fillStyle = '#fff';
-    ctx2.font = `bold ${Math.max(8, w*0.12)}px sans-serif`;
-    ctx2.textAlign = 'center';
-    ctx2.textBaseline = 'middle';
-    ctx2.fillText('★', px + w*0.82, py + h*0.18);
-  }
-
-  // Tile border
-  ctx2.strokeStyle = 'rgba(0,0,0,0.35)';
+  // --- Tile border ---
+  ctx2.strokeStyle = 'rgba(0,0,0,0.4)';
   ctx2.lineWidth = 1;
   ctx2.strokeRect(px, py, w, h);
 
-  // Meeple
-  if (meeple) {
-    drawMeepleOnTile(ctx2, meeple, px, py, w, h, rotated);
+  // --- Meeple ---
+  if (meeple) drawMeepleOnTile(ctx2, meeple, px, py, w, h, rotated);
+}
+
+function _drawCityEdge(ctx2, dir, px, py, w, h, d) {
+  let g;
+  if (dir === 'N') {
+    g = ctx2.createLinearGradient(0, py, 0, py + d);
+    g.addColorStop(0, '#8c5c28'); g.addColorStop(0.25, '#d4a060'); g.addColorStop(1, '#c09050');
+    ctx2.fillStyle = g; ctx2.fillRect(px, py, w, d);
+  } else if (dir === 'S') {
+    g = ctx2.createLinearGradient(0, py + h, 0, py + h - d);
+    g.addColorStop(0, '#8c5c28'); g.addColorStop(0.25, '#d4a060'); g.addColorStop(1, '#c09050');
+    ctx2.fillStyle = g; ctx2.fillRect(px, py + h - d, w, d);
+  } else if (dir === 'E') {
+    g = ctx2.createLinearGradient(px + w, 0, px + w - d, 0);
+    g.addColorStop(0, '#8c5c28'); g.addColorStop(0.25, '#d4a060'); g.addColorStop(1, '#c09050');
+    ctx2.fillStyle = g; ctx2.fillRect(px + w - d, py, d, h);
+  } else if (dir === 'W') {
+    g = ctx2.createLinearGradient(px, 0, px + d, 0);
+    g.addColorStop(0, '#8c5c28'); g.addColorStop(0.25, '#d4a060'); g.addColorStop(1, '#c09050');
+    ctx2.fillStyle = g; ctx2.fillRect(px, py, d, h);
   }
 }
 
-function drawEdge(ctx2, type, dir, px, py, w, h, edgeW, edgeH, rotated) {
-  if (type === 'C') {
-    ctx2.fillStyle = '#c8873a';
-    if (dir === 'N') ctx2.fillRect(px, py, w, edgeH);
-    else if (dir === 'E') ctx2.fillRect(px + w - edgeW, py, edgeW, h);
-    else if (dir === 'S') ctx2.fillRect(px, py + h - edgeH, w, edgeH);
-    else if (dir === 'W') ctx2.fillRect(px, py, edgeW, h);
-    // Connect adjacent city edges of the same group
-  } else if (type === 'R') {
-    ctx2.fillStyle = '#b0a090';
-    const rw = w * 0.22, rh = h * 0.22;
-    if (dir === 'N') {
-      ctx2.fillRect(px + w/2 - rw/2, py, rw, h/2 + rh/2);
-    } else if (dir === 'E') {
-      ctx2.fillRect(px + w/2 - rh/2, py + h/2 - rw/2, w/2 + rh/2, rw);
-    } else if (dir === 'S') {
-      ctx2.fillRect(px + w/2 - rw/2, py + h/2 - rh/2, rw, h/2 + rh/2);
-    } else if (dir === 'W') {
-      ctx2.fillRect(px, py + h/2 - rw/2, w/2 + rh/2, rw);
-    }
+function _drawRoadEdge(ctx2, dir, px, py, w, h, rw) {
+  const half = rw / 2;
+  let g;
+  if (dir === 'N' || dir === 'S') {
+    g = ctx2.createLinearGradient(px + w/2 - half, 0, px + w/2 + half, 0);
+    g.addColorStop(0, '#9a7840'); g.addColorStop(0.2, '#ead49c'); g.addColorStop(0.8, '#ead49c'); g.addColorStop(1, '#9a7840');
+    ctx2.fillStyle = g;
+    if (dir === 'N') ctx2.fillRect(px + w/2 - half, py, rw, h/2 + half);
+    else ctx2.fillRect(px + w/2 - half, py + h/2 - half, rw, h/2 + half);
+  } else {
+    g = ctx2.createLinearGradient(0, py + h/2 - half, 0, py + h/2 + half);
+    g.addColorStop(0, '#9a7840'); g.addColorStop(0.2, '#ead49c'); g.addColorStop(0.8, '#ead49c'); g.addColorStop(1, '#9a7840');
+    ctx2.fillStyle = g;
+    if (dir === 'E') ctx2.fillRect(px + w/2 - half, py + h/2 - half, w/2 + half, rw);
+    else ctx2.fillRect(px, py + h/2 - half, w/2 + half, rw);
   }
+}
+
+function _drawMonastery(ctx2, px, py, w, h) {
+  const mx = px + w/2, my = py + h/2;
+  const bw = w * 0.30, bh = h * 0.24;
+  const bx = mx - bw/2, by = my - bh * 0.15;
+
+  // Shadow
+  ctx2.fillStyle = 'rgba(0,0,0,0.18)';
+  ctx2.fillRect(bx + 2, by + 2, bw, bh);
+
+  // Building body
+  ctx2.fillStyle = '#9a7448';
+  ctx2.fillRect(bx, by, bw, bh);
+
+  // Roof
+  ctx2.fillStyle = '#5c3818';
+  ctx2.beginPath();
+  ctx2.moveTo(mx, by - bh * 0.55);
+  ctx2.lineTo(bx - bw * 0.08, by + 1);
+  ctx2.lineTo(bx + bw + bw * 0.08, by + 1);
+  ctx2.closePath();
+  ctx2.fill();
+
+  // Windows
+  ctx2.fillStyle = '#ffeaa0';
+  ctx2.fillRect(bx + bw * 0.12, by + bh * 0.25, bw * 0.28, bh * 0.38);
+  ctx2.fillRect(bx + bw * 0.60, by + bh * 0.25, bw * 0.28, bh * 0.38);
+
+  // Cross
+  ctx2.fillStyle = '#e8d4a0';
+  ctx2.fillRect(mx - w * 0.018, by - bh * 0.5, w * 0.036, bh * 0.38);
+  ctx2.fillRect(mx - w * 0.065, by - bh * 0.28, w * 0.13, h * 0.032);
+}
+
+function _drawShield(ctx2, px, py, w, h) {
+  const sx = px + w * 0.78, sy = py + h * 0.08;
+  const sw = w * 0.16, sh = h * 0.16;
+
+  // Shield shape
+  ctx2.beginPath();
+  ctx2.moveTo(sx, sy);
+  ctx2.lineTo(sx + sw, sy);
+  ctx2.lineTo(sx + sw, sy + sh * 0.62);
+  ctx2.quadraticCurveTo(sx + sw, sy + sh, sx + sw / 2, sy + sh);
+  ctx2.quadraticCurveTo(sx, sy + sh, sx, sy + sh * 0.62);
+  ctx2.closePath();
+  ctx2.fillStyle = '#1848c0';
+  ctx2.fill();
+  ctx2.strokeStyle = '#d4a020';
+  ctx2.lineWidth = Math.max(1, w * 0.022);
+  ctx2.stroke();
+
+  // Star
+  ctx2.fillStyle = '#ffe040';
+  ctx2.font = `bold ${Math.max(6, Math.floor(w * 0.095))}px sans-serif`;
+  ctx2.textAlign = 'center';
+  ctx2.textBaseline = 'middle';
+  ctx2.fillText('★', sx + sw / 2, sy + sh * 0.44);
 }
 
 function drawMeepleOnTile(ctx2, meeple, px, py, w, h, rotated) {

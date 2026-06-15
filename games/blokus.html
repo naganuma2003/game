@@ -183,7 +183,7 @@ function init(){
   const diff=document.getElementById('sel-d').value;
   G={
     board:Array.from({length:N},()=>Array(N).fill(0)),
-    nh,diff,numP:4,cur:0,
+    nh,diff,numP:4,cur:Math.floor(Math.random()*4),
     pcs:Array.from({length:4},()=>PIECES.map(p=>({...p,used:false}))),
     sp:null,so:0,
     first:[true,true,true,true],
@@ -217,8 +217,12 @@ function renderBoard(){
   cells.forEach((el,i)=>{
     const r=Math.floor(i/N),c=i%N;
     el.className='cell';
+    el.style.background='';
     const p=G.board[r][c];
     if(p)el.classList.add('p'+p);
+  });
+  CORNERS.forEach(([cr,cc],pi)=>{
+    if(!G.board[cr][cc])cells[cr*N+cc].style.background=PCOL[pi+1]+'28';
   });
   if(HR>=0&&G.sp!==null&&isHuman()){
     const shape=curShape();

@@ -64,6 +64,13 @@ text.coord{font-size:9px;fill:rgba(255,255,255,.45);pointer-events:none;font-fam
 .foot button:hover{border-color:var(--gold)}
 .foot button:disabled{opacity:.35}
 
+.eval-row{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
+.eval-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.45);padding:3px 9px;border-radius:12px;font-size:11px;cursor:pointer;font-family:inherit;transition:.2s;white-space:nowrap}
+.eval-btn.on{border-color:var(--gold,#c9a030);color:var(--gold,#c9a030)}
+.eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
+.eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
+.eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+
 .overlay{
   position:fixed;inset:0;background:rgba(8,10,14,.82);
   display:flex;align-items:center;justify-content:center;
@@ -105,6 +112,7 @@ text.coord{font-size:9px;fill:rgba(255,255,255,.45);pointer-events:none;font-fam
 <div class="caps" id="caps0"></div>
 
 <div class="msg" id="msg">白の番です</div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
 <div class="foot">
   <button id="undo">待った</button>
   <button id="reset">最初から</button>
@@ -385,6 +393,7 @@ function render(){
       caps[o].map(t=>`<span style="color:${o===0?'#23262E':'#F6F3EA'}">${GLYPH[1][t]}</span>`).join('');
   }
   document.getElementById('undo').disabled=!history.length||busy||over;
+  updateEval();
 }
 
 function msg(s){document.getElementById('msg').textContent=s;}
@@ -548,6 +557,38 @@ document.getElementById('modes').addEventListener('click',e=>{
 });
 
 init();
+
+// ===== AI評価 =====
+let evalOn=false;
+function toggleEval(){
+  evalOn=!evalOn;
+  document.getElementById('eval-btn').classList.toggle('on',evalOn);
+  document.getElementById('eval-bar').style.display=evalOn?'block':'none';
+  document.getElementById('eval-lbl').style.display=evalOn?'inline':'none';
+  updateEval();
+}
+function updateEval(){
+  if(!evalOn)return;
+  const s=evalScore(),MAX=40;
+  const C1='#f0f0f0',C2='#555',N1='白',N2='黒';
+  const pct=Math.min(Math.max((s+MAX)/(2*MAX),0),1);
+  document.getElementById('eval-fill').style.cssText=`width:${pct*100}%;background:${s>0.3?C1:s<-0.3?C2:'#888'}`;
+  document.getElementById('eval-lbl').textContent=Math.abs(s)<0.3?'互角':s>0?`${N1}+${Math.round(Math.abs(s))}`:`${N2}+${Math.round(Math.abs(s))}`;
+}
+function evalScore(){
+  // Material balance + center positional bonus (white positive)
+  const VALS={P:1,N:3,B:3.2,R:5,Q:9,K:0};
+  let s=0;
+  for(let i=0;i<64;i++){
+    const p=board[i];if(!p)continue;
+    let v=VALS[p.t]||0;
+    // center bonus: rows 3-4, cols 3-4 (0-indexed)
+    const r=Math.floor(i/8),c=i%8;
+    if(r>=3&&r<=4&&c>=3&&c<=4)v+=0.1;
+    s+=p.o===0?v:-v;
+  }
+  return s;
+}
 </script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=7"></script>

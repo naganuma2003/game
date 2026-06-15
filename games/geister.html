@@ -87,6 +87,12 @@ svg{display:block;width:min(96vw,420px);height:auto}
   border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.eval-row{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
+.eval-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.45);padding:3px 9px;border-radius:12px;font-size:11px;cursor:pointer;font-family:inherit;transition:.2s;white-space:nowrap}
+.eval-btn.on{border-color:var(--gold,#c9a030);color:var(--gold,#c9a030)}
+.eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
+.eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
+.eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
 </style>
 </head>
 <body>
@@ -109,6 +115,7 @@ svg{display:block;width:min(96vw,420px);height:auto}
 <div class="bwrap"><svg id="bd"></svg></div>
 
 <div class="msg" id="msg"></div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
 <div class="foot" id="foot">
   <button id="setup-ok" class="primary" style="display:none">この配置で開始</button>
   <button id="setup-rnd" style="display:none">ランダム配置</button>
@@ -378,6 +385,7 @@ function render(){
   const eb=document.getElementById('exitbtn');
   eb.style.display=(phase==='play'&&sel&&canExit(sel)&&isHumanSide(sel.o))?'':'none';
   document.getElementById('undo').disabled=!history.length||busy||phase!=='play';
+  updateEval();
 }
 
 function msg(s){document.getElementById('msg').textContent=s;}
@@ -678,6 +686,57 @@ OnlineCore.init({
     render(); uiPhase();
   },
 });
+</script>
+<script>
+// ===== AI評価 =====
+let evalOn=false;
+function toggleEval(){
+  evalOn=!evalOn;
+  document.getElementById('eval-btn').classList.toggle('on',evalOn);
+  document.getElementById('eval-bar').style.display=evalOn?'block':'none';
+  document.getElementById('eval-lbl').style.display=evalOn?'inline':'none';
+  updateEval();
+}
+function updateEval(){
+  if(!evalOn)return;
+  const s=evalScore(),MAX=16;
+  const C1='#3e87d6',C2='#e04a3a',N1='あなた',N2='相手';
+  const pct=Math.min(Math.max((s+MAX)/(2*MAX),0),1);
+  document.getElementById('eval-fill').style.cssText=`width:${pct*100}%;background:${s>0.3?C1:s<-0.3?C2:'#888'}`;
+  document.getElementById('eval-lbl').textContent=Math.abs(s)<0.3?'互角':s>0?`${N1}+${Math.round(Math.abs(s))}`:`${N2}+${Math.round(Math.abs(s))}`;
+}
+function evalScore(){
+  if(phase!=='play')return 0;
+  let score=0;
+  const myPieces=pieces.filter(p=>p.o===0&&!p.cap);
+  const oppPieces=pieces.filter(p=>p.o===1&&!p.cap);
+  // Own red ghosts on board = bad (want them captured), each = -1
+  const myReds=myPieces.filter(p=>p.col==='R');
+  score-=myReds.length;
+  // Own blue ghosts: closer to escape corners = better, each safe blue = base value
+  const myBlues=myPieces.filter(p=>p.col==='B');
+  for(const p of myBlues){
+    const minDist=Math.min(...EXITS(0).map(([er,ec])=>Math.abs(p.r-er)+Math.abs(p.c-ec)));
+    score+=0.5*(5-minDist); // closer to exit = higher score
+  }
+  // Known opponent red ghosts (captured reveals color, or visible in pvp) = +2 each (capturing them is good for us)
+  const oppCapturedByUs=capturedBy(0);
+  const knownOppReds=oppPieces.filter(p=>visibleColor(p)==='R');
+  score+=knownOppReds.length*2;
+  // Own blue ghosts threatened (adjacent to opponent piece) = -1 each
+  for(const p of myBlues){
+    const threatened=pieces.some(q=>!q.cap&&q.o===1&&
+      Math.abs(q.r-p.r)+Math.abs(q.c-p.c)===1);
+    if(threatened)score-=1;
+  }
+  // Captured blues by opponent = big negative
+  const oppTakenBlues=capturedBy(1).filter(p=>p.col==='B').length;
+  score-=oppTakenBlues*3;
+  // Captured reds by opponent = positive (trap worked)
+  const oppTakenReds=capturedBy(1).filter(p=>p.col==='R').length;
+  score+=oppTakenReds*2;
+  return score;
+}
 </script>
 <script src="../shared/firebase-counter.js"></script></body>
 </html>

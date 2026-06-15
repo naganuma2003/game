@@ -113,7 +113,7 @@
       if (!online || replaying) return;
       if (cfg.blockRelay && cfg.blockRelay()) return;
       const t = e.target;
-      if (t.closest && t.closest('#online-lobby,#online-btn,#oc-badge,a[href]')) return; // local-only UI / 画面遷移リンク（一覧に戻る等）は常に通す
+      if (t.closest && t.closest('#online-lobby,#online-btn,#oc-badge,.eval-row,a[href]')) return; // local-only UI / 画面遷移リンク（一覧に戻る等）は常に通す
       updateSticky();
       if (sticky !== mySeat) {
         e.preventDefault(); e.stopPropagation();
@@ -130,6 +130,7 @@
       firstSeat = seed & 1;   // 先攻をランダム化（両者同じシードなので一致）
       sticky = firstSeat;
       if (cfg.hideSel) document.querySelectorAll(cfg.hideSel).forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.eval-row').forEach(el => el.style.display = 'none');
       if (cfg.pvpSel) {
         const b = document.querySelector(cfg.pvpSel);
         if (b) { replaying = true; try { b.click(); } finally { replaying = false; } }

@@ -195,6 +195,13 @@ select { background: #f3ead9; color: #20160c; }
   .piece { font-size: 16px; }
 }
 
+.eval-row{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
+.eval-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.45);padding:3px 9px;border-radius:12px;font-size:11px;cursor:pointer;font-family:inherit;transition:.2s;white-space:nowrap}
+.eval-btn.on{border-color:var(--gold,#c9a030);color:var(--gold,#c9a030)}
+.eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
+.eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
+.eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+
 /* ---- Online play ---- */
 .online-entry { margin-top: 14px; }
 .btn-online { background: #2563c9; font-size: 15px; padding: 11px 22px; }
@@ -339,6 +346,7 @@ select { background: #f3ead9; color: #20160c; }
       <p id="assist-hint" class="assist-hint"></p>
 
       <p id="message" class="message"></p>
+      <div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
     </section>
 
     <!-- 成り確認ダイアログ -->
@@ -977,6 +985,7 @@ select { background: #f3ead9; color: #20160c; }
   /* ---------- rendering ---------- */
 
   function render() {
+    window._shogiState = state;
     const key = (r, c) => r * N + c;
     ensureAssist();
     const ranks = assistRanks();
@@ -1029,6 +1038,7 @@ select { background: #f3ead9; color: #20160c; }
     renderTurn();
     renderAssistHint(reco);
     undoBtn.disabled = busy || history.length === 0;
+    updateEval();
   }
 
   function renderAssistHint(reco) {
@@ -1264,6 +1274,33 @@ select { background: #f3ead9; color: #20160c; }
     onPeerLeft: () => Game.peerLeft(),
   });
 })();
+</script>
+<script>
+// ===== AI評価 =====
+let evalOn=false;
+function toggleEval(){
+  evalOn=!evalOn;
+  document.getElementById('eval-btn').classList.toggle('on',evalOn);
+  document.getElementById('eval-bar').style.display=evalOn?'block':'none';
+  document.getElementById('eval-lbl').style.display=evalOn?'inline':'none';
+  updateEval();
+}
+function updateEval(){
+  if(!evalOn)return;
+  const s=evalScore(),MAX=80;
+  const C1='#e04a3a',C2='#3e87d6',N1='先手',N2='後手';
+  const pct=Math.min(Math.max((s+MAX)/(2*MAX),0),1);
+  document.getElementById('eval-fill').style.cssText=`width:${pct*100}%;background:${s>0.3?C1:s<-0.3?C2:'#888'}`;
+  document.getElementById('eval-lbl').textContent=Math.abs(s)<0.3?'互角':s>0?`${N1}+${Math.round(Math.abs(s))}`:`${N2}+${Math.round(Math.abs(s))}`;
+}
+function evalScore(){
+  const st=window._shogiState;
+  if(!st)return 0;
+  // Material balance from Sente(0)'s perspective using ShogiAI.evaluate
+  // evaluate() returns score from side-to-move's view, so flip if it's Gote's turn
+  const raw=window.ShogiAI.evaluate(st);
+  return st.turn===0?raw:-raw;
+}
 </script>
 <script src="../shared/firebase-counter.js"></script></body>
 </html>

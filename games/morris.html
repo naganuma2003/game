@@ -31,6 +31,12 @@ svg{display:block;width:min(90vw,360px);height:auto}
 .rule{width:min(94vw,380px);margin-top:14px;font-size:11px;line-height:1.7;color:var(--sub);border-top:1px solid var(--line);padding-top:10px}
 .rule b{color:var(--txt)}
 .hidden{display:none!important}
+.eval-row{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
+.eval-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.45);padding:3px 9px;border-radius:12px;font-size:11px;cursor:pointer;font-family:inherit;transition:.2s;white-space:nowrap}
+.eval-btn.on{border-color:var(--gold,#c9a030);color:var(--gold,#c9a030)}
+.eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
+.eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
+.eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
 </style>
 </head>
 <body>
@@ -43,6 +49,7 @@ svg{display:block;width:min(90vw,360px);height:auto}
   <button data-m="pvp">2人</button>
 </div>
 <div class="turn" id="msg"></div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
 <div class="counts" id="counts"></div>
 <div class="bwrap"><svg id="bd"></svg></div>
 <div class="foot"><button id="undo">待った</button><button id="reset">最初から</button></div>
@@ -218,6 +225,7 @@ function render(){
     const c=document.createElementNS(NS,'circle');c.setAttribute('cx',PX(i));c.setAttribute('cy',PY(i));c.setAttribute('r',13);
     c.setAttribute('fill',board[i]===1?'var(--p1)':'var(--p2)');c.setAttribute('stroke','rgba(0,0,0,.35)');c.setAttribute('stroke-width',1.5);
     pieceLayer.appendChild(c);}
+  updateEval();
 }
 function ring(layer,i,r,col,w){const c=document.createElementNS(NS,'circle');c.setAttribute('cx',PX(i));c.setAttribute('cy',PY(i));c.setAttribute('r',r);c.setAttribute('fill','none');c.setAttribute('stroke',col);c.setAttribute('stroke-width',w);layer.appendChild(c);}
 function dot(layer,i,r,col){const c=document.createElementNS(NS,'circle');c.setAttribute('cx',PX(i));c.setAttribute('cy',PY(i));c.setAttribute('r',r);c.setAttribute('fill',col);layer.appendChild(c);}
@@ -250,8 +258,40 @@ document.getElementById('modes').addEventListener('click',e=>{const b=e.target.c
   document.querySelectorAll('#modes button').forEach(x=>x.classList.toggle('on',x===b));init();});
 init();
 
+// ===== AI評価 =====
+let evalOn=false;
+function toggleEval(){
+  evalOn=!evalOn;
+  document.getElementById('eval-btn').classList.toggle('on',evalOn);
+  document.getElementById('eval-bar').style.display=evalOn?'block':'none';
+  document.getElementById('eval-lbl').style.display=evalOn?'inline':'none';
+  updateEval();
+}
+function updateEval(){
+  if(!evalOn)return;
+  const s=evalScore(),MAX=9;
+  const C1='var(--p1)',C2='var(--p2)',N1='先手',N2='後手';
+  const pct=Math.min(Math.max((s+MAX)/(2*MAX),0),1);
+  document.getElementById('eval-fill').style.cssText=`width:${pct*100}%;background:${s>0.3?C1:s<-0.3?C2:'#888'}`;
+  document.getElementById('eval-lbl').textContent=Math.abs(s)<0.3?'互角':s>0?`${N1}+${Math.round(Math.abs(s))}`:`${N2}+${Math.round(Math.abs(s))}`;
+}
+function millCount(pl){
+  return MILLS.filter(m=>m.every(x=>board[x]===pl)).length;
+}
+function evalScore(){
+  if(typeof ONLINE!=='undefined'&&ONLINE)return 0;
+  const p1Board=countOn(board,1);
+  const p2Board=countOn(board,2);
+  const p1Mills=millCount(1);
+  const p2Mills=millCount(2);
+  return (p1Board-p2Board)+(p1Mills-p2Mills)*1.5;
+}
+
 // オンライン（2人用クリック中継レイヤー）
-function startMorrisOnline(seat){ONLINE=true;onSeat=seat;mode='pvp';}
+function startMorrisOnline(seat){
+  ONLINE=true;onSeat=seat;mode='pvp';
+  document.getElementById('eval-row').style.display='none';
+}
 </script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=7"></script>

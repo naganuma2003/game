@@ -131,6 +131,13 @@ select { background: #f3ead9; color: #1c1409; }
   :root { --cell: 22px; }
 }
 
+.eval-row{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
+.eval-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.45);padding:3px 9px;border-radius:12px;font-size:11px;cursor:pointer;font-family:inherit;transition:.2s;white-space:nowrap}
+.eval-btn.on{border-color:var(--gold,#c9a030);color:var(--gold,#c9a030)}
+.eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
+.eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
+.eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+
 /* ---- Online play ---- */
 .online-entry { margin-top: 14px; }
 .btn-online { background: #2563c9; font-size: 15px; padding: 11px 22px; }
@@ -281,6 +288,7 @@ select { background: #f3ead9; color: #1c1409; }
       </label>
 
       <p id="message" class="message"></p>
+      <div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI評価</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
     </section>
   </div>
 
@@ -695,6 +703,7 @@ select { background: #f3ead9; color: #1c1409; }
       turnEl.textContent = `${colorName(current)}の番`;
     }
     undoBtn.disabled = busy || online || history.length === 0;
+    updateEval();
   }
 
   function onClick(r, c) {
@@ -760,6 +769,64 @@ select { background: #f3ead9; color: #1c1409; }
 
   buildGrid();
   syncLevels();
+
+  // ===== AI評価 =====
+  let evalOn = false;
+  function toggleEval() {
+    evalOn = !evalOn;
+    document.getElementById('eval-btn').classList.toggle('on', evalOn);
+    document.getElementById('eval-bar').style.display = evalOn ? 'block' : 'none';
+    document.getElementById('eval-lbl').style.display = evalOn ? 'inline' : 'none';
+    updateEval();
+  }
+  function updateEval() {
+    if (!evalOn) return;
+    const s = evalScore(), MAX = 100;
+    const C1 = '#1a1a1a', C2 = '#e8e8e8', N1 = '黒', N2 = '白';
+    const pct = Math.min(Math.max((s + MAX) / (2 * MAX), 0), 1);
+    document.getElementById('eval-fill').style.cssText = `width:${pct*100}%;background:${s > 0.3 ? C1 : s < -0.3 ? C2 : '#888'}`;
+    document.getElementById('eval-lbl').textContent = Math.abs(s) < 0.3 ? '互角' : s > 0 ? `${N1}+${Math.round(Math.abs(s))}` : `${N2}+${Math.round(Math.abs(s))}`;
+  }
+  function evalScore() {
+    // Scan all lines for threat patterns; positive = BLACK advantage
+    const DIRS = [[0,1],[1,0],[1,1],[1,-1]];
+    const inside = (r, c) => r >= 0 && r < SIZE && c >= 0 && c < SIZE;
+    function scanPlayer(player) {
+      let total = 0;
+      const visited = new Set();
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          if (board[r][c] !== player) continue;
+          for (const [dr, dc] of DIRS) {
+            // only start a run from the first stone in this direction
+            const pr = r - dr, pc = c - dc;
+            if (inside(pr, pc) && board[pr][pc] === player) continue;
+            // count run length
+            let len = 0, rr = r, cc = c;
+            while (inside(rr, cc) && board[rr][cc] === player) { len++; rr += dr; cc += dc; }
+            if (len < 2) continue;
+            // check open ends
+            const beforeR = r - dr, beforeC = c - dc;
+            const afterR = rr, afterC = cc;
+            let openEnds = 0;
+            if (inside(beforeR, beforeC) && board[beforeR][beforeC] === 0) openEnds++;
+            if (inside(afterR, afterC) && board[afterR][afterC] === 0) openEnds++;
+            if (openEnds === 0) continue;
+            let score = 0;
+            if (len >= 4) score = openEnds === 2 ? 50 : 10;
+            else if (len === 3) score = openEnds === 2 ? 5 : 1;
+            else if (len === 2) score = 0.3;
+            total += score;
+          }
+        }
+      }
+      return total;
+    }
+    const raw = scanPlayer(BLACK) - scanPlayer(WHITE);
+    return Math.min(Math.max(raw, -100), 100);
+  }
+  window.toggleEval = toggleEval;
+  window.updateEval = updateEval;
 
   /* ---------- Online API (called by js/online.js) ---------- */
   window.GomokuGame = {

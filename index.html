@@ -47,11 +47,12 @@
     .fav-btn {
       position: absolute; top: 10px; right: 12px;
       background: none; border: none; font-size: 16px; line-height: 1;
-      cursor: pointer; padding: 4px; opacity: 0.6;
-      filter: grayscale(1) brightness(1.5);
+      cursor: pointer; padding: 4px; opacity: 0.5;
+      color: var(--gold, #c9a227);
+      filter: grayscale(1) sepia(1) saturate(3) hue-rotate(5deg) brightness(0.8);
       transition: opacity 0.15s, transform 0.15s, filter 0.15s;
     }
-    .fav-btn:hover { opacity: 0.85; transform: scale(1.2); filter: grayscale(0); }
+    .fav-btn:hover { opacity: 0.9; transform: scale(1.2); filter: grayscale(0); }
     .card.faved .fav-btn { opacity: 1; filter: grayscale(0); }
     .card.faved { border-color: rgba(255,210,0,0.35); }
     .icon { font-size: 44px; line-height: 1; margin-bottom: 14px; }

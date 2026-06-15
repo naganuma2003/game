@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -28,6 +28,12 @@ canvas{display:block;width:100%;height:auto;background:#060906;border:1px solid 
 .pad button:active{border-color:var(--gold);background:#16210f}
 .pad .fire{flex:1.1;background:#1a2a10;border-color:#3a5a22;color:var(--gold);font-weight:800;font-size:18px}
 .hint{font-size:10.5px;color:var(--sub);margin-top:10px;letter-spacing:.04em;text-align:center;line-height:1.6}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
 </style>
 </head>
 <body>

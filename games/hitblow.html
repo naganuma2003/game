@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -49,6 +49,12 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:24px;letter-spacing:.12em;
 .rule b{color:var(--txt)}
 .h-row .h-pl{font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid var(--line)}
 .hidden{display:none!important}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
 </style>
 </head>
 <body>

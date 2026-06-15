@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -41,6 +41,12 @@ svg{display:block;width:min(94vw,420px);height:auto}
 .assist-toggle{display:inline-flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;cursor:pointer}
 .assist-toggle input{accent-color:var(--gold,#c9a227);cursor:pointer}
 .edge.assist{stroke:rgba(108,208,138,0.75)!important;stroke-width:7!important;cursor:pointer}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
 </style>
 </head>
 <body>

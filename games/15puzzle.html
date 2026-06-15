@@ -74,6 +74,12 @@ h1{font-size:22px;color:var(--gold);margin-bottom:6px;text-align:center}
 .mode-btn.same:hover{background:var(--gold2)}
 .mode-btn.rand{background:#2a2a3e;color:var(--txt);border:1px solid #444}
 .mode-btn.rand:hover{border-color:var(--gold)}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
 </style>
 </head>
 <body>

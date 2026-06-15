@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>ソリティア</title><style>
 :root{--bg:#0E2A1C;--felt:#13402A;--txt:#EDE6D6;--sub:#8FB29C;--gold:#C9A227;--cardbg:#F4EFE3;--cardline:#C9BFA8;--red:#C23B26;--blk:#1C1C1C;}
@@ -33,6 +33,12 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:24px;letter-spacing:.2em;t
 .win .card2{background:#13402A;border:1px solid var(--gold);border-radius:10px;padding:28px 40px;text-align:center}
 .win .t{font-size:26px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;letter-spacing:.15em;margin-bottom:14px}
 .win button{background:var(--gold);border:none;color:#13402A;font-weight:700;padding:9px 24px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
 </style></head><body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 <h1>ソリティア</h1><div class="sub">KLONDIKE</div>

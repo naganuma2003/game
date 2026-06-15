@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>数独</title><style>
 :root{--bg:#15120E;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#4A4030;--given:#C9A227;--cellbg:#221E17;--cellbg2:#2A251C;--sel:#46402d;--peer:#26221a;}
@@ -27,6 +27,12 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:28px;letter-spacing:.25em;
 .foot{display:flex;gap:10px;margin-top:14px}
 .foot button{background:transparent;border:1px solid var(--line);color:var(--txt);padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit}
 .foot button:hover{border-color:var(--gold)}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
 </style></head><body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 <h1>数独</h1><div class="sub">SUDOKU</div>

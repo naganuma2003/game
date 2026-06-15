@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>どうぶつしょうぎ</title><style>
 :root{--bg:#1A140C;--board:#E8C887;--line:#7A5A2E;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--piece:#FFF6E2;--me:#2E7D46;--you:#C23B26;}
@@ -44,6 +44,12 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:23px;letter-spacing:.12em;
 .assist-toggle input{accent-color:var(--gold,#c9a227);cursor:pointer}
 .sq.assist-from{box-shadow:inset 0 0 0 3px #6cd08a}
 .sq.assist-to::before{content:"";position:absolute;inset:20%;border-radius:50%;background:rgba(108,208,138,0.4)}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
 </style></head><body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 <h1>どうぶつしょうぎ</h1><div class="sub">DOBUTSU SHOGI</div>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -29,6 +29,12 @@ svg{display:block;width:min(92vw,420px);height:auto}
 .over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:24px 36px;text-align:center}
 .over .t{font-size:23px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:8px}
 .over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit;margin-top:8px}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
 </style>
 </head>
 <body>

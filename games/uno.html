@@ -239,6 +239,14 @@ function canPlay(card) {
   return false;
 }
 
+// What is actually playable *right now*. While a draw stack is pending
+// (G.drawPending > 0) you may only respond with another draw card (+2/+4) to
+// pass the accumulated total on; otherwise you must take the cards.
+function playableNow(card) {
+  if (G.drawPending > 0) return card.t === 'draw2' || card.t === 'wild4';
+  return canPlay(card);
+}
+
 function drawFromPile(pi, n=1) {
   for (let i=0; i<n; i++) {
     if (!G.deck.length) reshuffle();
@@ -266,20 +274,19 @@ function playCard(pi, idx) {
 }
 
 function applyEffect(card, pi) {
-  const n = G.numP;
-  // Note: G.cur is still pi here. We only handle side-effects (draws, direction).
-  // Turn advancement is handled entirely by doPlay / pickColor.
+  // Only direction is a here-and-now side effect. Draw2 / Wild4 no longer make
+  // the next player draw immediately — they accumulate into G.drawPending
+  // (handled by doPlay / the online play handler) so the stack can be passed on.
   if (card.t==='rev') {
     G.dir *= -1;
-  } else if (card.t==='draw2') {
-    const np = (G.cur + G.dir + n) % n;
-    drawFromPile(np, 2);
-    checkUno(np);
-  } else if (card.t==='wild4') {
-    const np = (G.cur + G.dir + n) % n;
-    drawFromPile(np, 4);
-    checkUno(np);
   }
+}
+
+// Take the whole accumulated draw stack and lose the turn.
+function takePending(pi) {
+  drawFromPile(pi, G.drawPending);
+  G.drawPending = 0;
+  checkUno(pi);
 }
 
 function checkUno(pi) {
@@ -374,21 +381,32 @@ function scheduleTurn() {
 
   if (mine) {
     // My turn
-    setStatus('あなたのターン');
     enableButtons(true);
+    if (G.drawPending > 0) {
+      const hasCounter = G.hands[me].some(c => c.t === 'draw2' || c.t === 'wild4');
+      if (hasCounter) {
+        setStatus(`+${G.drawPending}枚！ ドロー2/ドロー4で返すか、ドローで${G.drawPending}枚引きます`);
+      } else {
+        setStatus(`+${G.drawPending}枚！ 返せるカードがないので ${G.drawPending}枚ドローします…`);
+        setTimeout(() => { if (G.cur === me && G.drawPending > 0 && G.phase === 'play') humanDraw(); }, 1100);
+      }
+    } else {
+      setStatus('あなたのターン');
+    }
     return;
   }
 
   enableButtons(false);
+  const pendingNote = G.drawPending > 0 ? `（+${G.drawPending}枚を受けています）` : '';
   if (ONLINE) {
-    setStatus(`${G.names[G.cur]} のターン`);
+    setStatus(`${G.names[G.cur]} のターン${pendingNote}`);
     // Host drives CPU seats and disconnected players so the turn advances.
     if (window.OnlineRoom && OnlineRoom.isHost && OnlineRoom.isHost()
         && OnlineRoom.isAuto && OnlineRoom.isAuto(G.cur)) {
       setTimeout(() => onlineCpuMove(G.cur), 800);
     }
   } else {
-    setStatus(`${G.names[G.cur]} が考え中…`);
+    setStatus(`${G.names[G.cur]} が考え中…${pendingNote}`);
     setTimeout(cpuPlay, 800);
   }
 }
@@ -412,6 +430,9 @@ function updatePlayBtn() {
   const ok = G.cur === me && G.phase === 'play' && G.selected.length > 0;
   btn.disabled = !ok;
   btn.textContent = G.selected.length > 1 ? `出す（${G.selected.length}枚）` : '出す';
+  // Draw button reflects a pending draw stack on your turn.
+  const drawBtn = document.getElementById('draw-btn');
+  if (drawBtn) drawBtn.textContent = (G.cur === me && G.drawPending > 0) ? `${G.drawPending}枚引く` : 'ドロー';
 }
 
 // Can card `i` be added to (or is already in) the current selection?
@@ -420,7 +441,7 @@ function isSelectable(i) {
   const me = meSeat();
   if (G.selected.includes(i)) return true; // already selected → can toggle off
   const card = G.hands[me][i];
-  if (!G.selected.length) return canPlay(card);
+  if (!G.selected.length) return playableNow(card);
   const first = G.hands[me][G.selected[0]];
   if (first.t !== 'num') return false;      // only number cards stack
   return card.t === 'num' && card.v === first.v;
@@ -436,7 +457,8 @@ function toggleSelect(i) {
     G.selected.push(i);
   } else {
     const card = G.hands[me][i];
-    if (!canPlay(card) && !G.selected.length) setStatus('そのカードは出せません');
+    if (G.drawPending > 0) setStatus(`+${G.drawPending}枚を受けています。ドロー2かドロー4でしか返せません`);
+    else if (!canPlay(card) && !G.selected.length) setStatus('そのカードは出せません');
     else setStatus('一緒に出せるのは同じ数字のカードだけです');
     return;
   }
@@ -483,12 +505,12 @@ function doPlay(pi, idx) {
   if (checkWin(pi)) return;
 
   if (card.t === 'wild' || card.t === 'wild4') {
-    // Advance past pi, then if wild4 also skip the penalized player
-    advanceTurn(); // move from pi to pi+1 (wild: that's the next player; wild4: pi+1 is penalized)
-    if (card.t === 'wild4') advanceTurn(); // wild4: penalized player is also skipped
+    // Wild4 adds 4 to the draw stack; the next player may pass it on. No extra
+    // skip — the victim gets a chance to respond (or takes the cards on draw).
+    if (card.t === 'wild4') G.drawPending += 4;
+    advanceTurn();
     if (pi === 0) {
       // Human played wild — show color picker BEFORE final scheduleTurn
-      // But we already advanced; save where we landed and wait for pickColor
       G.phase = 'color';
       document.getElementById('colorpick').style.display = 'flex';
     } else {
@@ -500,12 +522,11 @@ function doPlay(pi, idx) {
       scheduleTurn();
     }
   } else {
-    // applyEffect already handled draws/direction. Advance one seat.
+    // Draw2 adds 2 to the draw stack and passes the turn on (no skip — the
+    // victim responds or takes the cards). Skip & 2-player Reverse still skip.
+    if (card.t === 'draw2') G.drawPending += 2;
     advanceTurn();
-    // Skip & Draw2 also skip the affected player. Reverse acts as a Skip in a
-    // 2-player game. (In all these cases a 2-player game returns to the same
-    // player, i.e. they play again — per official UNO rules.)
-    if (card.t === 'skip' || card.t === 'draw2' || (card.t === 'rev' && G.numP === 2)) {
+    if (card.t === 'skip' || (card.t === 'rev' && G.numP === 2)) {
       advanceTurn();
     }
     G.unoCalled = false;
@@ -534,6 +555,19 @@ function humanDraw() {
   const me = meSeat();
   if (G.cur !== me || G.phase !== 'play') return;
   G.selected = [];
+  // Facing a draw stack: take all accumulated cards and lose the turn.
+  if (G.drawPending > 0) {
+    if (ONLINE && roomSend) { roomSend({t:'takeStack'}); return; }
+    const n = G.drawPending;
+    takePending(me);
+    setStatus(`${n}枚ドローしました`);
+    advanceTurn();
+    G.drewThisTurn = false;
+    G.unoCalled = false;
+    renderAll();
+    scheduleTurn();
+    return;
+  }
   if (G.drewThisTurn) {
     // 2回目のクリックでパス
     if (ONLINE && roomSend) { roomSend({t:'pass'}); return; }
@@ -578,11 +612,19 @@ function callUno() {
   setStatus('UNO！');
 }
 
-// Decide a CPU's move from the current state. Returns {action:'draw'} or
-// {action:'play', idxs:[...]} (multiple = a same-number stack). Shared by local
-// play (cpuPlay) and online play (onlineCpuMove) so both compute identically.
+// Decide a CPU's move from the current state. Returns {action:'draw'},
+// {action:'takeStack'} or {action:'play', idxs:[...]} (multiple = same-number
+// stack). Shared by local play (cpuPlay) and online play (onlineCpuMove).
 function cpuDecide(pi) {
   const hand = G.hands[pi];
+  // Facing a draw stack: counter with a draw card (prefer +2 to save +4),
+  // otherwise take the accumulated cards.
+  if (G.drawPending > 0) {
+    const d2 = hand.findIndex(c => c.t === 'draw2');
+    const d4 = hand.findIndex(c => c.t === 'wild4');
+    const i = d2 >= 0 ? d2 : d4;
+    return i >= 0 ? {action:'play', idxs:[i]} : {action:'takeStack'};
+  }
   const playable = hand.map((c,i)=>({c,i})).filter(x=>canPlay(x.c));
   if (!playable.length) return {action:'draw'};
 
@@ -641,6 +683,17 @@ function cpuPlay() {
     return;
   }
 
+  if (dec.action === 'takeStack') {
+    const n = G.drawPending;
+    takePending(pi);
+    setStatus(`${G.names[pi]} が ${n}枚ドロー`);
+    advanceTurn();
+    G.drewThisTurn = false;
+    renderAll();
+    setTimeout(() => scheduleTurn(), 400);
+    return;
+  }
+
   setStatus(`${G.names[pi]} がカードを出した`);
   if (dec.idxs.length === 1) doPlay(pi, dec.idxs[0]);
   else doPlayMulti(pi, dec.idxs);
@@ -656,6 +709,7 @@ function onlineCpuMove(pi) {
   if (!(OnlineRoom.isAuto && OnlineRoom.isAuto(pi))) return;
   const dec = cpuDecide(pi);
   if (dec.action === 'draw') { roomSend({t:'draw'}); return; }
+  if (dec.action === 'takeStack') { roomSend({t:'takeStack'}); return; }
   if (dec.idxs.length > 1) { roomSend({t:'playMulti', idxs: dec.idxs}); return; }
   const card = G.hands[pi][dec.idxs[0]];
   roomSend({t:'play', idx: dec.idxs[0]});
@@ -841,17 +895,19 @@ OnlineRoom.init({
       renderAll();
       if (checkWin(pi)) return;
       if (card.t === 'wild' || card.t === 'wild4') {
-        // Advance past pi; wild4 also skips the penalized player
+        // Wild4 adds 4 to the draw stack (no extra skip — victim may respond).
+        if (card.t === 'wild4') G.drawPending += 4;
         advanceTurn();
-        if (card.t === 'wild4') advanceTurn();
         if (pi === MYSEAT) {
           G.phase = 'color';
           document.getElementById('colorpick').style.display = 'flex';
         }
         // else wait for color message from the sender
       } else {
+        // Draw2 adds 2 to the draw stack and passes the turn (no skip).
+        if (card.t === 'draw2') G.drawPending += 2;
         advanceTurn();
-        if (card.t === 'skip' || card.t === 'draw2' || (card.t === 'rev' && G.numP === 2)) {
+        if (card.t === 'skip' || (card.t === 'rev' && G.numP === 2)) {
           advanceTurn();
         }
         G.drewThisTurn = false;
@@ -859,6 +915,17 @@ OnlineRoom.init({
         renderAll();
         scheduleTurn();
       }
+    } else if (msg.t === 'takeStack') {
+      // Player facing a draw stack takes all accumulated cards and is skipped.
+      const pi = G.cur;
+      drawFromPile(pi, G.drawPending);
+      G.drawPending = 0;
+      checkUno(pi);
+      advanceTurn();
+      G.drewThisTurn = false;
+      G.unoCalled = false;
+      renderAll();
+      scheduleTurn();
     } else if (msg.t === 'playMulti') {
       // Same-number stack (number cards only → advance one seat).
       const pi = G.cur;

@@ -2411,7 +2411,7 @@
   </script>
 
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <script src="shared/lobby.js?v=7"></script>
+  <script src="shared/lobby.js?v=8"></script>
   <script>
     // ハブ: PeerJSで直接プローブして対応ゲームページへリダイレクト
     (function () {
@@ -2419,6 +2419,19 @@
       var btn = document.getElementById("hub-join-btn");
       var msg = document.getElementById("hub-join-msg");
       var ROOM_PREFIX = "ngroom-";
+      var PEER_CFG = {
+        config: {
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" },
+            { urls: "stun:stun2.l.google.com:19302" },
+            { urls: "stun:stun3.l.google.com:19302" },
+            { urls: "turn:openrelay.metered.ca:80",  username: "openrelayproject", credential: "openrelayproject" },
+            { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+            { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
+          ],
+        },
+      };
 
       function go() {
         var code = (input.value || "").trim();
@@ -2429,7 +2442,7 @@
         btn.disabled = true;
         msg.textContent = "部屋を検索中…";
 
-        var peer = new Peer();
+        var peer = new Peer(PEER_CFG);
         var settled = false;
 
         function fail(m) {

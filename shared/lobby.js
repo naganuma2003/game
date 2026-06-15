@@ -14,6 +14,22 @@
   const ROOM_PREFIX = "ngroom-"; // shared across all games
   const ALPHABET = "0123456789";
 
+  // ICE servers: multiple STUN + free TURN relay for NAT traversal.
+  // Without TURN, connections fail on symmetric NAT (common on mobile/4G).
+  const PEER_CFG = {
+    config: {
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun3.l.google.com:19302" },
+        { urls: "turn:openrelay.metered.ca:80",  username: "openrelayproject", credential: "openrelayproject" },
+        { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+        { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
+      ],
+    },
+  };
+
   // gameId -> path from the game/ root (used for cross-game redirect).
   const GAME_PATHS = {
     mahjong: "麻雀ゲーム/index.html",
@@ -127,7 +143,7 @@
       if (els.joinBtn) els.joinBtn.disabled = true;
       const code = randomCode();
       setStatus("部屋を作成中…");
-      peer = new Peer(roomId(code));
+      peer = new Peer(roomId(code), PEER_CFG);
       peer.on("open", () => {
         if (els.codeText) els.codeText.textContent = code;
         if (els.codeBox) els.codeBox.hidden = false;
@@ -164,7 +180,7 @@
       if (els.createBtn) els.createBtn.disabled = true;
       if (els.joinBtn) els.joinBtn.disabled = true;
       setStatus("接続中…");
-      peer = new Peer();
+      peer = new Peer(PEER_CFG);
       peer.on("open", () => {
         const c = peer.connect(roomId(code), { reliable: true });
         let settled = false;

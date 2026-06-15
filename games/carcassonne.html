@@ -871,29 +871,9 @@ function drawTileOnCtx(ctx2, tile, rot, px, py, size, meeple) {
   ctx2.fillStyle = fg;
   ctx2.fillRect(px, py, w, h);
 
-  // --- City edges (drawn first, road overlaps) ---
+  // --- City (shape depends on how the city edges connect) ---
   const DIRS = ['N', 'E', 'S', 'W'];
-  for (let i = 0; i < 4; i++) {
-    if (edges[i] === 'C') _drawCityEdge(ctx2, DIRS[i], px, py, w, h, edgeD);
-  }
-
-  // City center fill
-  if (rotated.center === 'C') {
-    const cg = ctx2.createRadialGradient(mx, my, 0, mx, my, w * 0.38);
-    cg.addColorStop(0, '#e2bc80');
-    cg.addColorStop(1, '#b87c38');
-    ctx2.fillStyle = cg;
-    ctx2.fillRect(px + w*0.2, py + h*0.2, w*0.6, h*0.6);
-  }
-
-  // City-field boundary lines
-  ctx2.strokeStyle = '#7a5020';
-  ctx2.lineWidth = Math.max(1, w * 0.025);
-  ctx2.lineJoin = 'round';
-  if (edges[0] === 'C') { ctx2.beginPath(); ctx2.moveTo(px, py + edgeD); ctx2.lineTo(px + w, py + edgeD); ctx2.stroke(); }
-  if (edges[1] === 'C') { ctx2.beginPath(); ctx2.moveTo(px + w - edgeD, py); ctx2.lineTo(px + w - edgeD, py + h); ctx2.stroke(); }
-  if (edges[2] === 'C') { ctx2.beginPath(); ctx2.moveTo(px, py + h - edgeD); ctx2.lineTo(px + w, py + h - edgeD); ctx2.stroke(); }
-  if (edges[3] === 'C') { ctx2.beginPath(); ctx2.moveTo(px + edgeD, py); ctx2.lineTo(px + edgeD, py + h); ctx2.stroke(); }
+  _drawCity(ctx2, edges, rotated.center, px, py, w, h, edgeD);
 
   // --- Monastery ---
   if (rotated.center === 'M') _drawMonastery(ctx2, px, py, w, h);
@@ -925,6 +905,88 @@ function drawTileOnCtx(ctx2, tile, rot, px, py, size, meeple) {
 
   // --- Meeple ---
   if (meeple) drawMeepleOnTile(ctx2, meeple, px, py, w, h, rotated);
+}
+
+// Draw the whole city portion of a tile. The shape depends on how the city
+// edges connect (single edge, opposite edges, corner, 3-side, full), so the
+// city/field boundary always lands between city and field — never crossing a
+// city corner or bleeding into a field.
+function _drawCity(ctx2, edges, center, px, py, w, h, d) {
+  const cityEdges = [0,1,2,3].filter(i => edges[i] === 'C');
+  if (!cityEdges.length) return;
+  const stroke = '#7a5020', lw = Math.max(1, w * 0.025);
+  ctx2.lineJoin = 'round'; ctx2.lineCap = 'round';
+
+  if (center === 'C' && cityEdges.length >= 2) {
+    if (cityEdges.length === 4) { _fillCityRect(ctx2, px, py, w, h); return; }
+    if (cityEdges.length === 3) {
+      // City fills the tile; a field notch sits on the single non-city edge.
+      _fillCityRect(ctx2, px, py, w, h);
+      _fieldNotch(ctx2, [0,1,2,3].find(i => edges[i] !== 'C'), px, py, w, h, stroke, lw);
+      return;
+    }
+    // Exactly 2 connected (adjacent) edges → diagonal corner city.
+    _cornerCity(ctx2, cityEdges, px, py, w, h, stroke, lw);
+    return;
+  }
+
+  // Shallow band city per edge (single / opposite edges — never adjacent here).
+  const DIRS = ['N','E','S','W'];
+  for (const i of cityEdges) _drawCityEdge(ctx2, DIRS[i], px, py, w, h, d);
+  ctx2.strokeStyle = stroke; ctx2.lineWidth = lw;
+  if (edges[0]==='C'){ ctx2.beginPath(); ctx2.moveTo(px, py+d); ctx2.lineTo(px+w, py+d); ctx2.stroke(); }
+  if (edges[1]==='C'){ ctx2.beginPath(); ctx2.moveTo(px+w-d, py); ctx2.lineTo(px+w-d, py+h); ctx2.stroke(); }
+  if (edges[2]==='C'){ ctx2.beginPath(); ctx2.moveTo(px, py+h-d); ctx2.lineTo(px+w, py+h-d); ctx2.stroke(); }
+  if (edges[3]==='C'){ ctx2.beginPath(); ctx2.moveTo(px+d, py); ctx2.lineTo(px+d, py+h); ctx2.stroke(); }
+}
+
+function _fillCityRect(ctx2, px, py, w, h) {
+  const g = ctx2.createRadialGradient(px+w/2, py+h/2, w*0.1, px+w/2, py+h/2, w*0.78);
+  g.addColorStop(0, '#e2bc80'); g.addColorStop(1, '#b87c38');
+  ctx2.fillStyle = g; ctx2.fillRect(px, py, w, h);
+}
+
+// Two adjacent city edges: city is the triangle covering both edges, field is
+// the opposite-corner triangle, split by a single diagonal boundary.
+function _cornerCity(ctx2, cityEdges, px, py, w, h, stroke, lw) {
+  const C = [[px,py],[px+w,py],[px+w,py+h],[px,py+h]]; // 0=NW,1=NE,2=SE,3=SW
+  const edgeCorners = [[0,1],[1,2],[2,3],[3,0]];        // edge i -> its two corners
+  const fieldEdges = [0,1,2,3].filter(i => !cityEdges.includes(i));
+  const fc = edgeCorners[fieldEdges[0]].find(c => edgeCorners[fieldEdges[1]].includes(c)); // field corner
+  const cityCorners = [0,1,2,3].filter(c => c !== fc);
+  const adj = edgeCorners[fieldEdges[0]].concat(edgeCorners[fieldEdges[1]]).filter(c => c !== fc);
+  const allCity = cityCorners.find(c => !adj.includes(c));
+  // City triangle
+  ctx2.beginPath();
+  ctx2.moveTo(C[cityCorners[0]][0], C[cityCorners[0]][1]);
+  for (let k = 1; k < cityCorners.length; k++) ctx2.lineTo(C[cityCorners[k]][0], C[cityCorners[k]][1]);
+  ctx2.closePath();
+  const g = ctx2.createLinearGradient(C[fc][0], C[fc][1], C[allCity][0], C[allCity][1]);
+  g.addColorStop(0, '#c8945a'); g.addColorStop(1, '#e6c088');
+  ctx2.fillStyle = g; ctx2.fill();
+  // Boundary diagonal
+  ctx2.strokeStyle = stroke; ctx2.lineWidth = lw;
+  ctx2.beginPath(); ctx2.moveTo(C[adj[0]][0], C[adj[0]][1]); ctx2.lineTo(C[adj[1]][0], C[adj[1]][1]); ctx2.stroke();
+}
+
+// A semicircular field pocket cut into a 3-side city, on edge f (0=N,1=E,2=S,3=W).
+function _fieldNotch(ctx2, f, px, py, w, h, stroke, lw) {
+  const mids = [[px+w/2, py], [px+w, py+h/2], [px+w/2, py+h], [px, py+h/2]];
+  const cx = mids[f][0], cy = mids[f][1], r = w * 0.32;
+  ctx2.save();
+  ctx2.beginPath(); ctx2.arc(cx, cy, r, 0, Math.PI*2); ctx2.clip();
+  const fg = ctx2.createRadialGradient(cx, cy, 0, cx, cy, r);
+  fg.addColorStop(0, '#70c43a'); fg.addColorStop(1, '#3c7018');
+  ctx2.fillStyle = fg; ctx2.fillRect(px, py, w, h);
+  ctx2.restore();
+  // Boundary = the inner half of the circle (the part inside the tile)
+  let a0, a1;
+  if (f === 0) { a0 = 0; a1 = Math.PI; }                 // N: bulge down
+  else if (f === 1) { a0 = Math.PI/2; a1 = 3*Math.PI/2; } // E: bulge left
+  else if (f === 2) { a0 = Math.PI; a1 = 2*Math.PI; }     // S: bulge up
+  else { a0 = -Math.PI/2; a1 = Math.PI/2; }               // W: bulge right
+  ctx2.strokeStyle = stroke; ctx2.lineWidth = lw;
+  ctx2.beginPath(); ctx2.arc(cx, cy, r, a0, a1); ctx2.stroke();
 }
 
 function _drawCityEdge(ctx2, dir, px, py, w, h, d) {

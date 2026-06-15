@@ -57,7 +57,7 @@ document.getElementById('undo').addEventListener('click',()=>{if(!hist.length)re
 document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 init();
 // ===== AI評価 =====
-let evalOn=false;
+var evalOn=false;
 function toggleEval(){
   evalOn=!evalOn;
   document.getElementById('eval-btn').classList.toggle('on',evalOn);

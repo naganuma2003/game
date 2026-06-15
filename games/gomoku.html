@@ -771,7 +771,7 @@ select { background: #f3ead9; color: #1c1409; }
   syncLevels();
 
   // ===== AI評価 =====
-  let evalOn = false;
+  var evalOn = false;
   function toggleEval() {
     evalOn = !evalOn;
     document.getElementById('eval-btn').classList.toggle('on', evalOn);

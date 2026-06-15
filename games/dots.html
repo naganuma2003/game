@@ -195,7 +195,7 @@ let cpuLv=2;
 document.getElementById('lv').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;cpuLv=+b.dataset.lv;document.querySelectorAll('#lv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
 init();
 // ===== AI評価 =====
-let evalOn=false;
+var evalOn=false;
 function toggleEval(){
   evalOn=!evalOn;
   document.getElementById('eval-btn').classList.toggle('on',evalOn);

@@ -335,7 +335,7 @@ document.getElementById('undo').addEventListener('click',()=>{if(!hist.length||O
 init();
 
 // ===== AI評価 =====
-let evalOn=false;
+var evalOn=false;
 function toggleEval(){
   evalOn=!evalOn;
   document.getElementById('eval-btn').classList.toggle('on',evalOn);

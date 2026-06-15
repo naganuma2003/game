@@ -1038,7 +1038,7 @@ select { background: #f3ead9; color: #20160c; }
     renderTurn();
     renderAssistHint(reco);
     undoBtn.disabled = busy || history.length === 0;
-    updateEval();
+    if(typeof updateEval==='function')updateEval();
   }
 
   function renderAssistHint(reco) {

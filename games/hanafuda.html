@@ -70,6 +70,10 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:20px;letter-spacing:.14em;
   <span class="lbl">対戦:</span>
   <button data-m="cpu" class="on">CPU対戦</button>
   <button data-m="pvp">2人対戦</button>
+  <span class="lbl" id="cpuLvlLbl" style="margin-left:8px">CPU:</span>
+  <button data-c="cpu1" id="cpu1">弱</button>
+  <button data-c="cpu2" id="cpu2" class="on">普通</button>
+  <button data-c="cpu3" id="cpu3">強</button>
   <span class="lbl" style="margin-left:8px">月数:</span>
   <button data-r="3">3</button>
   <button data-r="6" class="on">6</button>
@@ -109,7 +113,7 @@ function buildDeck(){const D=[];let id=0;
   a(11,'bright',0,'桐に鳳凰','🦅');a(11,'plain',0,'桐','🌳');a(11,'plain',0,'桐','🌳');a(11,'plain',0,'桐','🌳');
   return D;}
 
-let mode='cpu',rounds=6;
+let mode='cpu',rounds=6,cpuLevel=2;
 let deck,hands,field,captured,cur,dealer,roundNo,total,koikoi,prevTotal,over,viewP;
 let pending=null;          // {source:'hand'|'draw', card, matches:[fieldIdx]}
 let awaitingDecision=false;
@@ -305,9 +309,85 @@ function showWait(text){const ov=$('over'),tt=$('ov-t'),d=$('ov-d'),btns=$('ov-b
 /* ---------- CPU ---------- */
 function isCPU(p){return !ONLINE&&mode==='cpu'&&p===1;}
 function cardVal(c){return c.type==='bright'?20:c.type==='animal'?(c.m===8?14:10):c.type==='ribbon'?(c.ribbon==='plain'?6:8):1;}
-function cpuPickField(matches){let best=matches[0],bv=-1;for(const i of matches){const v=cardVal(field[i]);if(v>bv){bv=v;best=i;}}return best;}
-function cpuBestHand(){const h=hands[cur];let best=0,bs=-1e9;for(let i=0;i<h.length;i++){const c=h[i];const ms=matchesInField(c);let s;if(ms.length)s=10+Math.max(...ms.map(j=>cardVal(field[j])))+cardVal(c)*0.05;else s=-cardVal(c)*0.3;if(s>bs){bs=s;best=i;}}return best;}
-function cpuDecide(){const t=ykTotal(cur);if(t>=7)return 'stop';if(hands[cur].length>=4&&t<7)return 'koi';return 'stop';}
+
+/* --- CPU難易度別AI --- */
+function cpuPickField(matches){
+  if(cpuLevel===1)return matches[Math.floor(Math.random()*matches.length)];
+  if(cpuLevel===2){let best=matches[0],bv=-1;for(const i of matches){const v=cardVal(field[i]);if(v>bv){bv=v;best=i;}}return best;}
+  /* cpuLevel===3: 役への貢献度を考慮 */
+  let best=matches[0],bs=-1;
+  for(const i of matches){
+    const c=field[i];let s=cardVal(c);
+    s+=yakuBonus(c,cur);
+    if(s>bs){bs=s;best=i;}
+  }
+  return best;
+}
+
+function yakuBonus(c,p){
+  /* 強CPUが役完成に近い札を優先するためのボーナス */
+  const cap=captured[p];let b=0;
+  if(c.type==='bright'){const bc=cap.filter(x=>x.type==='bright').length;if(bc>=2)b+=15;if(bc>=3)b+=20;}
+  if(c.type==='animal'){
+    const ac=cap.filter(x=>x.type==='animal').length;if(ac>=3)b+=8;
+    const ino=cap.some(x=>x.m===6&&x.type==='animal'),shika=cap.some(x=>x.m===9&&x.type==='animal'),cho=cap.some(x=>x.m===5&&x.type==='animal');
+    const isc=[c.m===6&&c.type==='animal',c.m===9&&c.type==='animal',c.m===5&&c.type==='animal'];
+    const have=[ino,shika,cho].filter(Boolean).length;
+    if(have>=1&&isc.some(Boolean))b+=12;if(have>=2&&isc.some(Boolean))b+=20;
+  }
+  if(c.type==='ribbon'){
+    const rc=cap.filter(x=>x.type==='ribbon').length;if(rc>=3)b+=6;
+    if(c.ribbon==='red'){const reds=cap.filter(x=>x.ribbon==='red'&&[0,1,2].includes(x.m)).length;if(reds>=1)b+=8;if(reds>=2)b+=18;}
+    if(c.ribbon==='blue'){const blues=cap.filter(x=>x.ribbon==='blue'&&[5,8,9].includes(x.m)).length;if(blues>=1)b+=8;if(blues>=2)b+=18;}
+  }
+  if(c.type==='plain'){const kc=cap.filter(x=>x.type==='plain').length;if(kc>=7)b+=5;if(kc>=9)b+=10;}
+  /* 花見・月見 */
+  const hasCup=cap.some(x=>x.m===8&&x.type==='animal');
+  if(c.m===2&&c.type==='bright'&&hasCup)b+=15;
+  if(c.m===7&&c.type==='bright'&&hasCup)b+=15;
+  if(c.m===8&&c.type==='animal'){if(cap.some(x=>x.m===2&&x.type==='bright')||cap.some(x=>x.m===7&&x.type==='bright'))b+=15;}
+  return b;
+}
+
+function cpuBestHand(){
+  const h=hands[cur];
+  if(cpuLevel===1){/* 弱: ランダム */return Math.floor(Math.random()*h.length);}
+  if(cpuLevel===2){/* 普通: 基本ヒューリスティクス */
+    let best=0,bs=-1e9;for(let i=0;i<h.length;i++){const c=h[i];const ms=matchesInField(c);let s;if(ms.length)s=10+Math.max(...ms.map(j=>cardVal(field[j])))+cardVal(c)*0.05;else s=-cardVal(c)*0.3;if(s>bs){bs=s;best=i;}}return best;
+  }
+  /* cpuLevel===3: 役完成を意識した選択 */
+  let best=0,bs=-1e9;
+  for(let i=0;i<h.length;i++){
+    const c=h[i];const ms=matchesInField(c);let s;
+    if(ms.length){
+      const bestField=Math.max(...ms.map(j=>cardVal(field[j])+yakuBonus(field[j],cur)));
+      s=10+bestField+cardVal(c)*0.1+yakuBonus(c,cur)*0.5;
+    }else{
+      /* 場に出すと相手に取られるリスク: 高価値カードは出したくない */
+      s=-cardVal(c)*0.5-yakuBonus(c,1-cur)*0.3;
+    }
+    if(s>bs){bs=s;best=i;}
+  }
+  return best;
+}
+
+function cpuDecide(){
+  const t=ykTotal(cur);const hl=hands[cur].length;
+  if(cpuLevel===1){/* 弱: ランダム */return Math.random()<0.5?'koi':'stop';}
+  if(cpuLevel===2){/* 普通 */if(t>=7)return 'stop';if(hl>=4&&t<7)return 'koi';return 'stop';}
+  /* cpuLevel===3: リスク・リワード判定 */
+  const oppT=ykTotal(1-cur);const oppCap=captured[1-cur];
+  const oppBrights=oppCap.filter(c=>c.type==='bright').length;
+  const risk=oppBrights>=2||oppT>=3;
+  if(t>=10)return 'stop';
+  if(t>=7&&hl<=2)return 'stop';
+  if(t>=7&&risk)return 'stop';
+  if(hl>=5&&t<5)return 'koi';
+  if(hl>=3&&t<3&&!risk)return 'koi';
+  if(t>=5&&hl<=3)return 'stop';
+  if(hl>=4&&!risk)return 'koi';
+  return 'stop';
+}
 function cpuTurn(){ // オフラインCPU専用
   if(over||cur!==1)return;busy=true;
   if(!hands[1].length)return endTurn();
@@ -343,7 +423,8 @@ function msg(s){$('msg').textContent=s;}
 /* ---------- ボタン ---------- */
 $('reset').addEventListener('click',()=>{if(ONLINE)return;newGame();});
 $('opts').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;
-  if(b.dataset.m){mode=b.dataset.m;document.querySelectorAll('#opts button[data-m]').forEach(x=>x.classList.toggle('on',x===b));}
+  if(b.dataset.m){mode=b.dataset.m;document.querySelectorAll('#opts button[data-m]').forEach(x=>x.classList.toggle('on',x===b));const show=mode==='cpu';document.querySelectorAll('#opts button[data-c]').forEach(x=>x.style.display=show?'':'none');$('cpuLvlLbl').style.display=show?'':'none';}
+  if(b.dataset.c){cpuLevel=+b.dataset.c.replace('cpu','');document.querySelectorAll('#opts button[data-c]').forEach(x=>x.classList.toggle('on',x===b));}
   if(b.dataset.r){rounds=+b.dataset.r;document.querySelectorAll('#opts button[data-r]').forEach(x=>x.classList.toggle('on',x===b));}
   newGame();});
 newGame();

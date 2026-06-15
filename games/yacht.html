@@ -52,12 +52,15 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;
 <body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 <h1>ヨット</h1><div class="sub">YACHT — サイコロ役作り</div>
-<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:8px" id="np">
+<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:4px" id="np">
 <span style="font-size:11px;color:var(--sub);align-self:center;margin-right:2px">人数:</span>
 <button data-np="1" class="on" style="background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">1人</button>
 <button data-np="2" style="background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">2人</button>
 <button data-np="3" style="background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">3人</button>
 <button data-np="4" style="background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">4人</button>
+</div>
+<div id="cpu-cfg" style="display:none;margin-bottom:8px;text-align:center">
+<div id="seat-rows" style="display:flex;flex-direction:column;gap:4px;align-items:center"></div>
 </div>
 <div id="curp" style="font-size:13px;color:var(--gold);min-height:18px;margin-bottom:4px;display:none"></div>
 <div class="dice" id="dice"></div>
@@ -89,8 +92,13 @@ function isFull(d){const v=Object.values(counts(d)).sort();return v.length===2&&
 function straight(d,len){const s=[...new Set(d)].sort((a,b)=>a-b);let run=1,best=1;for(let i=1;i<s.length;i++){if(s[i]===s[i-1]+1){run++;best=Math.max(best,run);}else run=1;}return best>=len;}
 let dice,keep,rolls,allScores,turn,over,np=1,curPlayer;
 let ONLINE=false,MYSEAT=0,roomSend=null;
+// CPU seats: seatCpu[i] = 0 (human), 1 (弱), 2 (普通), 3 (強)
+let seatCpu=[0,0,0,0];
+let cpuBusy=false;
 const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a']; // P1赤 P2青 P3緑 P4黄
-function myTurn(){return !ONLINE||curPlayer===MYSEAT;}
+const CPU_NAMES={0:'人間',1:'CPU弱',2:'CPU普通',3:'CPU強'};
+function isCpuSeat(s){return !ONLINE&&seatCpu[s]>0;}
+function myTurn(){if(ONLINE)return curPlayer===MYSEAT;return !isCpuSeat(curPlayer);}
 // online: route every input through the relay so all clients apply in one order
 function emit(a){if(ONLINE){if(!myTurn()||over)return;roomSend(a);}else doAction(a);}
 function doAction(a){if(a.k==='roll')_roll();else if(a.k==='keep')_toggleKeep(a.i);else if(a.k==='record')_record(a.id);else if(a.k==='autoturn')_autoturn();}
@@ -99,18 +107,50 @@ function _autoturn(){if(rolls===0)_roll();const c=CATS.find(x=>scores()[x.id]===
 function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&((OnlineRoom.isCpu&&OnlineRoom.isCpu(s))||(OnlineRoom.isGone&&OnlineRoom.isGone(s)));}
 function autoKick(){if(!ONLINE||!OnlineRoom.isHost()||over||np<=1)return;if(!isAutoSeat(curPlayer))return;
   setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!over&&isAutoSeat(curPlayer))OnlineRoom.send({k:'autoturn'});},700);}
+
+/* ==================== CPU seat config UI ==================== */
+function renderSeatCfg(){
+  const wrap=document.getElementById('cpu-cfg');
+  const rows=document.getElementById('seat-rows');
+  if(np<=1||ONLINE){wrap.style.display='none';return;}
+  wrap.style.display='block';rows.innerHTML='';
+  for(let i=0;i<np;i++){
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:5px;align-items:center;justify-content:center';
+    const lbl=document.createElement('span');
+    lbl.style.cssText='font-size:11px;width:28px;text-align:right;margin-right:2px;font-weight:700;color:'+PCOL[i];
+    lbl.textContent='P'+(i+1);
+    row.appendChild(lbl);
+    const opts=i===0?[['人間',0]]:[['人間',0],['CPU弱',1],['CPU普通',2],['CPU強',3]];
+    for(const [t,v] of opts){
+      const b=document.createElement('button');
+      b.textContent=t;
+      const sel=seatCpu[i]===v;
+      b.style.cssText='background:transparent;border:1px solid '+(sel?'var(--gold)':'#3a3326')+';color:'+(sel?'var(--gold)':'var(--sub)')+';padding:3px 10px;border-radius:14px;font-size:11px;cursor:pointer;font-family:inherit';
+      b.addEventListener('click',()=>{seatCpu[i]=v;renderSeatCfg();init();});
+      row.appendChild(b);
+    }
+    rows.appendChild(row);
+  }
+}
+
 function init(){dice=[1,1,1,1,1];keep=[false,false,false,false,false];rolls=0;
-  allScores=Array.from({length:np},()=>({}));turn=0;curPlayer=0;over=false;
+  allScores=Array.from({length:np},()=>({}));turn=0;curPlayer=0;over=false;cpuBusy=false;
   document.getElementById('over').classList.remove('show');
   document.getElementById('curp').style.display=np>1?'block':'none';
-  updateCurP();renderDice();renderSheet();updateRollBtn();}
+  updateCurP();renderDice();renderSheet();updateRollBtn();scheduleCpuTurn();}
 function scores(){return allScores[curPlayer];}
 function updateCurP(){
   if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(curPlayer===MYSEAT&&!over);
   if(np<=1)return;
   const me=ONLINE&&curPlayer===MYSEAT;
   const cp=document.getElementById('curp');
-  cp.textContent=(me?'★ あなた（P'+(curPlayer+1)+'）':'プレイヤー '+(curPlayer+1))+' の番（'+turn+'/13問目）';
+  const cpuLvl=isCpuSeat(curPlayer)?CPU_NAMES[seatCpu[curPlayer]]:null;
+  if(cpuLvl){
+    cp.textContent='P'+(curPlayer+1)+'（'+cpuLvl+'）の番（'+turn+'/13問目）';
+  } else {
+    cp.textContent=(me?'★ あなた（P'+(curPlayer+1)+'）':'プレイヤー '+(curPlayer+1))+' の番（'+turn+'/13問目）';
+  }
   cp.style.color=over?'var(--gold)':PCOL[curPlayer];cp.style.fontWeight='800';}
 function renderDice(){const el=document.getElementById('dice');el.innerHTML='';dice.forEach((v,i)=>{
   const d=document.createElement('div');d.className='die'+(keep[i]?' keep':'');
@@ -148,6 +188,151 @@ function catRow(sh,c){const r=document.createElement('div');
   r.innerHTML=`<span class="nm">${c.name}</span><span class="pt">${used?scores()[c.id]:(preview!==null?preview:'')}</span>`;
   if(canRec)r.addEventListener('click',()=>emit({k:'record',id:c.id}));
   sh.appendChild(r);}
+/* ==================== CPU AI ==================== */
+function scheduleCpuTurn(){
+  if(ONLINE||over||!isCpuSeat(curPlayer))return;
+  cpuBusy=true;
+  setTimeout(()=>runCpuTurn(),600);
+}
+function runCpuTurn(){
+  if(over||!isCpuSeat(curPlayer)){cpuBusy=false;return;}
+  const lvl=seatCpu[curPlayer];
+  // Roll 1
+  _roll();renderDice();renderSheet();updateRollBtn();
+  const doRoll2=()=>{
+    cpuKeep(lvl);renderDice();
+    setTimeout(()=>{
+      _roll();renderDice();renderSheet();updateRollBtn();
+      const doRoll3=()=>{
+        cpuKeep(lvl);renderDice();
+        setTimeout(()=>{
+          _roll();renderDice();renderSheet();updateRollBtn();
+          setTimeout(()=>{cpuRecord(lvl);cpuBusy=false;},500);
+        },500);
+      };
+      // decide whether to use roll 3
+      if(cpuShouldReroll(lvl)){doRoll3();}
+      else{setTimeout(()=>{cpuRecord(lvl);cpuBusy=false;},500);}
+    },500);
+  };
+  // decide whether to use roll 2
+  setTimeout(()=>{
+    if(cpuShouldReroll(lvl)){doRoll2();}
+    else{setTimeout(()=>{cpuRecord(lvl);cpuBusy=false;},500);}
+  },500);
+}
+function cpuShouldReroll(lvl){
+  if(rolls>=3)return false;
+  if(lvl===1)return Math.random()<0.7; // weak: usually rerolls
+  // check if we already have a great hand
+  const open=CATS.filter(c=>scores()[c.id]===undefined);
+  const best=Math.max(...open.map(c=>c.fn(dice)));
+  if(lvl===2)return best<20;
+  // strong: reroll unless we have yacht or high scoring combo
+  if(best>=40)return false;
+  return true;
+}
+function cpuKeep(lvl){
+  keep=[false,false,false,false,false];
+  if(lvl===1){
+    // weak: random keeps
+    for(let i=0;i<5;i++)keep[i]=Math.random()<0.35;
+    return;
+  }
+  if(lvl===2){
+    // medium: keep the most frequent value (prefer higher)
+    const ct=counts(dice);
+    let bestVal=0,bestCnt=0;
+    for(const[v,c]of Object.entries(ct)){if(c>bestCnt||(c===bestCnt&&+v>bestVal)){bestCnt=c;bestVal=+v;}}
+    if(bestCnt>=2){for(let i=0;i<5;i++)keep[i]=dice[i]===bestVal;}
+    else{for(let i=0;i<5;i++)keep[i]=dice[i]>=5;} // keep high values
+    return;
+  }
+  // strong: evaluate best keep pattern
+  cpuKeepStrong();
+}
+function cpuKeepStrong(){
+  const sc=scores();
+  const open=CATS.filter(c=>sc[c.id]===undefined);
+  let bestKeep=[false,false,false,false,false],bestEV=-1;
+  // Try all 32 keep masks
+  for(let mask=0;mask<32;mask++){
+    const k=[!!(mask&1),!!(mask&2),!!(mask&4),!!(mask&8),!!(mask&16)];
+    const ev=estimateEV(k,open);
+    if(ev>bestEV){bestEV=ev;bestKeep=k;}
+  }
+  for(let i=0;i<5;i++)keep[i]=bestKeep[i];
+}
+function estimateEV(keepMask,openCats){
+  // Monte Carlo: sample random rerolls and take best open category score
+  const fixed=[];
+  for(let i=0;i<5;i++)if(keepMask[i])fixed.push({idx:i,val:dice[i]});
+  const freeCount=5-fixed.length;
+  if(freeCount===0){return Math.max(...openCats.map(c=>c.fn(dice)));}
+  const N=200;
+  let total=0;
+  for(let s=0;s<N;s++){
+    const d=[...dice];
+    for(let i=0;i<5;i++)if(!keepMask[i])d[i]=1+Math.floor(Math.random()*6);
+    const best=Math.max(...openCats.map(c=>c.fn(d)));
+    total+=best;
+  }
+  return total/N;
+}
+function cpuRecord(lvl){
+  const sc=scores();
+  const open=CATS.filter(c=>sc[c.id]===undefined);
+  if(open.length===0)return;
+  if(lvl===1){
+    // weak: random category
+    const pick=open[Math.floor(Math.random()*open.length)];
+    _record(pick.id);return;
+  }
+  if(lvl===2){
+    // medium: pick highest scoring open category, but consider upper bonus
+    let best=null,bestScore=-1;
+    for(const c of open){
+      let s=c.fn(dice);
+      // slight bonus for upper section progress toward 63
+      if(c.up){const need=63-upperSum();if(need>0)s+=Math.min(s*0.3,5);}
+      if(s>bestScore){bestScore=s;best=c;}
+    }
+    // if all scores are 0, sacrifice lowest-value category
+    if(bestScore===0){
+      const sacrifice=open.find(c=>c.id==='ones')||open.find(c=>c.id==='twos')||open[0];
+      _record(sacrifice.id);return;
+    }
+    _record(best.id);return;
+  }
+  // strong: evaluate expected value considering upper bonus
+  cpuRecordStrong(open);
+}
+function cpuRecordStrong(open){
+  let best=null,bestVal=-999;
+  const uSum=upperSum();
+  for(const c of open){
+    let v=c.fn(dice);
+    // Factor in upper bonus: if choosing this helps reach 63, add fractional bonus value
+    if(c.up){
+      const afterU=uSum+v;
+      const remaining=open.filter(x=>x.up&&x.id!==c.id);
+      // estimate remaining upper potential (avg ~3 per die * count of die * 3 remaining)
+      const remPotential=remaining.reduce((s,x)=>{const n=parseInt({ones:1,twos:2,threes:3,fours:4,fives:5,sixes:6}[x.id]||0);return s+n*3/6*5;},0);
+      if(afterU+remPotential>=63&&uSum+remPotential<63)v+=35*0.5; // this pick enables bonus
+      if(afterU>=63&&uSum<63)v+=35; // this pick clinches bonus
+    }
+    // penalty for wasting a category (scoring 0 when it could score well later)
+    if(v===0&&c.fn){
+      // estimate how much we'd lose by burning this category
+      v=-5;
+      if(c.id==='yacht')v=-8;
+      if(c.id==='lstr')v=-6;
+    }
+    if(v>bestVal){bestVal=v;best=c;}
+  }
+  _record(best.id);
+}
+
 function _record(id){const c=CATS.find(x=>x.id===id);if(!c||scores()[c.id]!==undefined||rolls===0||over)return;
   scores()[c.id]=c.fn(dice);
   keep=[false,false,false,false,false];rolls=0;
@@ -159,24 +344,34 @@ function _record(id){const c=CATS.find(x=>x.id===id);if(!c||scores()[c.id]!==und
     turn++;
     if(turn>=13){finish();return;}
   }
-  updateCurP();renderDice();renderSheet();updateRollBtn();autoKick();}
+  updateCurP();renderDice();renderSheet();updateRollBtn();
+  if(ONLINE)autoKick();
+  else scheduleCpuTurn();}
 function finish(){over=true;updateRollBtn();
   if(np===1){document.getElementById('ov-s').textContent='合計 '+grandTotal()+' 点'+(grandTotal()>=200?'（ハイスコア級！）':'');}
-  else{const totals=allScores.map((_,p)=>grandTotal(p));const max=Math.max(...totals);const winners=totals.map((v,i)=>v===max?i+1:null).filter(x=>x);const r=winners.length>1?'引き分け（P'+winners.join(', P')+'）':'プレイヤー'+winners[0]+'の勝ち！';const det=totals.map((v,i)=>'P'+(i+1)+': '+v+'点').join(' / ');document.getElementById('ov-s').innerHTML=r+'<br><span style="font-size:13px">'+det+'</span>';}
+  else{const totals=allScores.map((_,p)=>grandTotal(p));const max=Math.max(...totals);const winners=totals.map((v,i)=>v===max?i+1:null).filter(x=>x);
+    const pName=i=>'P'+i+(isCpuSeat(i-1)?'('+CPU_NAMES[seatCpu[i-1]]+')':'');
+    const r=winners.length>1?'引き分け（'+winners.map(pName).join(', ')+'）':pName(winners[0])+'の勝ち！';
+    const det=totals.map((v,i)=>pName(i+1)+': '+v+'点').join(' / ');document.getElementById('ov-s').innerHTML=r+'<br><span style="font-size:13px">'+det+'</span>';}
   document.getElementById('over').classList.add('show');
   try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
 document.getElementById('roll').addEventListener('click',roll);
 document.getElementById('again').addEventListener('click',()=>{if(ONLINE)return;init();});
-document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>{x.classList.remove('on');x.style.borderColor='#3a3326';x.style.color='var(--sub)';});b.classList.add('on');b.style.borderColor='var(--gold)';b.style.color='var(--gold)';init();});
+document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>{x.classList.remove('on');x.style.borderColor='#3a3326';x.style.color='var(--sub)';});b.classList.add('on');b.style.borderColor='var(--gold)';b.style.color='var(--gold)';
+  // default: P2+ are CPU普通 when switching to multiplayer
+  if(np>=2)for(let i=1;i<4;i++)if(seatCpu[i]===0)seatCpu[i]=2;
+  renderSeatCfg();init();});
 init();
 function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
   document.getElementById('np').style.display='none';
+  document.getElementById('cpu-cfg').style.display='none';
   document.getElementById('again').style.display='none';
   init();}
 // 再接続: 現在状態の書き出し/復元
 function getState(){return {dice,keep,rolls,allScores,turn,curPlayer,over};}
 function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;
   document.getElementById('np').style.display='none';
+  document.getElementById('cpu-cfg').style.display='none';
   document.getElementById('again').style.display='none';
   const s=o.state;dice=s.dice;keep=s.keep;rolls=s.rolls;allScores=s.allScores;turn=s.turn;curPlayer=s.curPlayer;over=s.over;
   document.getElementById('curp').style.display=np>1?'block':'none';

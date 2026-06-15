@@ -153,7 +153,9 @@ h1 {
 <div class="sub">CARCASSONNE</div>
 
 <div class="modes" id="modes">
-  <button data-m="solo">ひとり（CPU）</button>
+  <button data-m="cpu1">CPU 弱</button>
+  <button data-m="cpu2">CPU 普通</button>
+  <button data-m="cpu3">CPU 強</button>
   <button data-m="pvp2" class="on">2人対戦</button>
   <button data-m="pvp3">3人対戦</button>
   <button data-m="pvp4">4人対戦</button>
@@ -251,6 +253,7 @@ const DY = [-1,0,1,0];
 /* ===== GAME STATE ===== */
 let state = null;
 let mode = 'pvp2';
+let cpuLevel = 0; // 0=none, 1=weak, 2=normal, 3=strong
 let myOnlineSeat = -1;
 let onlineSend = null;
 let isOnlineGame = false;
@@ -695,7 +698,7 @@ function getMeepleDirs(x, y) {
 function isMyTurn() {
   if (!state) return false;
   if (isOnlineGame) return state.turn === myOnlineSeat;
-  if (mode === 'solo') return state.turn === 0;
+  if (cpuLevel > 0) return state.turn === 0;
   return true; // PvP: all seats are human
 }
 
@@ -777,7 +780,7 @@ function nextTurn() {
 
   const cpuTurn = isOnlineGame
     ? (myOnlineSeat === 0 && onlineNcpus > 0 && state.turn >= state.nPlayers - onlineNcpus)
-    : (!isOnlineGame && mode === 'solo' && state.turn !== 0);
+    : (!isOnlineGame && cpuLevel > 0 && state.turn !== 0);
   if (cpuTurn) setTimeout(doCPUTurn, 500);
 }
 
@@ -794,8 +797,151 @@ function hasAnyValidPlacement(tile) {
 }
 
 /* ===== CPU AI ===== */
+function evaluateMove(tile, rot, x, y) {
+  // Score a potential tile placement for CPU heuristic evaluation
+  let score = 0;
+  const rotated = getRotatedTile(tile, rot);
+  const edges = [rotated.n, rotated.e, rotated.s, rotated.w];
+
+  // Temporarily place tile to evaluate
+  const key = posKey(x, y);
+  const tempCell = { tile, rot, meeple: null };
+  state.board[key] = tempCell;
+
+  // Reward completing cities (high value)
+  const scoredCities = new Set();
+  for (let edge = 0; edge < 4; edge++) {
+    if (edges[edge] !== 'C') continue;
+    const res = checkCityComplete(x, y, edge);
+    const sig = res.tiles.map(t => posKey(t.x, t.y)).sort().join('|');
+    if (scoredCities.has(sig)) continue;
+    scoredCities.add(sig);
+    if (res.complete) {
+      score += res.tiles.length * 2 + res.shieldCount * 2 + 5; // bonus for completing
+      // Extra if our meeple scores
+      const winners = getWinners(res.meeples);
+      if (winners.includes(state.turn)) score += 8;
+    } else {
+      // Extending a city we own
+      const winners = getWinners(res.meeples);
+      if (winners.includes(state.turn)) score += res.tiles.length;
+    }
+  }
+
+  // Reward completing roads
+  const scoredRoads = new Set();
+  for (let edge = 0; edge < 4; edge++) {
+    if (edges[edge] !== 'R') continue;
+    const res = checkRoadComplete(x, y, edge);
+    const sig = res.tiles.map(t => posKey(t.x, t.y)).sort().join('|');
+    if (scoredRoads.has(sig)) continue;
+    scoredRoads.add(sig);
+    if (res.complete) {
+      score += res.tiles.length + 3;
+      const winners = getWinners(res.meeples);
+      if (winners.includes(state.turn)) score += 5;
+    } else {
+      const winners = getWinners(res.meeples);
+      if (winners.includes(state.turn)) score += 1;
+    }
+  }
+
+  // Reward completing monasteries nearby
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const mx = x + dx, my = y + dy;
+      const mc = state.board[posKey(mx, my)];
+      if (!mc) continue;
+      const mr = getRotatedTile(mc.tile, mc.rot);
+      if (mr.center !== 'M') continue;
+      if (mc.meeple && mc.meeple.dir === 'C') {
+        const { complete } = checkMonastery(mx, my);
+        if (complete) {
+          score += 9;
+          if (mc.meeple.seat === state.turn) score += 5;
+        } else if (mc.meeple.seat === state.turn) {
+          score += 1; // progressing our monastery
+        }
+      }
+    }
+  }
+
+  // Prefer more neighbors (tighter board)
+  let neighbors = 0;
+  for (let d = 0; d < 4; d++) {
+    if (state.board[posKey(x + DX[d], y + DY[d])]) neighbors++;
+  }
+  score += neighbors * 0.5;
+
+  // Remove temporary placement
+  delete state.board[key];
+
+  return score;
+}
+
+function cpuChooseMeeple(x, y, level) {
+  const dirs = getMeepleDirs(x, y);
+  const valid = dirs.filter(d => !d.disabled);
+  if (valid.length === 0 || state.meeples[state.turn] === 0) return null;
+
+  if (level === 1) {
+    // Weak: place meeple 25% of the time, random choice
+    return Math.random() < 0.25 ? valid[Math.floor(Math.random() * valid.length)].dir : null;
+  }
+
+  if (level === 2) {
+    // Normal: 50% chance, slight preference for cities
+    if (Math.random() < 0.5) return null;
+    const cities = valid.filter(d => d.type === 'C');
+    const monasteries = valid.filter(d => d.type === 'M');
+    if (monasteries.length > 0 && Math.random() < 0.6) return monasteries[0].dir;
+    if (cities.length > 0 && Math.random() < 0.6) return cities[0].dir;
+    return valid[Math.floor(Math.random() * valid.length)].dir;
+  }
+
+  // Strong: evaluate each meeple placement
+  let bestDir = null, bestVal = -1;
+  const cell = state.board[posKey(x, y)];
+  const rotated = getRotatedTile(cell.tile, cell.rot);
+
+  for (const { dir, type } of valid) {
+    let val = 0;
+    const edge = dirToEdge(dir);
+
+    if (dir === 'C' && rotated.center === 'M') {
+      // Monastery: value = surrounding tiles count + potential
+      const { count } = checkMonastery(x, y);
+      val = count + 1 + 3; // base value for monastery
+    } else if (type === 'C' && edge !== null) {
+      const res = checkCityComplete(x, y, edge);
+      if (res.complete) {
+        val = res.tiles.length * 2 + res.shieldCount * 2; // will score immediately
+      } else {
+        val = res.tiles.length * 1.5 + res.shieldCount; // potential
+      }
+    } else if (type === 'R' && edge !== null) {
+      const res = checkRoadComplete(x, y, edge);
+      if (res.complete) {
+        val = res.tiles.length;
+      } else {
+        val = res.tiles.length * 0.5;
+      }
+    }
+
+    if (val > bestVal) { bestVal = val; bestDir = dir; }
+  }
+
+  // Only place if the expected value is worthwhile, or if we have plenty of meeples
+  if (bestVal >= 2 || (state.meeples[state.turn] >= 4 && bestVal >= 1)) return bestDir;
+  if (state.meeples[state.turn] >= 5 && Math.random() < 0.3 && valid.length > 0) {
+    return valid[Math.floor(Math.random() * valid.length)].dir;
+  }
+  return null;
+}
+
 function doCPUTurn() {
   if (!state || state.phase !== 'place') return;
+  const level = cpuLevel || 2;
 
   const moves = [];
   for (let rot = 0; rot < 4; rot++) {
@@ -812,7 +958,32 @@ function doCPUTurn() {
     if (isOnlineGame) onlineSend({ type: 'skip-meeple' }); else nextTurn();
     return;
   }
-  const pick = moves[Math.floor(Math.random() * moves.length)];
+
+  let pick;
+  if (level === 1) {
+    // Weak: mostly random, 20% chance to pick a decent move
+    if (Math.random() < 0.2 && moves.length > 1) {
+      const scored = moves.map(m => ({ ...m, score: evaluateMove(state.currentTile, m.rot, m.x, m.y) }));
+      scored.sort((a, b) => b.score - a.score);
+      pick = scored[Math.floor(Math.random() * Math.min(3, scored.length))];
+    } else {
+      pick = moves[Math.floor(Math.random() * moves.length)];
+    }
+  } else if (level === 2) {
+    // Normal: evaluate and pick from top half with some randomness
+    const scored = moves.map(m => ({ ...m, score: evaluateMove(state.currentTile, m.rot, m.x, m.y) }));
+    scored.sort((a, b) => b.score - a.score);
+    const topN = Math.max(1, Math.ceil(scored.length * 0.4));
+    pick = scored[Math.floor(Math.random() * topN)];
+  } else {
+    // Strong: pick the best move
+    const scored = moves.map(m => ({ ...m, score: evaluateMove(state.currentTile, m.rot, m.x, m.y) }));
+    scored.sort((a, b) => b.score - a.score);
+    // Small randomness among top 2 equal-score moves
+    const best = scored.filter(m => m.score === scored[0].score);
+    pick = best[Math.floor(Math.random() * best.length)];
+  }
+
   currentRot = pick.rot;
   computeValidMoves();
   renderAll();
@@ -826,10 +997,7 @@ function doCPUTurn() {
     }
     setTimeout(() => {
       if (state.phase !== 'meeple') return;
-      const dirs = getMeepleDirs(pick.x, pick.y);
-      const valid = dirs.filter(d => !d.disabled);
-      const chooseDir = valid.length > 0 && state.meeples[state.turn] > 0 && Math.random() < 0.4
-        ? valid[Math.floor(Math.random() * valid.length)].dir : null;
+      const chooseDir = cpuChooseMeeple(pick.x, pick.y, level);
       if (isOnlineGame) {
         onlineSend(chooseDir ? { type: 'meeple', dir: chooseDir } : { type: 'skip-meeple' });
       } else {
@@ -1403,7 +1571,8 @@ document.getElementById('modes').addEventListener('click', (e) => {
 function startGame() {
   if (isOnlineGame) return;
   document.getElementById('gov').classList.remove('show');
-  const nMap = { solo: 2, pvp2: 2, pvp3: 3, pvp4: 4 };
+  cpuLevel = mode === 'cpu1' ? 1 : mode === 'cpu2' ? 2 : mode === 'cpu3' ? 3 : 0;
+  const nMap = { cpu1: 2, cpu2: 2, cpu3: 2, pvp2: 2, pvp3: 3, pvp4: 4 };
   initGame(nMap[mode] || 2);
   drawCurrentTile();
 }

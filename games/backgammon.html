@@ -124,6 +124,7 @@ svg{display:block;width:min(98vw,520px);height:auto}
 
 <div class="modes" id="modes">
   <button data-m="cpu1" class="on">CPU 弱</button>
+  <button data-m="cpu_mid">CPU 普通</button>
   <button data-m="cpu2">CPU 強</button>
   <button data-m="pvp">2人対戦</button>
 </div>
@@ -585,6 +586,7 @@ function renderDice(){
 /* =================== flow =================== */
 function msg(s){document.getElementById('msg').textContent=s;}
 const isHumanTurn=()=>mode==='pvp'||turn===W;
+const isCpuMode=()=>mode==='cpu1'||mode==='cpu_mid'||mode==='cpu2';
 const rnd=()=>1+Math.floor(Math.random()*6);
 
 function init(){
@@ -735,6 +737,12 @@ function cpuTurn(){
     let chosen;
     if(mode==='cpu1'){
       chosen=valid[Math.floor(Math.random()*valid.length)];
+    }else if(mode==='cpu_mid'){
+      let bs=-Infinity;
+      for(const s of valid){
+        const v=evalSt(s.st,B)+Math.random()*18;
+        if(v>bs){bs=v;chosen=s;}
+      }
     }else{
       let bs=-Infinity;
       for(const s of valid){

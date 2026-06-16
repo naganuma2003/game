@@ -102,6 +102,15 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:23px;letter-spacing:.18em;
 <div class="foot"><button id="new">配り直し</button></div>
 <div class="win" id="winov"><div class="c"><div class="t" id="wint">結果</div><div class="rk" id="winrk"></div><button id="again">もう一度</button></div></div>
 <div class="handoff" id="handoff"><div class="c"><div class="t" id="ho-t">交代</div><div class="s" id="ho-s">端末を渡してください</div><button id="ho-ok">手札を見る</button></div></div>
+<div id="online-rule-dlg" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.7);align-items:center;justify-content:center">
+<div style="background:#1d2330;padding:28px 24px;border-radius:14px;min-width:260px;text-align:center">
+<div style="color:#e0a13a;font-weight:700;font-size:17px;margin-bottom:16px">オンライン ルール設定</div>
+<div style="margin-bottom:14px;text-align:left">
+<label style="font-size:13px;color:#aab">ジョーカー枚数</label>
+<select id="ol-joker" style="display:block;width:100%;margin-top:4px;padding:8px;background:#141420;border:1px solid #333;color:#e8e6e0;border-radius:8px;font-size:14px">
+<option value="0" selected>0枚（なし）</option><option value="1">1枚</option><option value="2">2枚</option></select></div>
+<button onclick="sendOnlineSetup()" style="width:100%;padding:11px;background:#e0a13a;color:#111;border:none;border-radius:10px;font:700 15px 'Segoe UI',sans-serif;cursor:pointer">ゲーム開始</button>
+</div></div>
 <script>
 const SUITS=['♠','♥','♦','♣'],RED={'♥':1,'♦':1};
 const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
@@ -276,8 +285,7 @@ function endGame(){gameOver=true;
   document.getElementById('winrk').innerHTML=html;
   document.getElementById('winov').classList.add('show');
   try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
-document.getElementById('pass').addEventListener('click',()=>{if(!canAct())return;
-  if(legalCards(turn).length){msg('出せるカードがあります（パスできません）');return;}emit({k:'pass'});});
+document.getElementById('pass').addEventListener('click',()=>{if(!canAct())return;emit({k:'pass'});});
 function newGame(){if(ONLINE)return;init();}
 document.getElementById('new').addEventListener('click',newGame);
 document.getElementById('again').addEventListener('click',newGame);
@@ -313,9 +321,24 @@ init();
 function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
   document.getElementById('setup').classList.add('hidden');
   document.querySelector('.foot').classList.add('hidden');
-  if(seat===0)roomSend({k:'setup',np:n,jokerCount});
-  else msg('ホストの設定を待っています…');}
-function applySetup(a){np=a.np;jokerCount=a.jokerCount;init();}
+  if(seat===0){
+    const d=document.getElementById('online-rule-dlg');d.style.display='flex';
+  } else msg('ホストの設定を待っています…');}
+function sendOnlineSetup(){
+  const d=document.getElementById('online-rule-dlg');d.style.display='none';
+  jokerCount=+document.getElementById('ol-joker').value;
+  init();
+  roomSend({k:'setup',np,jokerCount,hands:hands.map(h=>h.map(c=>c.joker?{joker:true,s:-1,r:-1}:{s:c.s,r:c.r})),turn});}
+function applySetup(a){np=a.np;jokerCount=a.jokerCount;
+  NAMES=makeNames();
+  hands=a.hands.map(h=>h.map(c=>c.joker?{joker:true,s:-1,r:-1}:{s:c.s,r:c.r}));
+  board=Array.from({length:4},()=>new Array(13).fill(false));
+  passes=new Array(np).fill(0);outCnt=new Array(np).fill(false);finished=[];gameOver=false;busy=false;jokerPending=null;
+  for(let s=0;s<4;s++)board[s][6]=true;
+  turn=a.turn;localView=0;
+  document.getElementById('winov').classList.remove('show');
+  document.getElementById('handoff').classList.remove('show');
+  beginTurn(true);}
 // 再接続: 現在状態の書き出し/復元
 function getState(){return {hands,board,turn,passes,outCnt,finished,gameOver,jokerCount};}
 function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;

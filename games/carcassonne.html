@@ -778,8 +778,10 @@ function nextTurn() {
   updateMsg();
   drawCurrentTile();
 
+  updateOnlineTurnBadge();
+
   const cpuTurn = isOnlineGame
-    ? (myOnlineSeat === 0 && onlineNcpus > 0 && state.turn >= state.nPlayers - onlineNcpus)
+    ? shouldOnlineCpuPlay()
     : (!isOnlineGame && cpuLevel > 0 && state.turn !== 0);
   if (cpuTurn) setTimeout(doCPUTurn, 500);
 }
@@ -1589,6 +1591,104 @@ function handleOnlineMessage(fromSeat, msg) {
     hideMeeplePanel();
     applyMeeple(null);
   }
+  updateOnlineTurnBadge();
+}
+
+function updateOnlineTurnBadge() {
+  if (!isOnlineGame || !state || !window.OnlineRoom || !OnlineRoom.setTurn) return;
+  OnlineRoom.setTurn(state.phase !== 'end' && state.turn === myOnlineSeat);
+}
+
+function shouldOnlineCpuPlay() {
+  if (!isOnlineGame || !state || state.phase === 'end') return false;
+  if (myOnlineSeat !== 0) return false; // only host drives CPU
+  const seat = state.turn;
+  // CPU seats or disconnected humans
+  if (window.OnlineRoom && OnlineRoom.isAuto && OnlineRoom.isAuto(seat)) return true;
+  return false;
+}
+
+// Reconnection: serialize / restore full game state
+function getOnlineState() {
+  if (!state) return null;
+  return {
+    board: serializeBoard(),
+    deck: state.deck.map(t => serializeTileDef(t)),
+    nPlayers: state.nPlayers,
+    scores: [...state.scores],
+    meeples: [...state.meeples],
+    turn: state.turn,
+    phase: state.phase,
+    currentTile: state.currentTile ? serializeTileDef(state.currentTile) : null,
+    currentRot: currentRot,
+    lastPlaced: state.lastPlaced ? { ...state.lastPlaced } : null,
+  };
+}
+
+function serializeTileDef(t) {
+  const o = { n:t.n, e:t.e, s:t.s, w:t.w, center:t.center,
+    cityGroups: t.cityGroups.map(g=>[...g]),
+    roadGroups: t.roadGroups.map(g=>[...g]),
+    count: t.count };
+  if (t.shield) o.shield = true;
+  return o;
+}
+
+function serializeBoard() {
+  const out = {};
+  for (const key of Object.keys(state.board)) {
+    const cell = state.board[key];
+    out[key] = {
+      tile: serializeTileDef(cell.tile),
+      rot: cell.rot,
+      meeple: cell.meeple ? { seat: cell.meeple.seat, dir: cell.meeple.dir } : null,
+    };
+  }
+  return out;
+}
+
+function applyOnlineState(o) {
+  isOnlineGame = true;
+  myOnlineSeat = o.seat;
+  onlineSend = o.send;
+  onlineNcpus = 0; // will be set from snap
+  document.getElementById('modes').style.display = 'none';
+
+  const s = o.state;
+  if (!s) return;
+
+  // Restore board
+  const board = {};
+  for (const key of Object.keys(s.board)) {
+    const c = s.board[key];
+    board[key] = { tile: c.tile, rot: c.rot, meeple: c.meeple };
+  }
+
+  state = {
+    board,
+    deck: s.deck || [],
+    nPlayers: s.nPlayers,
+    scores: s.scores,
+    meeples: s.meeples,
+    turn: s.turn,
+    phase: s.phase,
+    currentTile: s.currentTile,
+    currentRot: s.currentRot || 0,
+    lastPlaced: s.lastPlaced,
+  };
+  currentRot = s.currentRot || 0;
+  placingPhase = state.phase === 'meeple';
+
+  computeValidMoves();
+  centerView();
+  renderAll();
+  updateHUD();
+  updateMsg();
+  drawCurrentTile();
+  updateOnlineTurnBadge();
+
+  if (state.phase === 'end') showEndOverlay();
+  else if (shouldOnlineCpuPlay()) setTimeout(doCPUTurn, 500);
 }
 
 /* ===== INIT ===== */
@@ -1612,7 +1712,7 @@ OnlineRoom.init({
     document.getElementById('modes').style.display = 'none';
     initGame(nPlayers);
     drawCurrentTile();
-    // If host and CPU seats exist, trigger first CPU turn if needed
+    updateOnlineTurnBadge();
     if (seat === 0 && onlineNcpus > 0 && state.turn >= nPlayers - onlineNcpus) {
       setTimeout(doCPUTurn, 500);
     }
@@ -1622,7 +1722,11 @@ OnlineRoom.init({
   },
   onLeft(seat) {
     document.getElementById('msg').textContent = `プレイヤー${PLAYER_NAMES[seat]}が退出しました`;
-  }
+    updateOnlineTurnBadge();
+    if (shouldOnlineCpuPlay()) setTimeout(doCPUTurn, 500);
+  },
+  getState: getOnlineState,
+  applyState: applyOnlineState,
 });
 </script>
 </body>

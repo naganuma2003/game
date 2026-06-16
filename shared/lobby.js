@@ -73,6 +73,7 @@
     uno: "games/uno.html",
     bomberman: "games/bomberman.html",
     carcassonne: "games/carcassonne.html",
+    roulette: "games/russian-roulette.html",
   };
 
   function randomCode() {

@@ -854,9 +854,9 @@ function initOnlineGame(n, handData, deckData, discardData, curColor, cur, dir) 
 OnlineRoom.init({
   gameId: 'uno',
   minPlayers: 2,
-  maxPlayers: 6,
-  note: '最初に手札をなくした人の勝ち。2〜6人',
-  onStart: (seat, n, send) => {
+  maxPlayers: 4,
+  note: '最初に手札をなくした人の勝ち。2〜4人',
+  onStart: (seat, n, send, nCpus) => {
     ONLINE = true; MYSEAT = seat; roomSend = send;
     document.getElementById('setup').style.display = 'none';
     if (seat === 0) {
@@ -974,15 +974,31 @@ OnlineRoom.init({
       scheduleTurn();
     }
   },
+  onLeft: (seat) => {
+    // Departed player becomes CPU — update name and re-render.
+    G.names[seat] = `CPU(P${seat+1})`;
+    renderAll();
+    // If it was their turn, the host drives the CPU move.
+    if (G.cur === seat && window.OnlineRoom && OnlineRoom.isHost && OnlineRoom.isHost()) {
+      setTimeout(() => onlineCpuMove(seat), 600);
+    }
+  },
   getState: () => ({
     deck: G.deck, hands: G.hands, discard: G.discard,
-    curColor: G.curColor, cur: G.cur, dir: G.dir, numP: G.numP
+    curColor: G.curColor, cur: G.cur, dir: G.dir, numP: G.numP,
+    drawPending: G.drawPending, drewThisTurn: G.drewThisTurn
   }),
   applyState: (o) => {
     ONLINE = true; MYSEAT = o.seat; roomSend = o.send;
     const s = o.state;
     initOnlineGame(s.numP, s.hands, s.deck, s.discard, s.curColor, s.cur, s.dir);
+    if (s.drawPending) G.drawPending = s.drawPending;
+    if (s.drewThisTurn) G.drewThisTurn = s.drewThisTurn;
     G.names[MYSEAT] = 'あなた';
+    // Mark disconnected players as CPU in names
+    for (let i = 0; i < G.numP; i++) {
+      if (i !== MYSEAT && OnlineRoom.isAuto && OnlineRoom.isAuto(i)) G.names[i] = `CPU(P${i+1})`;
+    }
     document.getElementById('setup').style.display = 'none';
     document.getElementById('game').style.display = 'flex';
     renderAll(); scheduleTurn();

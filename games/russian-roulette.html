@@ -625,4 +625,426 @@ document.getElementById('bomb-back').addEventListener('click',()=>{
   document.getElementById('setup').style.display='flex';
 });
 </script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../shared/lobby.js"></script>
+<script src="../shared/online-room.js"></script>
+<script>
+/* ===== Online Multiplayer ===== */
+(function(){
+  let onlineSend = null;
+  let onlineSeat = -1;
+  let onlineActive = false;
+  let onlinePlayerCount = 0;
+  // Gun mode online state
+  let onlineBulletPositions = null; // array, host-determined
+  let onlineGunPlayers = [];       // [{name,alive,bangCount}]
+  let onlineGunCurrent = 0;        // current chamber
+  let onlineGunPlayerIdx = 0;      // whose turn
+  let onlineGunFired = new Set();
+  let onlineGunBang = new Set();
+  let onlineGunFiredCount = 0;
+  let onlineGunBangCount = 0;
+  let onlineGunBusy = false;
+  // Bomb mode online state
+  let onlineBombPos = -1;
+  let onlineBombOver = false;
+  let onlineBombPicks = 0;
+  let onlineBombTurnSeat = 0;
+
+  OnlineRoom.init({
+    gameId: 'roulette',
+    minPlayers: 2,
+    maxPlayers: 4,
+    note: '2〜4人でロシアンルーレット（ガン／ボム）を遊べます。',
+
+    onStart(seat, n, send, cpus) {
+      onlineSend = send;
+      onlineSeat = seat;
+      onlineActive = true;
+      onlinePlayerCount = n;
+
+      // Hide local setup, show appropriate game
+      document.getElementById('setup').style.display = 'none';
+
+      if (topMode === 'bomb') {
+        startOnlineBomb(n);
+      } else {
+        startOnlineGun(n);
+      }
+    },
+
+    onMessage(fromSeat, msg) {
+      if (!msg || !msg.t) return;
+
+      if (msg.t === 'gun-init') {
+        // Host sent bullet positions and player list
+        receiveGunInit(msg);
+      } else if (msg.t === 'gun-pull') {
+        // A player pulled the trigger
+        receiveGunPull(msg);
+      } else if (msg.t === 'bomb-init') {
+        receiveBombInit(msg);
+      } else if (msg.t === 'bomb-pick') {
+        receiveBombPick(msg);
+      } else if (msg.t === 'bomb-reset') {
+        receiveBombReset(msg);
+      } else if (msg.t === 'mode') {
+        // Host announced mode selection
+        topMode = msg.mode;
+      }
+    },
+
+    onLeft(seat) {
+      // A player left - mark them but keep the game going
+      if (onlineActive) {
+        OnlineRoom.setTurn(false, '🌐 P' + (seat+1) + 'が退出');
+      }
+    }
+  });
+
+  /* ===== Online Gun Mode ===== */
+  function startOnlineGun(n) {
+    // Build player names for online
+    onlineGunPlayers = [];
+    for (let i = 0; i < n; i++) {
+      onlineGunPlayers.push({ name: 'P' + (i+1), alive: true, bangCount: 0 });
+    }
+    onlineGunCurrent = 0;
+    onlineGunPlayerIdx = 0;
+    onlineGunFired = new Set();
+    onlineGunBang = new Set();
+    onlineGunFiredCount = 0;
+    onlineGunBangCount = 0;
+    onlineGunBusy = false;
+
+    if (OnlineRoom.isHost()) {
+      // Host determines bullet positions and broadcasts
+      const pos = [0,1,2,3,4,5];
+      for (let i = pos.length-1; i > 0; i--) {
+        const j = Math.floor(Math.random()*(i+1));
+        [pos[i],pos[j]] = [pos[j],pos[i]];
+      }
+      onlineBulletPositions = pos.slice(0, numBullets);
+      onlineSend({ t: 'gun-init', bullets: onlineBulletPositions, numBullets: numBullets });
+    }
+    // Wait for gun-init message to actually show the game
+  }
+
+  function receiveGunInit(msg) {
+    onlineBulletPositions = msg.bullets;
+    numBullets = msg.numBullets;
+    // Set up the local gun game state for display
+    bulletPositions = new Set(onlineBulletPositions);
+    firedChambers = new Set();
+    bangChambers = new Set();
+    currentChamber = 0;
+    firedCount = 0;
+    bangCount = 0;
+    playerMode = 'fixed';
+    players = onlineGunPlayers.map(p => ({...p}));
+    numPlayers = players.length;
+    playerNames = players.map(p => p.name);
+    currentPlayerIdx = 0;
+    gbusy = false;
+
+    document.getElementById('result-msg').textContent = '';
+    document.getElementById('result-msg').className = 'result-msg';
+    document.getElementById('trigger-btn').disabled = true;
+    document.getElementById('over').classList.remove('show');
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('game-gun').style.display = 'flex';
+    document.getElementById('cur-label').textContent = '現在のプレイヤー';
+    document.getElementById('cur-name').textContent = players[0].name;
+    document.getElementById('players-ui').style.display = 'flex';
+    buildPlayersUI();
+    buildChambersUI();
+    updateBulletInfo();
+    drawChambers(false);
+    spinCylinder(true);
+
+    updateOnlineGunTurn();
+  }
+
+  function updateOnlineGunTurn() {
+    const isMyTurn = (onlineGunPlayerIdx === onlineSeat);
+    document.getElementById('trigger-btn').disabled = !isMyTurn || onlineGunBusy;
+    OnlineRoom.setTurn(isMyTurn, isMyTurn ? '🟢 あなたの番' : '⏳ P' + (onlineGunPlayerIdx+1) + 'の番');
+  }
+
+  // Override trigger button for online
+  const origTriggerBtn = document.getElementById('trigger-btn');
+  origTriggerBtn.addEventListener('click', function onlineTriggerHandler(e) {
+    if (!onlineActive) return; // local mode handled by original handler
+    e.stopImmediatePropagation();
+    if (onlineGunBusy) return;
+    if (onlineGunPlayerIdx !== onlineSeat) return;
+    // Send pull action
+    onlineSend({ t: 'gun-pull', seat: onlineSeat, chamber: onlineGunCurrent });
+  }, true); // capture phase to intercept before local handler
+
+  function receiveGunPull(msg) {
+    if (onlineGunBusy) return;
+    onlineGunBusy = true;
+    document.getElementById('trigger-btn').disabled = true;
+    document.getElementById('result-msg').textContent = '';
+    document.getElementById('result-msg').className = 'result-msg';
+
+    const isBang = bulletPositions.has(currentChamber);
+    const group = document.getElementById('cyl-group');
+    group.classList.remove('spinning');
+    void group.offsetWidth;
+    const spins = Math.floor(Math.random()*2)+1;
+    const targetAngle = 360*spins + CHAMBER_ANGLES[currentChamber];
+    group.style.setProperty('--spin-end', targetAngle+'deg');
+    group.classList.add('spinning');
+
+    setTimeout(() => {
+      showOnlineGunResult(isBang, msg.seat);
+    }, 950);
+  }
+
+  function showOnlineGunResult(isBang, seat) {
+    const flash = document.getElementById('flash');
+    const msg2 = document.getElementById('result-msg');
+    const label = players[onlineGunPlayerIdx].name;
+
+    if (isBang) {
+      flash.className = 'bang';
+      bangChambers.add(currentChamber);
+      firedCount++; bangCount++;
+      currentChamber++;
+      msg2.textContent = '💥 BANG！　' + label + ' が脱落！';
+      msg2.className = 'result-msg bang';
+      players[onlineGunPlayerIdx].alive = false;
+      players[onlineGunPlayerIdx].bangCount++;
+      onlineGunPlayers[onlineGunPlayerIdx].alive = false;
+      onlineGunPlayers[onlineGunPlayerIdx].bangCount++;
+      drawChambers(false);
+      updateChambersUI();
+      updateBulletInfo();
+
+      setTimeout(() => {
+        updatePlayersUI();
+        const alive = players.filter(p => p.alive);
+        if (bangCount >= numBullets || alive.length <= 1) {
+          endGunFixed();
+          onlineGunBusy = false;
+          OnlineRoom.setTurn(false, '🏁 終了');
+          return;
+        }
+        advanceOnlinePlayer();
+        onlineGunBusy = false;
+        updateOnlineGunTurn();
+      }, 1200);
+    } else {
+      flash.className = 'safe';
+      firedChambers.add(currentChamber);
+      firedCount++;
+      currentChamber++;
+      msg2.textContent = '🔘 カチッ！　' + label + ' はセーフ！';
+      msg2.className = 'result-msg safe';
+      drawChambers(false);
+      updateChambersUI();
+      updateBulletInfo();
+
+      if (currentChamber >= 6) {
+        setTimeout(() => {
+          endGunFixed();
+          onlineGunBusy = false;
+          OnlineRoom.setTurn(false, '🏁 終了');
+        }, 800);
+      } else {
+        setTimeout(() => {
+          advanceOnlinePlayer();
+          onlineGunBusy = false;
+          updateOnlineGunTurn();
+        }, 800);
+      }
+    }
+    flash.addEventListener('animationend', () => { flash.className = ''; }, { once: true });
+  }
+
+  function advanceOnlinePlayer() {
+    do {
+      onlineGunPlayerIdx = (onlineGunPlayerIdx + 1) % onlineGunPlayers.length;
+    } while (!onlineGunPlayers[onlineGunPlayerIdx].alive);
+    currentPlayerIdx = onlineGunPlayerIdx;
+    document.getElementById('cur-name').textContent = players[onlineGunPlayerIdx].name;
+    updatePlayersUI();
+  }
+
+  /* ===== Online Bomb Mode ===== */
+  function startOnlineBomb(n) {
+    onlineBombOver = false;
+    onlineBombPicks = 0;
+    onlineBombTurnSeat = 0;
+
+    if (OnlineRoom.isHost()) {
+      onlineBombPos = Math.floor(Math.random() * 16);
+      onlineSend({ t: 'bomb-init', bombPos: onlineBombPos });
+    }
+  }
+
+  function receiveBombInit(msg) {
+    onlineBombPos = msg.bombPos;
+    onlineBombOver = false;
+    onlineBombPicks = 0;
+    onlineBombTurnSeat = 0;
+
+    // Show bomb game
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('game-bomb').classList.add('show');
+
+    // Build bomb grid (custom online version)
+    const grid = document.getElementById('bgrid');
+    grid.innerHTML = '';
+    bbtns = [];
+    bover = false;
+    bpicks = 0;
+    document.getElementById('bpicks').textContent = '0';
+    document.getElementById('bstatus').textContent = 'P' + (onlineBombTurnSeat+1) + ' のターン';
+    document.getElementById('bstatus').className = 'bstatus';
+    bombPosition = onlineBombPos;
+
+    for (let i = 0; i < 16; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'bslot';
+      const b = document.createElement('button');
+      b.className = 'bbtn';
+      b.setAttribute('aria-label', (i+1)+'番のボタン');
+      b.innerHTML = '<span class="bbezel"></span><span class="bcap"><span class="bmark" aria-hidden="true"></span></span>';
+      b.addEventListener('click', () => onlineBombClick(i, b));
+      slot.appendChild(b);
+      grid.appendChild(slot);
+      bbtns.push(b);
+    }
+
+    updateOnlineBombTurn();
+  }
+
+  function updateOnlineBombTurn() {
+    const isMyTurn = (onlineBombTurnSeat === onlineSeat);
+    document.getElementById('bstatus').textContent = onlineBombOver
+      ? document.getElementById('bstatus').textContent
+      : (isMyTurn ? 'あなたの番 — ボタンを押せ！' : 'P' + (onlineBombTurnSeat+1) + ' のターン');
+    OnlineRoom.setTurn(isMyTurn && !onlineBombOver,
+      isMyTurn ? '🟢 あなたの番' : '⏳ P' + (onlineBombTurnSeat+1) + 'の番');
+    // Disable buttons if not my turn
+    bbtns.forEach(b => {
+      if (!b.classList.contains('bsafe') && !b.classList.contains('bbomb')) {
+        b.disabled = !isMyTurn || onlineBombOver;
+      }
+    });
+  }
+
+  function onlineBombClick(i, b) {
+    if (onlineBombOver || b.disabled) return;
+    if (onlineBombTurnSeat !== onlineSeat) return;
+    onlineSend({ t: 'bomb-pick', idx: i, seat: onlineSeat });
+  }
+
+  function receiveBombPick(msg) {
+    const i = msg.idx;
+    const b = bbtns[i];
+    if (!b || b.disabled || b.classList.contains('bsafe') || b.classList.contains('bbomb')) return;
+
+    b.disabled = true;
+    b.classList.add('bpressed');
+    const mark = b.querySelector('.bmark');
+    const isBomb = (i === onlineBombPos);
+
+    if (isBomb) {
+      b.classList.add('bbomb');
+      mark.textContent = BOMB_ICON;
+      document.getElementById('bstatus').textContent = '💥 P' + (msg.seat+1) + ' が大爆発！';
+      document.getElementById('bstatus').className = 'bstatus boom';
+      bigExplosion();
+      showInsult();
+      if (navigator.vibrate) navigator.vibrate([80,50,150,40,250]);
+      onlineBombOver = true;
+      bover = true;
+
+      // Reveal all
+      bbtns.forEach((c, idx) => {
+        if (!c.classList.contains('bsafe') && !c.classList.contains('bbomb')) {
+          if (idx === i) { c.classList.add('bbomb'); c.querySelector('.bmark').textContent = BOMB_ICON; }
+          c.classList.add('brevealed');
+        }
+        c.disabled = true;
+      });
+
+      OnlineRoom.setTurn(false, '💥 P' + (msg.seat+1) + '爆死');
+    } else {
+      b.classList.add('bsafe');
+      onlineBombPicks++;
+      bpicks = onlineBombPicks;
+      document.getElementById('bpicks').textContent = onlineBombPicks;
+      if (navigator.vibrate) navigator.vibrate(18);
+
+      // Advance turn
+      onlineBombTurnSeat = (onlineBombTurnSeat + 1) % onlinePlayerCount;
+      // Skip gone players
+      let tries = 0;
+      while (OnlineRoom.isGone(onlineBombTurnSeat) && tries < onlinePlayerCount) {
+        onlineBombTurnSeat = (onlineBombTurnSeat + 1) % onlinePlayerCount;
+        tries++;
+      }
+
+      if (onlineBombPicks >= 15) {
+        document.getElementById('bstatus').textContent = '残り1個…それが爆弾だ！';
+      }
+      updateOnlineBombTurn();
+    }
+  }
+
+  function receiveBombReset(msg) {
+    onlineBombPos = msg.bombPos;
+    onlineBombOver = false;
+    onlineBombPicks = 0;
+    onlineBombTurnSeat = 0;
+    receiveBombInit(msg);
+  }
+
+  // Override bomb reset button for online
+  document.getElementById('breset').addEventListener('click', function(e) {
+    if (!onlineActive) return;
+    e.stopImmediatePropagation();
+    if (!OnlineRoom.isHost()) return; // only host can reset
+    const newPos = Math.floor(Math.random() * 16);
+    onlineSend({ t: 'bomb-reset', bombPos: newPos });
+  }, true);
+
+  // Override back buttons for online to prevent going to local setup
+  document.getElementById('bomb-back').addEventListener('click', function(e) {
+    if (onlineActive) { e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true);
+  document.getElementById('back-btn').addEventListener('click', function(e) {
+    if (onlineActive) { e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true);
+  document.getElementById('over-back').addEventListener('click', function(e) {
+    if (onlineActive) { e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true);
+
+  // Override restart/again for online gun mode
+  document.getElementById('restart-btn').addEventListener('click', function(e) {
+    if (!onlineActive) return;
+    e.stopImmediatePropagation();
+    if (!OnlineRoom.isHost()) return;
+    // Re-init gun game
+    startOnlineGun(onlinePlayerCount);
+  }, true);
+  document.getElementById('again-btn').addEventListener('click', function(e) {
+    if (!onlineActive) return;
+    e.stopImmediatePropagation();
+    if (!OnlineRoom.isHost()) return;
+    document.getElementById('over').classList.remove('show');
+    startOnlineGun(onlinePlayerCount);
+  }, true);
+
+  // Intercept local pullTrigger when online
+  const origPullTrigger = window.pullTrigger;
+  // We use capture-phase listener above, but also guard the original
+  const _origTriggerClick = document.getElementById('trigger-btn');
+})();
+</script>
 <script src="../shared/firebase-counter.js"></script></body></html>

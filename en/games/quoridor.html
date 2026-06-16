@@ -355,10 +355,10 @@ document.querySelector('.actbar').addEventListener('click',e=>{const b=e.target.
 document.getElementById('again').addEventListener('click',init);
 document.getElementById('reset').addEventListener('click',init);
 document.getElementById('undo').addEventListener('click',()=>{if(!hist.length||ONLINE)return;let s=hist.pop();if(mode==='cpu'){while(hist.length&&JSON.parse(s).turn!==0)s=hist.pop();}restoreQ(s);setActionUI();document.getElementById('over').classList.remove('show');render();updateTurn();updateStock();});
-init();
-
 const assistEl=document.getElementById('assist');
 if(assistEl) assistEl.addEventListener('change', render);
+
+init();
 function computeAssist(){
   if(!assistEl||!assistEl.checked||over||!isHuman()||action!=='move')return null;
   const moves=pawnMoves(turn);

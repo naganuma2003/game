@@ -90,6 +90,8 @@ svg{display:block;width:min(96vw,440px);height:auto}
 .eval-row{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
 .eval-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.45);padding:3px 9px;border-radius:12px;font-size:11px;cursor:pointer;font-family:inherit;transition:.2s;white-space:nowrap}
 .eval-btn.on{border-color:var(--gold,#c9a030);color:var(--gold,#c9a030)}
+.watch-btn{background:transparent;border:2px solid var(--gold);color:var(--gold);padding:7px 13px;border-radius:18px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:all .2s;font-weight:600;}
+.watch-btn:hover{background:rgba(217,180,74,.15);}
 .eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
 .eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
 .eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
@@ -121,6 +123,7 @@ svg{display:block;width:min(96vw,440px);height:auto}
   <button data-m="cpu3">CPU 強</button>
   <button data-m="pvp">2人対戦</button>
 </div>
+<button class="watch-btn" onclick="startWatch()">最強AI観戦</button>
 
 <div class="status"><div class="dot r" id="tdot"></div><span id="tlabel">赤の番です</span></div>
 <div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
@@ -144,7 +147,7 @@ svg{display:block;width:min(96vw,440px);height:auto}
 
 <script>
 const COLS=7,ROWS=6;
-let board,turn,mode='cpu1',history=[],over=false,busy=false,winCells=[];
+let board,turn,mode='cpu1',history=[],over=false,busy=false,winCells=[],watchMode=false;
 
 const NS='http://www.w3.org/2000/svg';
 const svg=document.getElementById('bd');
@@ -205,7 +208,22 @@ let discLayer,ringLayer,assistLayer;
   }
 })();
 
+function startWatch(){
+  watchMode=true;
+  mode='cpu3';
+  document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('on'));
+  document.querySelector('#modes button[data-m="cpu3"]').classList.add('on');
+  // init without watchMode so random-first logic doesn't run with CPU-vs-CPU confusion
+  watchMode=false;
+  init();
+  watchMode=true;
+  // kick off first CPU move
+  busy=true;
+  setTimeout(()=>{const c=cpuMove();busy=false;const r=dropRow(board,c);history.push({bd:board.slice(),turn});play(c,r);},420);
+}
+
 function init(){
+  watchMode=false;
   board=new Array(ROWS*COLS).fill(0);
   turn=1;history=[];over=false;busy=false;winCells=[];
   discLayer.innerHTML='';ringLayer.innerHTML='';
@@ -245,7 +263,7 @@ function checkWin(bd,p){
   return null;
 }
 
-const isHuman=()=>mode==='pvp'||turn===1;
+const isHuman=()=>!watchMode&&(mode==='pvp'||turn===1);
 
 function onCol(c){
   if(over||busy||!isHuman())return;
@@ -448,6 +466,9 @@ document.getElementById('modes').addEventListener('click',e=>{
   b.classList.add('on');init();
 });
 
+const assistEl=document.getElementById('assist');
+if(assistEl) assistEl.addEventListener('change', renderAssist);
+
 init();
 
 // ===== AI評価 =====
@@ -488,8 +509,6 @@ function evalScore(){
 }
 
 // ===== AIアシスタント =====
-const assistEl=document.getElementById('assist');
-if(assistEl) assistEl.addEventListener('change', renderAssist);
 function computeAssist(){
   if(!assistEl||!assistEl.checked||over||busy||!isHuman())return null;
   const legal=ORDER.filter(c=>dropRow(board,c)>=0);

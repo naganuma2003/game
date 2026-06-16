@@ -99,6 +99,8 @@ svg{display:block;width:min(96vw,480px);height:auto}
 .eval-row{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
 .eval-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.45);padding:3px 9px;border-radius:12px;font-size:11px;cursor:pointer;font-family:inherit;transition:.2s;white-space:nowrap}
 .eval-btn.on{border-color:var(--gold,#c9a030);color:var(--gold,#c9a030)}
+.watch-btn{background:transparent;border:2px solid var(--gold);color:var(--gold);padding:7px 13px;border-radius:18px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:all .2s;font-weight:600;}
+.watch-btn:hover{background:rgba(217,168,74,.15);}
 .eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
 .eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
 .eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
@@ -130,6 +132,7 @@ svg{display:block;width:min(96vw,480px);height:auto}
   <button data-m="cpu3">CPU 強</button>
   <button data-m="pvp">2人対戦</button>
 </div>
+<button class="watch-btn" onclick="startWatch()">最強AI観戦</button>
 
 <div class="msg" id="msg">あなたの番です</div>
 <div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
@@ -156,7 +159,7 @@ svg{display:block;width:min(96vw,480px);height:auto}
 
 <script>
 /* index: 0-5 あなたの穴(左→右), 6 あなたのゴール(右端), 7-12 相手の穴, 13 相手のゴール(左端) */
-let pits,turn,mode='cpu1',history=[],over=false,busy=false;
+let pits,turn,mode='cpu1',history=[],over=false,busy=false,watchMode=false;
 
 const NS='http://www.w3.org/2000/svg';
 const svg=document.getElementById('bd');
@@ -276,7 +279,7 @@ function render(sownIdx=-1){
 }
 
 function isHumanSide(i){
-  if(busy||over)return false;
+  if(watchMode||busy||over)return false;
   if(turn===0)return i>=0&&i<6;
   return mode==='pvp'&&i>=7&&i<13;
 }
@@ -287,7 +290,20 @@ function legalPits(p){
   return out;
 }
 
+function startWatch(){
+  watchMode=true;
+  mode='cpu3';
+  document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('on'));
+  document.querySelector('#modes button[data-m="cpu3"]').classList.add('on');
+  pits=new Array(14).fill(4);pits[6]=0;pits[13]=0;
+  turn=0;history=[];over=false;busy=false;
+  document.getElementById('gov').classList.remove('show');
+  render();msg('最強AI観戦中 — CPU vs CPU');
+  busy=true;setTimeout(()=>{const m=cpuMoveFor(0);busy=false;history.push({p:pits.slice(),turn});playAnimated(m);},650);
+}
+
 function init(){
+  watchMode=false;
   pits=new Array(14).fill(4);
   pits[6]=0;pits[13]=0;
   turn=0;history=[];over=false;busy=false;
@@ -353,10 +369,10 @@ function finish(lastPos){
   }else{
     msg(turn===0?(mode==='pvp'?'下側の番です':'あなたの番です'):(mode==='pvp'?'上側の番です':'CPUの番です'));
   }
-  if(turn===1&&mode!=='pvp'){
+  if((turn===1&&mode!=='pvp')||(watchMode&&turn===0)){
     busy=true;render();
     setTimeout(()=>{
-      const m=cpuMove();
+      const m=cpuMoveFor(turn);
       busy=false;
       history.push({p:pits.slice(),turn});
       playAnimated(m);
@@ -436,6 +452,23 @@ function minimax(bd,p,depth,a,b){
     }
     return best;
   }
+}
+
+function cpuMoveFor(p){
+  // For watch mode: player 0 uses minimax from perspective of p=0
+  if(p===0&&watchMode){
+    const moves=legalOf(pits,0);
+    const d=mode==='cpu2'?3:7;
+    const d2=mode==='cpu2'?4:8;
+    let best=moves[0],bs=Infinity;
+    for(const m of moves){
+      const[nb,extra,end]=simulate(pits,0,m);
+      const v=end?evalBd(nb)*10:minimax(nb,extra?0:1,extra?d2:d,-Infinity,Infinity);
+      if(v<bs){bs=v;best=m;}
+    }
+    return best;
+  }
+  return cpuMove();
 }
 
 function cpuMove(){

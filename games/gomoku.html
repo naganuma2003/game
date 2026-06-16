@@ -234,6 +234,7 @@ select { background: #f3ead9; color: #1c1409; }
         </div>
       </div>
       <button id="start" class="btn btn-primary">対戦開始</button>
+      <button id="watch-btn" class="btn btn-primary" style="background:transparent;border:2px solid #c8772f;color:#c8772f;margin-top:6px">最強AI観戦</button>
       <div class="online-entry">
         <button id="online-btn" class="btn btn-online">🌐 オンラインで対戦（部屋番号）</button>
       </div>
@@ -607,6 +608,13 @@ select { background: #f3ead9; color: #1c1409; }
     players[BLACK].level = blackLevel.value;
     players[WHITE].level = whiteLevel.value;
     randomizeFirst();
+    enterGameScreen();
+  });
+
+  document.getElementById("watch-btn").addEventListener("click", () => {
+    online = null;
+    players[BLACK].type = "cpu"; players[BLACK].level = "4";
+    players[WHITE].type = "cpu"; players[WHITE].level = "4";
     enterGameScreen();
   });
   backBtn.addEventListener("click", () => { gameEl.hidden = true; setupEl.hidden = false; });

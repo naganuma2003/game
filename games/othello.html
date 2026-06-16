@@ -103,6 +103,8 @@ h1 {
   padding: 12px 36px;
 }
 .btn-primary:hover { background: #ffc14d; }
+.watch-btn{background:transparent;border:2px solid #D9B44A;color:#D9B44A;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px;transition:all .2s;display:block;margin-left:auto;margin-right:auto;}
+.watch-btn:hover{background:rgba(217,180,74,.15);}
 
 /* Scoreboard */
 .scoreboard {
@@ -401,6 +403,7 @@ select { background: #eef5f0; color: #14201a; }
         </div>
       </div>
       <button id="start" class="btn btn-primary">対戦開始</button>
+      <button class="watch-btn" id="watch-btn">最強AI観戦</button>
       <div class="online-entry">
         <button id="online-btn" class="btn btn-online">🌐 オンラインで対戦（部屋番号）</button>
       </div>
@@ -857,6 +860,13 @@ select { background: #eef5f0; color: #14201a; }
     online = null;
     readConfig();
     randomizeFirst();
+    enterGameScreen();
+  });
+
+  document.getElementById("watch-btn").addEventListener("click", () => {
+    online = null;
+    players[BLACK].type = "cpu"; players[BLACK].level = "5";
+    players[WHITE].type = "cpu"; players[WHITE].level = "5";
     enterGameScreen();
   });
 

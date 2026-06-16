@@ -92,6 +92,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
   <div class="form-row">
     <label>人間プレイヤー数</label>
     <select id="sel-h">
+      <option value="0">0人（CPU×4 観戦モード）</option>
       <option value="1" selected>1人（CPU×3）</option>
       <option value="2">2人（CPU×2）</option>
       <option value="3">3人（CPU×1）</option>
@@ -107,6 +108,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
     </select>
   </div>
   <button class="start-btn" onclick="init()">ゲーム開始</button>
+  <button class="start-btn" id="watch-btn" style="background:transparent;border:2px solid var(--gold);color:var(--gold);margin-top:6px" onclick="startWatch()">最強AI観戦</button>
   <div class="rules-box">
     <b>ルール：</b>4人が20×20ボードに交互にタイルを置く。<br>
     ・最初の1枚は自分のコーナーに置く<br>
@@ -209,6 +211,11 @@ let G={};
 let HR=-1,HC=-1;
 let ONLINE=false, MYSEAT=-1, roomSend=null;
 
+function startWatch(){
+  document.getElementById('sel-h').value='0';
+  document.getElementById('sel-d').value='hard';
+  init();
+}
 function init(){
   const nh=+document.getElementById('sel-h').value;
   const diff=document.getElementById('sel-d').value;

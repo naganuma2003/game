@@ -62,6 +62,7 @@ svg{display:block;width:min(92vw,420px);height:auto}
 <div class="row" id="np"><span class="lab">人数:</span><button data-np="2" class="on">2人</button><button data-np="3">3人</button></div>
 <div class="row" id="mode"><span class="lab">対戦:</span><button data-m="cpu" class="on">CPU対戦</button><button data-m="pvp">人対人</button></div>
 <div class="row" id="lv"><span class="lab">CPU強さ:</span><button data-lv="1">弱</button><button data-lv="2" class="on">普通</button><button data-lv="3">強</button></div>
+<div class="row" id="watch-row"><button id="watch-btn" style="background:transparent;border:2px solid var(--gold);color:var(--gold);padding:7px 20px;border-radius:16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">最強AI観戦</button></div>
 <div class="turn" id="turn"></div>
 <div class="eval-wrap" id="eval-wrap"><div class="eval-lab" id="eval-lab"></div><div class="eval-bar" id="eval-bar"></div></div>
 <div class="bwrap"><svg id="bd"></svg></div>
@@ -85,6 +86,7 @@ const SETUPS={
   3:{start:['B','UL','UR'],goal:['A','LR','LL']}
 };
 let np=2,mode='cpu';
+let watchMode=false;
 let cells=[];      // {id,x,y,r,zone}
 let occ;           // id -> playerIdx or -1
 let adj;
@@ -116,6 +118,7 @@ function jumpTarget(fromId,viaId){
   return cells.find(c=>Math.hypot(c.x-tx,c.y-ty)<0.12);
 }
 function init(){
+  watchMode=false;
   buildCells();occ={};cells.forEach(c=>occ[c.id]=-1);
   const su=SETUPS[np];
   for(let p=0;p<np;p++){
@@ -137,7 +140,7 @@ function updateTurn(){
   else t.textContent=turn===0?'あなた('+nm+')の番':'CPU('+nm+')の番';
 }
 function isCpuSeat(){return ONLINE&&window.OnlineRoom&&OnlineRoom.isCpu(turn);}
-function isHuman(){if(ONLINE){if(isCpuSeat())return false;return turn===MYSEAT;}return mode==='pvp'||turn===0;}
+function isHuman(){if(watchMode)return false;if(ONLINE){if(isCpuSeat())return false;return turn===MYSEAT;}return mode==='pvp'||turn===0;}
 function shouldRunCpu(){if(over)return false;if(ONLINE)return isCpuSeat()&&OnlineRoom.isHost();return !isHuman();}
 function rotXY(c){
   if(!ONLINE||MYSEAT===0)return{x:c.x,y:c.y};
@@ -248,6 +251,8 @@ function finish(){
   else t.textContent=top===0?'あなた('+nm+')の勝ち！🎉':'CPU('+nm+')の勝ち';
   document.getElementById('over').classList.add('show');
 }
+document.getElementById('watch-btn').addEventListener('click',startWatch);
+function startWatch(){watchMode=false;cpuLv=3;mode='cpu';document.querySelectorAll('#lv button').forEach(x=>x.classList.remove('on'));document.querySelector('#lv button[data-lv="3"]').classList.add('on');init();watchMode=true;if(!over)setTimeout(cpuMove,520);}
 document.getElementById('new').addEventListener('click',init);
 document.getElementById('undo').addEventListener('click',()=>{if(!hist.length||busy||ONLINE)return;let h=hist.pop();if(mode==='cpu'){while(hist.length&&h.turn!==0)h=hist.pop();}occ=h.occ;turn=h.turn;winners=h.winners;over=h.over;sel=null;dests=[];document.getElementById('over').classList.remove('show');render();updateTurn();});
 document.getElementById('again').addEventListener('click',init);

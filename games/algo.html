@@ -127,6 +127,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
     </select>
   </div>
   <button class="start-btn" id="start-btn">ゲームスタート</button>
+  <button class="start-btn" id="watch-btn" style="background:transparent;border:2px solid var(--gold);color:var(--gold);margin-top:6px">最強AI観戦</button>
   <div class="rules-box">
     <b>ルール：</b>黒0〜11・白0〜11の計24枚。各プレイヤーに4枚配り、昇順に伏せて並べる（自分のカードは見える）。自分の番に山から1枚引いて見る → 相手の伏せカードを指定して数字を宣言。<b>正解→</b>そのカードが表になり、もう1回攻撃可（やめると引いたカードが伏せで追加）。<b>不正解→</b>引いたカードが表向きで自分の手元に追加。全カードが表になったら脱落。<b>並び順：</b>昇順、同値なら黒が左。
   </div>
@@ -175,6 +176,7 @@ function insertSorted(arr,c){const n=[...arr,{...c}];n.sort(cardSort);return n;}
 function cardLabel(c){return(c.color==='B'?'黒':'白')+c.value;}
 
 let G={};
+let watchMode=false;
 let ONLINE=false, MYSEAT=0, roomSend=null;
 function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&OnlineRoom.isAuto(s);}
 function makeNames(n){
@@ -211,7 +213,7 @@ function beginTurn(pi){
   G.cur=pi;G.target=null;G.selectedNum=null;
   if(G.deck.length===0||activePlayers()<=1){endGame();return;}
   G.drawn=G.deck.pop();
-  const isMe=pi===G.myIdx;
+  const isMe=pi===G.myIdx&&!watchMode;
   if(isMe){
     G.phase='attack';
     renderAll();
@@ -239,7 +241,7 @@ function beginTurn(pi){
   }
 }
 
-function isMyTurn(){return G.cur===G.myIdx;}
+function isMyTurn(){return !watchMode&&G.cur===G.myIdx;}
 
 // ===== ATTACK =====
 function selectTarget(pi,pos){
@@ -577,10 +579,17 @@ function endGame(){
 }
 
 document.getElementById('start-btn').addEventListener('click',()=>{
+  watchMode=false;
   initGame(+document.getElementById('sel-players').value,document.getElementById('sel-diff').value,false,-1);
+});
+document.getElementById('watch-btn').addEventListener('click',()=>{
+  watchMode=true;
+  document.getElementById('sel-diff').value='hard';
+  initGame(+document.getElementById('sel-players').value,'hard',false,-1);
 });
 document.getElementById('again-btn').addEventListener('click',()=>{
   document.getElementById('gameover').style.display='none';
+  watchMode=false;
   if(ONLINE){if(window.OnlineRoom)OnlineRoom.clearSession();location.reload();}else{document.getElementById('game').style.display='none';document.getElementById('setup').style.display='';}
 });
 </script>

@@ -72,6 +72,8 @@ select, .btn {
 select { background: #f3ead9; color: #20160c; }
 .btn-primary { background: #e0a13a; color: #20160c; padding: 12px 30px; font-size: 16px; }
 .btn-primary:hover { background: #f0b450; }
+.watch-btn{background:transparent;border:2px solid #D9B44A;color:#D9B44A;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px;transition:all .2s;}
+.watch-btn:hover{background:rgba(217,180,74,.15);}
 
 /* ---- Turn bar ---- */
 .turn-bar { font-size: 16px; font-weight: 700; margin-bottom: 10px; min-height: 22px; }
@@ -289,6 +291,7 @@ select { background: #f3ead9; color: #20160c; }
         </div>
       </div>
       <button id="start" class="btn btn-primary">対戦開始</button>
+      <button class="watch-btn" id="watch-btn">最強AI観戦</button>
       <div class="online-entry">
         <button id="online-btn" class="btn btn-online">🌐 オンラインで対戦（部屋番号）</button>
       </div>
@@ -894,6 +897,13 @@ select { background: #f3ead9; color: #20160c; }
     players[SENTE].level = senteLevel.value;
     players[GOTE].level = goteLevel.value;
     randomizeFirst();
+    enterGameScreen();
+  });
+
+  document.getElementById("watch-btn").addEventListener("click", () => {
+    online = null;
+    players[SENTE].type = "cpu"; players[SENTE].level = "3";
+    players[GOTE].type = "cpu"; players[GOTE].level = "3";
     enterGameScreen();
   });
   backBtn.addEventListener("click", () => {

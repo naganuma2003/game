@@ -1,0 +1,103 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Minesweeper | Free Browser Game</title>
+<meta name="description" content="Play Minesweeper for free in your browser. Easy, Medium, and Hard difficulty levels with flag mode. Works on mobile and PC.">
+<meta name="keywords" content="Minesweeper,free,browser game,puzzle">
+<meta property="og:title" content="Minesweeper | Free Browser Game">
+<meta property="og:description" content="Play Minesweeper for free in your browser. Difficulty selection and flag mode included.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/mines.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/mines.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/mines.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/mines.html">
+<style>
+:root{--bg:#15120E;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#352C20;--closed:#3A3326;--closed2:#43392b;--open:#221E17;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 10px 30px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.2em;text-indent:.2em;margin:2px 0}
+.sub{font-size:11px;color:var(--sub);letter-spacing:.2em;margin-bottom:12px}
+.row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
+.row button{background:transparent;border:1px solid #3a3326;color:var(--sub);padding:7px 13px;border-radius:18px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:all .2s}
+.row button.on{border-color:var(--gold);color:var(--gold)}
+.bar{display:flex;gap:16px;align-items:center;margin-bottom:10px;font-size:15px}
+.bar .b{background:#221E17;border-radius:7px;padding:5px 12px;min-width:62px;text-align:center;letter-spacing:.05em}
+.flagmode{border:1px solid #3a3326;border-radius:18px;padding:6px 13px;cursor:pointer;font-size:12.5px;color:var(--sub);background:transparent;font-family:inherit}
+.flagmode.on{border-color:var(--gold);color:var(--gold)}
+#bd{display:grid;gap:2px;background:var(--line);border:2px solid var(--line);border-radius:5px}
+.c{width:var(--cs);height:var(--cs);background:linear-gradient(145deg,var(--closed2),var(--closed));display:flex;align-items:center;justify-content:center;font-weight:700;cursor:pointer;border-radius:2px;font-size:calc(var(--cs)*.5)}
+.c.open{background:var(--open);cursor:default;box-shadow:inset 0 0 0 1px #2c2820}
+.c.mine{background:#9C2A1E}
+.c.boom{background:#E04A2E}
+.c.flag{color:var(--gold)}
+.n1{color:#5b9bd5}.n2{color:#6aa84f}.n3{color:#e0533e}.n4{color:#9b7ad5}.n5{color:#d49a2a}.n6{color:#3ec0c0}.n7{color:#d6d6d6}.n8{color:#9A8F7B}
+.prog{margin-top:10px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);width:100%;max-width:460px}
+.prog-bar{flex:1;height:6px;background:#221E17;border-radius:3px;overflow:hidden}.prog-fill{height:100%;width:0%;background:var(--gold);border-radius:3px;transition:width .2s}
+.prog-txt{min-width:70px;text-align:right;font-variant-numeric:tabular-nums}
+.msg{min-height:22px;font-size:14px;color:var(--gold);margin-top:12px;letter-spacing:.05em}
+.foot{margin-top:6px}
+.foot button{background:transparent;border:1px solid var(--line);color:var(--txt);padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit}
+.foot button:hover{border-color:var(--gold)}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Minesweeper","description":"Play Minesweeper for free in your browser. Easy, Medium, and Hard difficulty levels with flag mode. Works on mobile and PC.","url":"https://naganuma2003.github.io/game/en/games/mines.html","genre":["Puzzle Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":1},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+</head><body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>Minesweeper</h1><div class="sub">MINESWEEPER</div>
+<div class="row" id="diff">
+  <button data-w="9" data-h="9" data-m="10" class="on">Easy 9&times;9</button>
+  <button data-w="12" data-h="12" data-m="24">Medium 12&times;12</button>
+  <button data-w="16" data-h="14" data-m="40">Hard 16&times;14</button>
+</div>
+<div class="bar">
+  <span class="b">&#128163; <span id="mleft">10</span></span>
+  <button class="flagmode" id="fmode">&#128681; Flag Mode</button>
+  <span class="b">&#9201; <span id="time">0</span></span>
+  <span class="b">&#127942; <span id="best">&mdash;</span></span>
+</div>
+<div id="bd"></div>
+<div class="prog" id="prog"><span>Progress</span><div class="prog-bar"><div class="prog-fill" id="pfill"></div></div><span class="prog-txt" id="ptxt">0 / 0</span></div>
+<div class="msg" id="msg"></div>
+<div class="foot"><button id="new">New Game</button></div>
+<div style="font-size:11px;color:var(--sub);margin-top:10px;text-align:center;line-height:1.7">&#128681; How to flag: Turn on "Flag Mode" and tap / Right-click on PC / Long press on mobile</div>
+<script>
+let W=9,H=9,M=10,board,revealed,flags,over,started,timer,sec=0,flagMode=false,cells=[];
+function bestKey(){return 'minebest_'+W+'x'+H+'_'+M;}
+function showBest(){const v=localStorage.getItem(bestKey());document.getElementById('best').textContent=v?(v+'s'):'—';}
+const bd=document.getElementById('bd');
+function setSize(){const cs=Math.min(Math.floor((Math.min(window.innerWidth*0.94,460))/W)-2,38);bd.style.gridTemplateColumns='repeat('+W+',1fr)';document.documentElement.style.setProperty('--cs',cs+'px');}
+function init(){clearInterval(timer);sec=0;document.getElementById('time').textContent=0;over=false;started=false;flags=new Set();revealed=new Set();document.getElementById('msg').textContent='';document.getElementById('mleft').textContent=M;board=null;setSize();draw();showBest();}
+function plant(safe){board=Array(W*H).fill(0);const spots=[];for(let i=0;i<W*H;i++)if(i!==safe&&!neighbors(safe).includes(i))spots.push(i);for(let i=spots.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[spots[i],spots[j]]=[spots[j],spots[i]];}for(let i=0;i<M;i++)board[spots[i]]=-1;for(let i=0;i<W*H;i++){if(board[i]===-1)continue;board[i]=neighbors(i).filter(n=>board[n]===-1).length;}}
+function neighbors(i){const r=Math.floor(i/W),c=i%W,out=[];for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const nr=r+dr,nc=c+dc;if(nr>=0&&nr<H&&nc>=0&&nc<W)out.push(nr*W+nc);}return out;}
+function draw(){bd.innerHTML='';cells=[];for(let i=0;i<W*H;i++){const d=document.createElement('div');d.className='c';
+let pressT=null,flagAt=0;
+const recently=()=>Date.now()-flagAt<700;
+d.addEventListener('click',()=>{if(recently())return;onTap(i);});
+d.addEventListener('contextmenu',e=>{e.preventDefault();if(recently())return;toggleFlag(i);});
+d.addEventListener('touchstart',()=>{pressT=setTimeout(()=>{toggleFlag(i);flagAt=Date.now();pressT=null;},380);},{passive:true});
+d.addEventListener('touchend',()=>{if(pressT){clearTimeout(pressT);pressT=null;}},{passive:true});
+d.addEventListener('touchmove',()=>{if(pressT){clearTimeout(pressT);pressT=null;}},{passive:true});
+bd.appendChild(d);cells.push(d);}render();}
+function startTimer(){timer=setInterval(()=>{sec++;document.getElementById('time').textContent=sec;},1000);}
+function onTap(i){if(over)return;if(flagMode){toggleFlag(i);return;}if(flags.has(i))return;if(!started){plant(i);started=true;startTimer();}reveal(i);check();}
+function reveal(i){if(revealed.has(i)||flags.has(i))return;if(board[i]===-1){lose(i);return;}const stack=[i];while(stack.length){const k=stack.pop();if(revealed.has(k)||flags.has(k))continue;revealed.add(k);if(board[k]===0)for(const n of neighbors(k))if(!revealed.has(n))stack.push(n);}render();}
+function toggleFlag(i){if(over||revealed.has(i))return;if(flags.has(i))flags.delete(i);else flags.add(i);document.getElementById('mleft').textContent=M-flags.size;render();}
+function updateProg(){const safe=W*H-M;const r=revealed.size;const pct=safe?Math.round(r/safe*100):0;document.getElementById('pfill').style.width=pct+'%';document.getElementById('ptxt').textContent=r+' / '+safe+' ('+pct+'%)';}
+function render(){for(let i=0;i<W*H;i++){const el=cells[i];el.className='c';el.textContent='';if(flags.has(i)){el.classList.add('flag');el.textContent='🚩';continue;}if(revealed.has(i)){el.classList.add('open');const v=board?board[i]:0;if(v>0){el.classList.add('n'+v);el.textContent=v;}}}updateProg();}
+function lose(boom){over=true;clearInterval(timer);for(let i=0;i<W*H;i++){if(board[i]===-1){revealed.add(i);cells[i].classList.add('open','mine');cells[i].textContent='💣';}}cells[boom].classList.add('boom');render();document.getElementById('msg').textContent='BOOM! 💥 Game Over';}
+function check(){if(over)return;let safe=0;for(let i=0;i<W*H;i++)if(board[i]!==-1)safe++;if(revealed.size===safe){over=true;clearInterval(timer);
+  const prev=+(localStorage.getItem(bestKey())||0);
+  let msg='Cleared! '+sec+'s 🎉';
+  if(!prev||sec<prev){localStorage.setItem(bestKey(),sec);msg+=' New best!';showBest();}
+  document.getElementById('msg').textContent=msg;
+  for(let i=0;i<W*H;i++)if(board[i]===-1){flags.add(i);}document.getElementById('mleft').textContent=0;render();}}
+document.getElementById('fmode').addEventListener('click',()=>{flagMode=!flagMode;document.getElementById('fmode').classList.toggle('on',flagMode);});
+document.getElementById('new').addEventListener('click',init);
+document.getElementById('diff').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;W=+b.dataset.w;H=+b.dataset.h;M=+b.dataset.m;document.querySelectorAll('#diff button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
+window.addEventListener('resize',()=>{setSize();});
+init();
+</script><script src="../../shared/firebase-counter.js"></script></body></html>

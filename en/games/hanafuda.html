@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Hanafuda Koi-Koi | Free Browser Game</title>
+<meta name="description" content="Play Hanafuda Koi-Koi for free in your browser. Japanese flower card game with yaku scoring, CPU opponent. No installation required.">
+<meta name="keywords" content="Hanafuda,Koi-Koi,free,browser game,card game,Japanese">
+<meta property="og:title" content="Hanafuda Koi-Koi | Free Browser Game">
+<meta property="og:description" content="Play Hanafuda Koi-Koi for free in your browser. Yaku scoring, CPU opponent.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/hanafuda.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/hanafuda.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/hanafuda.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/hanafuda.html">
+<style>
+:root{--bg:#0d2417;--panel:#123022;--felt:#16432d;--txt:#f0ead8;--sub:#9fb8a4;--gold:#e0b53a;--line:#2a543b;--red:#d8473a;--blue:#3e87d6;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(ellipse at top,#15402a,#08180f);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:10px 6px 24px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:20px;letter-spacing:.14em;margin:2px 0;color:var(--gold)}
+.sub{font-size:9.5px;color:var(--sub);letter-spacing:.26em;margin-bottom:6px}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;margin-bottom:5px}
+.row .lbl{font-size:11px;color:var(--sub);margin-right:2px}
+.row button{background:transparent;border:1px solid #2a543b;color:var(--sub);padding:5px 11px;border-radius:15px;font-size:12px;cursor:pointer;font-family:inherit}
+.row button.on{border-color:var(--gold);color:var(--gold)}
+.tableau{width:min(96vw,440px)}
+.side{display:flex;align-items:flex-start;gap:8px;padding:5px 2px}
+.side .info{font-size:11px;color:var(--sub);min-width:78px;line-height:1.5}
+.side .info b{color:var(--txt)}
+.hand{display:flex;gap:3px;flex-wrap:wrap;flex:1}
+.cap{display:flex;gap:2px;flex-wrap:wrap;flex:1;min-height:24px}
+.field{background:var(--felt);border:1px solid var(--line);border-radius:10px;padding:8px;margin:4px 0;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;min-height:80px;align-items:center;box-shadow:inset 0 0 20px rgba(0,0,0,.35)}
+.deckwrap{display:flex;align-items:center;justify-content:center;gap:10px;margin:2px 0}
+.card{width:40px;height:60px;border-radius:6px;background:#f7f2e2;border:1.5px solid #cdbf94;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:3px 2px;font-size:9px;color:#3a3020;position:relative;box-shadow:0 1px 2px rgba(0,0,0,.3);flex:0 0 auto}
+.card .ico{font-size:19px;line-height:1}
+.card .mn{font-size:8.5px;color:#6b5d3a;font-weight:700}
+.card.bright{border-color:var(--gold);box-shadow:0 0 0 1.5px var(--gold),0 1px 2px rgba(0,0,0,.3)}
+.card.animal{border-color:#d98a2b}
+.card.ribbon-red{border-color:var(--red)}
+.card.ribbon-blue{border-color:var(--blue)}
+.card.ribbon-plain{border-color:#b08d57}
+.card .tp{font-size:7.5px;padding:0 3px;border-radius:6px;background:rgba(0,0,0,.06)}
+.card.sel{outline:3px solid var(--gold);outline-offset:1px}
+.card.match{outline:3px solid #6ee06e;outline-offset:1px;cursor:pointer;animation:mp .8s infinite alternate}
+@keyframes mp{from{outline-color:#6ee06e}to{outline-color:#caffca}}
+.card.mini{width:24px;height:36px;font-size:0}
+.card.mini .ico{font-size:13px}.card.mini .mn,.card.mini .tp{display:none}
+.card.back{background:linear-gradient(135deg,#7a1f1f,#4a1212);border-color:#3a0e0e}
+.card.back .ico{color:rgba(255,255,255,.25);font-size:16px}
+.card.clk{cursor:pointer}.card.clk:hover{transform:translateY(-4px)}
+.card.dim{opacity:.45}
+.msg{min-height:20px;font-size:13px;color:var(--gold);margin:6px 0;text-align:center;font-weight:700}
+.yk{font-size:11px;color:var(--sub);text-align:center;min-height:16px}
+.yk b{color:var(--gold)}
+.foot{margin-top:8px;display:flex;gap:8px}
+.foot button{background:transparent;border:1px solid var(--line);color:var(--txt);padding:7px 16px;border-radius:6px;font-size:12.5px;cursor:pointer;font-family:inherit}
+.over{position:fixed;inset:0;background:rgba(6,16,10,.86);display:none;align-items:center;justify-content:center;z-index:30;padding:16px}
+.over.show{display:flex}
+.over .c{background:#10301f;border:1px solid var(--gold);border-radius:12px;padding:22px 26px;text-align:center;max-width:94vw}
+.over .t{font-size:21px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:10px}
+.over .d{font-size:13px;line-height:1.8;margin-bottom:16px;color:var(--txt)}
+.over .d .y{color:var(--gold)}
+.over button{background:var(--gold);border:none;color:#10301f;font-weight:800;padding:9px 20px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit;margin:0 4px}
+.over .alt{background:transparent;color:var(--gold);border:1px solid var(--gold)}
+.rule{width:min(94vw,440px);margin-top:12px;font-size:10.5px;line-height:1.7;color:var(--sub);border-top:1px solid var(--line);padding-top:8px}
+.rule b{color:var(--txt)}
+.hidden{display:none!important}
+.eval-bar{display:none;width:min(96vw,440px);height:18px;border-radius:9px;overflow:hidden;background:#1a3d29;border:1px solid var(--line);margin:4px auto;position:relative}
+.eval-bar.show{display:block}
+.eval-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue));transition:width .5s ease;border-radius:9px 0 0 9px}
+.eval-bar .ev-lbl{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:0 8px;font-size:9px;color:rgba(255,255,255,.7);pointer-events:none}
+.eval-bar .ev-mid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:8.5px;color:var(--sub);white-space:nowrap}
+@media (max-width:480px){
+  .card{width:34px;height:51px}
+  .card .ico{font-size:16px}
+  .side .info{min-width:60px;font-size:10px}
+}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Hanafuda Koi-Koi","description":"Hanafuda Koi-Koi - a traditional Japanese flower card game.","url":"https://naganuma2003.github.io/game/en/games/hanafuda.html","genre":["Card Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":"MultiPlayer","numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":2},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.5);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.22)">&larr; Back to List</a>
+<h1>Hanafuda Koi-Koi</h1><div class="sub">HANAFUDA KOI-KOI</div>
+<div class="row" id="opts">
+  <span class="lbl">Mode:</span>
+  <button data-m="cpu" class="on">vs CPU</button>
+  <button data-m="pvp">2 Player</button>
+  <span class="lbl" id="cpuLvlLbl" style="margin-left:8px">CPU:</span>
+  <button data-c="cpu1" id="cpu1">Easy</button>
+  <button data-c="cpu2" id="cpu2" class="on">Normal</button>
+  <button data-c="cpu3" id="cpu3">Hard</button>
+  <span class="lbl" style="margin-left:8px">Months:</span>
+  <button data-r="3">3</button>
+  <button data-r="6" class="on">6</button>
+  <button data-r="12">12</button>
+</div>
+<div class="tableau">
+  <div class="side"><div class="info" id="oInfo"></div><div class="cap" id="oCap"></div></div>
+  <div class="side"><div class="info">Opponent's hand</div><div class="hand" id="oHand"></div></div>
+  <div class="field" id="field"></div>
+  <div class="eval-bar" id="evalBar"><div class="eval-fill" id="evalFill"></div><div class="ev-lbl"><span id="evP">You</span><span id="evO">CPU</span></div><div class="ev-mid" id="evMid"></div></div>
+  <div class="deckwrap"><div class="card back" id="deck"><span class="ico">花</span></div><div id="deckMsg" style="font-size:11px;color:var(--sub)"></div></div>
+  <div class="side"><div class="info">Your hand</div><div class="hand" id="pHand"></div></div>
+  <div class="side"><div class="info" id="pInfo"></div><div class="cap" id="pCap"></div></div>
+</div>
+<div class="msg" id="msg"></div>
+<div class="yk" id="yk"></div>
+<div class="foot"><button id="reset">Restart</button></div>
+<div class="rule">
+Play a card from your hand to match a card of the <b>same month</b> on the field and capture both. Then flip a card from the deck and match again. Collect Brights, Animals, Ribbons, and Plains to form <b>yaku</b> (scoring combinations). When you complete a yaku, choose "<b>Koi-Koi</b>" to keep going for higher points, or "<b>Stop</b>" to bank your score. Koi-koi doubles your points if you win. Play the set number of months, and the highest total score wins.
+</div>
+<div class="over" id="over"><div class="c"><div class="t" id="ov-t"></div><div class="d" id="ov-d"></div><div id="ov-btns"></div></div></div>
+<div class="over" id="ho"><div class="c"><div class="t" id="ho-t">Switch</div><div class="d">Pass the device to the next player</div><button id="ho-ok">View Hand</button></div></div>
+<script>
+const MONTHS=['Pine','Plum','Cherry','Wisteria','Iris','Peony','Bush Clover','Susuki','Chrysanthemum','Maple','Willow','Paulownia'];
+function buildDeck(){const D=[];let id=0;
+  const a=(m,type,ribbon,name,ico)=>D.push({id:id++,m,type,ribbon,name,ico});
+  a(0,'bright',0,'Crane & Pine','🦢');a(0,'ribbon','red','Pine Red Ribbon','🎴');a(0,'plain',0,'Pine','🌲');a(0,'plain',0,'Pine','🌲');
+  a(1,'animal',0,'Warbler & Plum','🐦');a(1,'ribbon','red','Plum Red Ribbon','🎴');a(1,'plain',0,'Plum','🌸');a(1,'plain',0,'Plum','🌸');
+  a(2,'bright',0,'Curtain & Cherry','🎏');a(2,'ribbon','red','Cherry Red Ribbon','🎴');a(2,'plain',0,'Cherry','🌸');a(2,'plain',0,'Cherry','🌸');
+  a(3,'animal',0,'Cuckoo & Wisteria','🐦');a(3,'ribbon','plain','Wisteria Ribbon','🎋');a(3,'plain',0,'Wisteria','🌿');a(3,'plain',0,'Wisteria','🌿');
+  a(4,'animal',0,'Bridge & Iris','🌉');a(4,'ribbon','plain','Iris Ribbon','🎋');a(4,'plain',0,'Iris','🪻');a(4,'plain',0,'Iris','🪻');
+  a(5,'animal',0,'Butterfly & Peony','🦋');a(5,'ribbon','blue','Peony Blue Ribbon','📘');a(5,'plain',0,'Peony','🌺');a(5,'plain',0,'Peony','🌺');
+  a(6,'animal',0,'Boar & Bush Clover','🐗');a(6,'ribbon','plain','Bush Clover Ribbon','🎋');a(6,'plain',0,'Bush Clover','🌿');a(6,'plain',0,'Bush Clover','🌿');
+  a(7,'bright',0,'Moon & Susuki','🌕');a(7,'animal',0,'Geese & Susuki','🦆');a(7,'plain',0,'Susuki','🌾');a(7,'plain',0,'Susuki','🌾');
+  a(8,'animal',0,'Sake Cup & Chrysanthemum','🍶');a(8,'ribbon','blue','Chrysanthemum Blue Ribbon','📘');a(8,'plain',0,'Chrysanthemum','🌼');a(8,'plain',0,'Chrysanthemum','🌼');
+  a(9,'animal',0,'Deer & Maple','🦌');a(9,'ribbon','blue','Maple Blue Ribbon','📘');a(9,'plain',0,'Maple','🍁');a(9,'plain',0,'Maple','🍁');
+  a(10,'bright',0,'Ono no Michikaze & Willow','☔');a(10,'animal',0,'Swallow & Willow','🐦');a(10,'ribbon','plain','Willow Ribbon','🎋');a(10,'plain',0,'Willow','⚡');
+  a(11,'bright',0,'Phoenix & Paulownia','🦅');a(11,'plain',0,'Paulownia','🌳');a(11,'plain',0,'Paulownia','🌳');a(11,'plain',0,'Paulownia','🌳');
+  return D;}
+
+let mode='cpu',rounds=6,cpuLevel=2;
+let deck,hands,field,captured,cur,dealer,roundNo,total,koikoi,prevTotal,over,viewP;
+let pending=null;
+let awaitingDecision=false;
+let busy=false;
+let ONLINE=false,mySeat=0,roomSend=null,sent=false;
+
+const $=id=>document.getElementById(id);
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ---------- Setup ---------- */
+function newGame(){roundNo=0;total=[0,0];dealer=Math.random()<.5?0:1;startRound();}
+function startRound(){
+  roundNo++;
+  deck=shuffle(buildDeck());
+  hands=[[],[]];field=[];captured=[[],[]];
+  for(let i=0;i<8;i++){hands[0].push(deck.pop());hands[1].push(deck.pop());}
+  for(let i=0;i<8;i++)field.push(deck.pop());
+  cur=dealer;koikoi=0;prevTotal=[0,0];over=false;pending=null;awaitingDecision=false;busy=false;sent=false;
+  viewP=ONLINE?mySeat:((mode==='cpu')?0:cur);
+  $('over').classList.remove('show');
+  if(ONLINE){render();onlineMsg();maybeAuto();}
+  else if(mode==='pvp'&&isHuman(cur))handoff();
+  else beginTurn();
+}
+function isHuman(p){return mode==='pvp'?true:p===0;}
+function turnName(p){if(ONLINE)return p===mySeat?'You':'Opponent';if(mode==='cpu')return p===0?'You':'CPU';return p===0?'Player 1':'Player 2';}
+function handoff(){$('ho-t').textContent=(cur===0?'Player 1':'Player 2')+"'s Turn";$('ho').classList.add('show');}
+$('ho-ok').addEventListener('click',()=>{$('ho').classList.remove('show');viewP=cur;render();beginTurn();});
+function beginTurn(){
+  render();if(over)return;
+  if(ONLINE){onlineMsg();busy=false;return;}
+  if(!isHuman(cur)){busy=true;render();setTimeout(cpuTurn,650);}
+  else{busy=false;msg(turnName(cur)+"'s turn: select a card from your hand");render();}
+}
+function onlineMsg(){msg(cur===mySeat?"Your turn: select a card from your hand":"Opponent's turn...");}
+
+function matchesInField(card){const o=[];for(let i=0;i<field.length;i++)if(field[i].m===card.m)o.push(i);return o;}
+
+/* ---------- Online auto-play ---------- */
+function isAutoOnline(p){return ONLINE&&window.OnlineRoom&&((OnlineRoom.isCpu&&OnlineRoom.isCpu(p))||(OnlineRoom.isGone&&OnlineRoom.isGone(p)));}
+function hostDrives(){return ONLINE&&window.OnlineRoom&&OnlineRoom.isHost&&OnlineRoom.isHost();}
+function maybeAuto(){if(over||!hostDrives()||!isAutoOnline(cur))return;setTimeout(autoAct,pending?520:680);}
+function autoAct(){
+  if(over||!hostDrives()||!isAutoOnline(cur))return;
+  if(awaitingDecision){OnlineRoom.send({k:'decide',koi:cpuDecide()==='koi'});return;}
+  if(pending){OnlineRoom.send({k:'pick',idx:cpuPickField(pending.matches)});return;}
+  if(!hands[cur].length){return;}
+  OnlineRoom.send({k:'play',idx:cpuBestHand()});
+}
+
+/* ---------- Input (human) ---------- */
+function clickHand(idx){
+  if(over||busy||pending||awaitingDecision)return;
+  if(ONLINE){if(cur!==mySeat||sent)return;sent=true;roomSend({k:'play',idx});return;}
+  if(!isHuman(cur)||viewP!==cur)return;
+  applyPlay(idx);
+}
+function clickField(idx){
+  if(!pending||!pending.matches.includes(idx))return;
+  if(ONLINE){if(cur!==mySeat||sent)return;sent=true;roomSend({k:'pick',idx});return;}
+  resolvePick(idx);
+}
+function decide(koi){
+  $('over').classList.remove('show');
+  if(ONLINE){if(cur!==mySeat||sent)return;sent=true;roomSend({k:'decide',koi:!!koi});return;}
+  applyDecide(!!koi);
+}
+function nextRound(){if(ONLINE){if(sent)return;sent=true;roomSend({k:'next'});return;}applyNext();}
+
+/* ---------- Action application ---------- */
+function doAction(a){
+  sent=false;
+  if(a.k==='play')applyPlay(a.idx);
+  else if(a.k==='pick')resolvePick(a.idx);
+  else if(a.k==='decide')applyDecide(!!a.koi);
+  else if(a.k==='next')applyNext();
+}
+function applyPlay(idx){
+  if(over)return;const c=hands[cur][idx];if(!c)return;
+  const ms=matchesInField(c);hands[cur].splice(idx,1);
+  if(ms.length===0){field.push(c);msg(turnName(cur)+': '+c.name+' to field');drawPhase();}
+  else if(ms.length===1||ms.length===3){capture([c,...ms.map(i=>field[i])]);removeFieldIdx(ms);msg(turnName(cur)+': captured '+c.name);drawPhase();}
+  else{pending={source:'hand',card:c,matches:matchesInField(c)};render();askPick();}
+}
+function resolvePick(idx){
+  if(!pending)return;capture([pending.card,field[idx]]);removeFieldIdx([idx]);
+  const src=pending.source;pending=null;
+  if(src==='hand')drawPhase();else afterCaptures();
+}
+function drawPhase(){
+  render();
+  setTimeout(()=>{
+    if(over)return;
+    if(!deck.length){afterCaptures();return;}
+    const d=deck.pop();const ms=matchesInField(d);
+    if(ms.length===0){field.push(d);msg('Drawn: '+d.name+' → field');afterCaptures();}
+    else if(ms.length===1||ms.length===3){capture([d,...ms.map(i=>field[i])]);removeFieldIdx(ms);msg('Drawn: captured '+d.name+'!');afterCaptures();}
+    else{pending={source:'draw',card:d,matches:ms};field.push(d);render();msg('Drawn card '+d.name+': choose a field card to capture');askPick();}
+  },420);
+}
+function askPick(){
+  if(!ONLINE){if(isCPU(cur))setTimeout(()=>resolvePick(cpuPickField(pending.matches)),500);else msg('Choose a field card to capture');return;}
+  if(isAutoOnline(cur)){showWait("Opponent is choosing...");maybeAuto();}
+  else if(cur===mySeat)msg('Choose a field card to capture');
+  else showWait("Opponent is choosing...");
+}
+function removeFieldIdx(idxs){const set=new Set(idxs);field=field.filter((_,i)=>!set.has(i));}
+function capture(cards){for(const c of cards)captured[cur].push(c);}
+
+function afterCaptures(){
+  render();const t=ykTotal(cur);
+  if(t>prevTotal[cur]){
+    awaitingDecision=true;
+    if(!ONLINE){if(isCPU(cur)){applyDecide(cpuDecide()==='koi');return;}showDecision(cur,t);return;}
+    if(isAutoOnline(cur)){showWait('Opponent completed a yaku ('+t+' pts)...');maybeAuto();}
+    else if(cur===mySeat)showDecision(cur,t);
+    else showWait('Opponent has a yaku ('+t+' pts)! Choosing Koi-koi or Stop...');
+  }else endTurn();
+}
+function endTurn(){
+  if(over)return;
+  if(!hands[0].length&&!hands[1].length)return roundDraw();
+  cur=1-cur;prevTotal[cur]=ykTotal(cur);pending=null;awaitingDecision=false;
+  if(ONLINE){viewP=mySeat;render();$('over').classList.remove('show');onlineMsg();busy=false;maybeAuto();}
+  else if(mode==='pvp'&&isHuman(cur)){busy=true;render();handoff();}
+  else beginTurn();
+}
+function applyDecide(koi){
+  awaitingDecision=false;$('over').classList.remove('show');
+  if(koi){koikoi++;prevTotal[cur]=ykTotal(cur);msg(turnName(cur)+' declares "Koi-Koi!"');setTimeout(endTurn,500);}
+  else roundEnd(cur);
+}
+function applyNext(){
+  if(!over)return;
+  if(roundNo>=rounds)newGame();
+  else{dealer=1-dealer;startRound();}
+}
+
+/* ---------- Yaku ---------- */
+function ykList(cap){
+  const br=cap.filter(c=>c.type==='bright'),an=cap.filter(c=>c.type==='animal'),ri=cap.filter(c=>c.type==='ribbon'),ka=cap.filter(c=>c.type==='plain');
+  const has=p=>cap.some(p);const res=[];const rain=br.some(c=>c.m===10);
+  if(br.length===5)res.push(['Five Brights',10]);
+  else if(br.length===4)res.push(rain?['Rainy Four Brights',7]:['Four Brights',8]);
+  else if(br.length===3&&!rain)res.push(['Three Brights',5]);
+  if(has(c=>c.m===6&&c.type==='animal')&&has(c=>c.m===9&&c.type==='animal')&&has(c=>c.m===5&&c.type==='animal'))res.push(['Boar-Deer-Butterfly',5]);
+  if([0,1,2].every(m=>ri.some(c=>c.m===m&&c.ribbon==='red')))res.push(['Red Ribbons',5]);
+  if([5,8,9].every(m=>ri.some(c=>c.m===m&&c.ribbon==='blue')))res.push(['Blue Ribbons',5]);
+  const cup=has(c=>c.m===8&&c.type==='animal');
+  if(has(c=>c.m===2&&c.type==='bright')&&cup)res.push(['Flower Viewing',5]);
+  if(has(c=>c.m===7&&c.type==='bright')&&cup)res.push(['Moon Viewing',5]);
+  if(an.length>=5)res.push(['Animals',an.length-4]);
+  if(ri.length>=5)res.push(['Ribbons',ri.length-4]);
+  if(ka.length>=10)res.push(['Plains',ka.length-9]);
+  return res;
+}
+function ykTotal(p){return ykList(captured[p]).reduce((s,[,x])=>s+x,0);}
+
+/* ---------- End of round / scoring ---------- */
+function roundEnd(winner){over=true;awaitingDecision=false;let pts=ykTotal(winner);if(koikoi>0)pts*=2;total[winner]+=pts;showResult(turnName(winner)+' stops!',winner,pts);}
+function roundDraw(){over=true;showResult('Draw (exhausted)',-1,0);}
+function showResult(title,winner,pts){
+  render();const t=$('ov-t'),d=$('ov-d'),btns=$('ov-btns');
+  t.textContent=title;let html='';
+  if(winner>=0){const yl=ykList(captured[winner]);
+    html+=yl.map(([n,p])=>'<span class="y">'+n+' '+p+'</span>').join('　')+'<br>';
+    html+='Earned <span class="y">'+pts+' pts</span>'+(koikoi>0?' (Koi-koi x2)':'')+'<br>';}
+  html+='<div style="margin-top:8px">Total: '+turnName(0)+' <b>'+total[0]+'</b> / '+turnName(1)+' <b>'+total[1]+'</b> (Month '+roundNo+'/'+rounds+')</div>';
+  d.innerHTML=html;btns.innerHTML='';
+  if(roundNo>=rounds){
+    const w=total[0]===total[1]?-1:(total[0]>total[1]?0:1);
+    t.textContent=w<0?'Draw!':turnName(w)+' Wins! \u{1F389}';
+    const b=document.createElement('button');b.textContent='Play Again';b.onclick=nextRound;btns.appendChild(b);
+  }else{
+    const b=document.createElement('button');b.textContent='Next Month';b.onclick=nextRound;btns.appendChild(b);
+  }
+  $('over').classList.add('show');
+  if(roundNo>=rounds){try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
+}
+function showDecision(p,t){
+  render();const ov=$('over'),tt=$('ov-t'),d=$('ov-d'),btns=$('ov-btns');
+  const yl=ykList(captured[p]);
+  tt.textContent='Yaku completed! ('+t+' pts)';
+  d.innerHTML=yl.map(([n,x])=>'<span class="y">'+n+' '+x+'</span>').join('　')+'<br>Continue with "Koi-Koi" for higher stakes?';
+  btns.innerHTML='';
+  const a=document.createElement('button');a.textContent='Stop ('+t*(koikoi>0?2:1)+' pts)';a.onclick=()=>decide(false);
+  const k=document.createElement('button');k.className='alt';k.textContent='Koi-Koi';k.onclick=()=>decide(true);
+  btns.appendChild(a);btns.appendChild(k);ov.classList.add('show');
+}
+function showWait(text){const ov=$('over'),tt=$('ov-t'),d=$('ov-d'),btns=$('ov-btns');tt.textContent='Please wait';d.textContent=text;btns.innerHTML='';ov.classList.add('show');}
+
+/* ---------- CPU ---------- */
+function isCPU(p){return !ONLINE&&mode==='cpu'&&p===1;}
+function cardVal(c){return c.type==='bright'?20:c.type==='animal'?(c.m===8?14:10):c.type==='ribbon'?(c.ribbon==='plain'?6:8):1;}
+
+function cpuPickField(matches){
+  if(cpuLevel===1)return matches[Math.floor(Math.random()*matches.length)];
+  if(cpuLevel===2){let best=matches[0],bv=-1;for(const i of matches){const v=cardVal(field[i]);if(v>bv){bv=v;best=i;}}return best;}
+  let best=matches[0],bs=-1;
+  for(const i of matches){
+    const c=field[i];let s=cardVal(c);
+    s+=yakuBonus(c,cur);
+    if(s>bs){bs=s;best=i;}
+  }
+  return best;
+}
+
+function yakuBonus(c,p){
+  const cap=captured[p];let b=0;
+  if(c.type==='bright'){const bc=cap.filter(x=>x.type==='bright').length;if(bc>=2)b+=15;if(bc>=3)b+=20;}
+  if(c.type==='animal'){
+    const ac=cap.filter(x=>x.type==='animal').length;if(ac>=3)b+=8;
+    const ino=cap.some(x=>x.m===6&&x.type==='animal'),shika=cap.some(x=>x.m===9&&x.type==='animal'),cho=cap.some(x=>x.m===5&&x.type==='animal');
+    const isc=[c.m===6&&c.type==='animal',c.m===9&&c.type==='animal',c.m===5&&c.type==='animal'];
+    const have=[ino,shika,cho].filter(Boolean).length;
+    if(have>=1&&isc.some(Boolean))b+=12;if(have>=2&&isc.some(Boolean))b+=20;
+  }
+  if(c.type==='ribbon'){
+    const rc=cap.filter(x=>x.type==='ribbon').length;if(rc>=3)b+=6;
+    if(c.ribbon==='red'){const reds=cap.filter(x=>x.ribbon==='red'&&[0,1,2].includes(x.m)).length;if(reds>=1)b+=8;if(reds>=2)b+=18;}
+    if(c.ribbon==='blue'){const blues=cap.filter(x=>x.ribbon==='blue'&&[5,8,9].includes(x.m)).length;if(blues>=1)b+=8;if(blues>=2)b+=18;}
+  }
+  if(c.type==='plain'){const kc=cap.filter(x=>x.type==='plain').length;if(kc>=7)b+=5;if(kc>=9)b+=10;}
+  const hasCup=cap.some(x=>x.m===8&&x.type==='animal');
+  if(c.m===2&&c.type==='bright'&&hasCup)b+=15;
+  if(c.m===7&&c.type==='bright'&&hasCup)b+=15;
+  if(c.m===8&&c.type==='animal'){if(cap.some(x=>x.m===2&&x.type==='bright')||cap.some(x=>x.m===7&&x.type==='bright'))b+=15;}
+  return b;
+}
+
+function cpuBestHand(){
+  const h=hands[cur];
+  if(cpuLevel===1){return Math.floor(Math.random()*h.length);}
+  if(cpuLevel===2){
+    let best=0,bs=-1e9;for(let i=0;i<h.length;i++){const c=h[i];const ms=matchesInField(c);let s;if(ms.length)s=10+Math.max(...ms.map(j=>cardVal(field[j])))+cardVal(c)*0.05;else s=-cardVal(c)*0.3;if(s>bs){bs=s;best=i;}}return best;
+  }
+  let best=0,bs=-1e9;
+  for(let i=0;i<h.length;i++){
+    const c=h[i];const ms=matchesInField(c);let s;
+    if(ms.length){
+      const bestField=Math.max(...ms.map(j=>cardVal(field[j])+yakuBonus(field[j],cur)));
+      s=10+bestField+cardVal(c)*0.1+yakuBonus(c,cur)*0.5;
+    }else{
+      s=-cardVal(c)*0.5-yakuBonus(c,1-cur)*0.3;
+    }
+    if(s>bs){bs=s;best=i;}
+  }
+  return best;
+}
+
+function cpuDecide(){
+  const t=ykTotal(cur);const hl=hands[cur].length;
+  if(cpuLevel===1){return Math.random()<0.5?'koi':'stop';}
+  if(cpuLevel===2){if(t>=7)return 'stop';if(hl>=4&&t<7)return 'koi';return 'stop';}
+  const oppT=ykTotal(1-cur);const oppCap=captured[1-cur];
+  const oppBrights=oppCap.filter(c=>c.type==='bright').length;
+  const risk=oppBrights>=2||oppT>=3;
+  if(t>=10)return 'stop';
+  if(t>=7&&hl<=2)return 'stop';
+  if(t>=7&&risk)return 'stop';
+  if(hl>=5&&t<5)return 'koi';
+  if(hl>=3&&t<3&&!risk)return 'koi';
+  if(t>=5&&hl<=3)return 'stop';
+  if(hl>=4&&!risk)return 'koi';
+  return 'stop';
+}
+function cpuTurn(){
+  if(over||cur!==1)return;busy=true;
+  if(!hands[1].length)return endTurn();
+  applyPlay(cpuBestHand());
+}
+
+/* ---------- Rendering ---------- */
+function cardHTML(c,cls){
+  const tc=c.type==='bright'?'bright':c.type==='animal'?'animal':c.type==='ribbon'?('ribbon-'+c.ribbon):'plain';
+  const tp=c.type==='bright'?'Bright':c.type==='animal'?(c.m===8?'Cup':'Animal'):c.type==='ribbon'?(c.ribbon==='red'?'Red':c.ribbon==='blue'?'Blue':'Ribbon'):'Plain';
+  return `<div class="card ${tc} ${cls||''}"><span class="mn">${MONTHS[c.m]}</span><span class="ico">${c.ico}</span><span class="tp">${tp}</span></div>`;
+}
+function capHTML(cap){return cap.slice().sort((a,b)=>a.m-b.m).map(c=>cardHTML(c,'mini')).join('');}
+function render(){
+  const me=viewP,opp=1-viewP;
+  $('oHand').innerHTML=hands[opp].map(()=>'<div class="card back"><span class="ico">花</span></div>').join('');
+  $('oCap').innerHTML=capHTML(captured[opp]);
+  $('pCap').innerHTML=capHTML(captured[me]);
+  $('oInfo').innerHTML=turnName(opp)+'<br>Captured: '+captured[opp].length+'<br><b>'+ykTotal(opp)+' pts</b>';
+  $('pInfo').innerHTML=turnName(me)+'<br>Captured: '+captured[me].length+'<br><b>'+ykTotal(me)+' pts</b>';
+  $('field').innerHTML=field.map((c,i)=>cardHTML(c,(pending&&pending.matches.includes(i))?'match':'')).join('');
+  const canPick=(!pending)?false:(ONLINE?cur===mySeat:(isHuman(cur)));
+  [...$('field').children].forEach((el,i)=>{if(pending&&pending.matches.includes(i)&&canPick){el.classList.add('clk');el.onclick=()=>clickField(i);}});
+  const canPlay=(!pending&&!awaitingDecision&&!over)&&(ONLINE?cur===mySeat:(isHuman(cur)&&cur===me));
+  $('pHand').innerHTML=hands[me].map((c)=>cardHTML(c,(canPlay?'clk':'dim'))).join('');
+  if(canPlay)[...$('pHand').children].forEach((el,i)=>{el.onclick=()=>clickHand(i);});
+  $('deckMsg').textContent='Deck: '+(deck?deck.length:0);
+  const yl=ykList(captured[me]);
+  $('yk').innerHTML=yl.length?('Your yaku: '+yl.map(([n,p])=>'<b>'+n+' '+p+'</b>').join(' / ')):'';
+  renderEval();
+}
+function evalAdvantage(){
+  function evalPlayer(p){
+    const cap=captured[p];let v=0;
+    for(const c of cap)v+=cardVal(c);
+    v+=ykTotal(p)*8;
+    const br=cap.filter(c=>c.type==='bright').length;
+    const an=cap.filter(c=>c.type==='animal').length;
+    const ri=cap.filter(c=>c.type==='ribbon').length;
+    const ka=cap.filter(c=>c.type==='plain').length;
+    const reds=cap.filter(c=>c.ribbon==='red'&&[0,1,2].includes(c.m)).length;
+    const blues=cap.filter(c=>c.ribbon==='blue'&&[5,8,9].includes(c.m)).length;
+    if(br>=2)v+=br*4;
+    if(an>=3)v+=an*2;
+    if(ri>=3)v+=ri*2;
+    if(ka>=7)v+=ka;
+    if(reds>=2)v+=10;
+    if(blues>=2)v+=10;
+    v+=hands[p].length*0.5;
+    v+=total[p]*2;
+    return v;
+  }
+  return {p:evalPlayer(0),o:evalPlayer(1)};
+}
+function renderEval(){
+  const bar=$('evalBar');
+  if(mode!=='cpu'||ONLINE){bar.classList.remove('show');return;}
+  bar.classList.add('show');
+  const e=evalAdvantage();
+  const sum=e.p+e.o||1;
+  const pct=Math.max(8,Math.min(92,(e.p/sum)*100));
+  $('evalFill').style.width=pct+'%';
+  const diff=e.p-e.o;
+  const lbl=diff>10?'Winning':diff>3?'Slight lead':diff<-10?'Losing':diff<-3?'Slight deficit':'Even';
+  $('evMid').textContent=lbl;
+}
+function msg(s){$('msg').textContent=s;}
+
+/* ---------- Buttons ---------- */
+$('reset').addEventListener('click',()=>{if(ONLINE)return;newGame();});
+$('opts').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;
+  if(b.dataset.m){mode=b.dataset.m;document.querySelectorAll('#opts button[data-m]').forEach(x=>x.classList.toggle('on',x===b));const show=mode==='cpu';document.querySelectorAll('#opts button[data-c]').forEach(x=>x.style.display=show?'':'none');$('cpuLvlLbl').style.display=show?'':'none';}
+  if(b.dataset.c){cpuLevel=+b.dataset.c.replace('cpu','');document.querySelectorAll('#opts button[data-c]').forEach(x=>x.classList.toggle('on',x===b));}
+  if(b.dataset.r){rounds=+b.dataset.r;document.querySelectorAll('#opts button[data-r]').forEach(x=>x.classList.toggle('on',x===b));}
+  newGame();});
+newGame();
+
+/* ---------- Online ---------- */
+function startOnline(seat,n,send){ONLINE=true;mySeat=seat;roomSend=send;rounds=6;
+  $('opts').classList.add('hidden');$('reset').style.display='none';
+  newGame();}
+function getState(){return {deck,hands,field,captured,cur,dealer,roundNo,rounds,total,koikoi,prevTotal,over,pending,awaitingDecision};}
+function applyState(o){ONLINE=true;mySeat=o.seat;roomSend=o.send;
+  $('opts').classList.add('hidden');$('reset').style.display='none';
+  const s=o.state;deck=s.deck;hands=s.hands;field=s.field;captured=s.captured;cur=s.cur;dealer=s.dealer;roundNo=s.roundNo;rounds=s.rounds;total=s.total;koikoi=s.koikoi;prevTotal=s.prevTotal;over=s.over;pending=s.pending;awaitingDecision=s.awaitingDecision;
+  viewP=mySeat;busy=false;sent=false;
+  render();
+  if(over){}
+  else if(awaitingDecision){if(cur===mySeat)showDecision(cur,ykTotal(cur));else showWait("Waiting for opponent's decision...");}
+  else if(pending)askPick();
+  else onlineMsg();
+  maybeAuto();
+}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-room.js?v=8"></script>
+<script>
+OnlineRoom.init({gameId:'koikoi',minPlayers:2,maxPlayers:2,note:'Play Hanafuda Koi-Koi online with 2 players.',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>doAction(msg),
+  onLeft:(seat)=>{ if(ONLINE){render();maybeAuto();} },
+  getState,applyState});
+</script>
+<script src="../../shared/firebase-counter.js"></script></body>
+</html>

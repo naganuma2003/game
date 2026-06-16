@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Chinchirorin | Free Browser Game</title>
+<meta name="description" content="Play Chinchirorin for free in your browser. A 3-dice gambling game with hand rankings. CPU opponent, no installation required.">
+<meta name="keywords" content="Chinchirorin,Chinchiro,free,browser game,dice game">
+<meta property="og:title" content="Chinchirorin | Free Browser Game">
+<meta property="og:description" content="Play Chinchirorin for free in your browser. A 3-dice gambling game.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/chinchiro.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/chinchiro.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/chinchiro.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/chinchiro.html">
+<style>
+:root{--bg:#0E2A1C;--felt:#13402A;--txt:#EDE6D6;--sub:#8FB29C;--gold:#C9A227;--die:#F4EFE2;--pip:#222;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(ellipse at 50% 30%,#164a30,#0E2A1C);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 10px 28px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:10px}
+.row{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.row .lab{font-size:11px;color:var(--sub);margin-right:2px}
+.row button{background:transparent;border:1px solid #2c5a40;color:var(--sub);padding:6px 13px;border-radius:18px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s}
+.row button.on{border-color:var(--gold);color:var(--gold)}
+.chips{display:flex;gap:14px;align-items:center;margin-bottom:8px;font-size:14px}
+.chips .b{background:rgba(0,0,0,.28);border-radius:7px;padding:5px 14px}
+.chips b{color:var(--gold)}
+.area{width:min(94vw,420px);margin:6px 0;text-align:center}
+.lab{font-size:11px;color:var(--sub);letter-spacing:.12em;margin-bottom:6px}
+.bowl{background:rgba(0,0,0,.22);border:2px solid #1c5e3c;border-radius:60px;padding:16px;display:flex;gap:12px;justify-content:center;min-height:78px;align-items:center}
+.die{width:46px;height:46px;border-radius:9px;background:var(--die);position:relative;box-shadow:0 3px 7px rgba(0,0,0,.45)}
+.die.roll{animation:sh .4s ease}
+@keyframes sh{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-8px) rotate(-12deg)}75%{transform:translateY(-4px) rotate(12deg)}}
+.die .pip{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--pip);transform:translate(-50%,-50%)}
+.role{font-size:17px;font-weight:700;color:var(--gold);min-height:24px;margin-top:6px;letter-spacing:.06em}
+.role.bad{color:#e0533e}
+.bet{display:flex;gap:8px;align-items:center;justify-content:center;margin:8px 0;flex-wrap:wrap}
+.bet button{background:#13402A;border:1px solid #2c5a40;color:var(--txt);padding:8px 13px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px}
+.bet button:hover{border-color:var(--gold)}
+.bet .betv{font-size:15px;color:var(--gold);font-weight:700;min-width:60px}
+.msg{min-height:24px;font-size:15px;font-weight:700;color:var(--gold);margin:8px 0;text-align:center;letter-spacing:.05em}
+.actions{display:flex;gap:10px;margin-top:4px;justify-content:center}
+.actions button{background:var(--gold);border:none;color:#13402A;font-weight:700;padding:11px 26px;border-radius:8px;cursor:pointer;font-size:15px;font-family:inherit}
+.actions button:disabled{opacity:.4}
+.actions button.alt{background:transparent;border:1px solid #2c5a40;color:var(--txt)}
+/* multi */
+.mboard{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;width:min(96vw,460px);margin:4px 0 8px}
+.pcard{background:rgba(0,0,0,.25);border:1px solid #1c5e3c;border-radius:10px;padding:8px 10px;min-width:96px;text-align:center}
+.pcard.active{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,162,39,.4)}
+.pcard.me .pn{color:#7fd6a0}
+.pcard.win{background:rgba(201,162,39,.14)}
+.pcard .pn{font-size:12px;color:var(--txt);margin-bottom:3px}
+.pcard .sc{font-size:18px;font-weight:800;color:var(--gold)}
+.pcard .pr{font-size:11px;color:var(--sub);min-height:15px;margin-top:2px}
+.minidice{display:flex;gap:3px;justify-content:center;margin-top:4px;min-height:20px}
+.minidice .md{width:18px;height:18px;border-radius:3px;background:var(--die);position:relative}
+.minidice .md .pip{position:absolute;width:3.4px;height:3.4px;border-radius:50%;background:var(--pip);transform:translate(-50%,-50%)}
+.rule{width:min(94vw,420px);margin-top:14px;font-size:11px;line-height:1.7;color:var(--sub);border-top:1px solid #1c5e3c;padding-top:10px}
+.rule b{color:var(--txt)}
+.hidden{display:none!important}
+/* AI eval bar */
+.eval-bar-wrap{width:min(94vw,420px);margin:6px 0}
+.eval-bar-wrap .eval-label{display:flex;justify-content:space-between;font-size:10px;color:var(--sub);margin-bottom:3px}
+.eval-bar-outer{height:18px;border-radius:9px;overflow:hidden;display:flex;background:#1a1a1a;border:1px solid #2c5a40}
+.eval-bar-outer .ev-cpu{background:linear-gradient(90deg,#e0533e,#c93a2a);transition:width .5s ease}
+.eval-bar-outer .ev-me{background:linear-gradient(90deg,#3eaa5e,#2a8c44);transition:width .5s ease}
+.eval-center{position:relative;display:flex;justify-content:center;margin-top:2px}
+.eval-center span{font-size:10px;color:var(--sub)}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Chinchirorin","description":"Chinchirorin - a Japanese dice gambling game with 3 dice.","url":"https://naganuma2003.github.io/game/en/games/chinchiro.html","genre":["Dice Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":"MultiPlayer","numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":4},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>Chinchiro</h1><div class="sub">CHINCHIRO &mdash; 3-dice showdown</div>
+
+<div class="row" id="mode"><span class="lab">Mode:</span>
+  <button data-m="cpu1" class="on">CPU Easy</button>
+  <button data-m="cpu2">CPU Normal</button>
+  <button data-m="cpu3">CPU Hard</button>
+  <button data-m="multi">Multiplayer</button>
+</div>
+<div class="row hidden" id="nprow"><span class="lab">Players:</span>
+  <button data-np="2" class="on">2</button>
+  <button data-np="3">3</button>
+  <button data-np="4">4</button>
+</div>
+
+<!-- SOLO -->
+<div id="solo-area">
+  <div class="chips"><span class="b">Chips <b id="chips">1000</b></span><span class="b">Bet <b id="betv2">100</b></span></div>
+  <div class="eval-bar-wrap" id="eval-wrap">
+    <div class="eval-label"><span id="ev-cpu-lab">CPU: 1000</span><span id="ev-me-lab">You: 1000</span></div>
+    <div class="eval-bar-outer"><div class="ev-cpu" id="ev-cpu" style="width:50%"></div><div class="ev-me" id="ev-me" style="width:50%"></div></div>
+    <div class="eval-center"><span id="ev-diff">&plusmn;0</span></div>
+  </div>
+  <div class="area"><div class="lab">Dealer (CPU)</div><div class="bowl" id="cpu-bowl"></div><div class="role" id="cpu-role"></div></div>
+  <div class="area"><div class="lab">You (Challenger)</div><div class="bowl" id="me-bowl"></div><div class="role" id="me-role"></div></div>
+  <div class="bet" id="betrow">
+    <button data-b="-50">&minus;50</button>
+    <span class="betv" id="betv">100</span>
+    <button data-b="50">+50</button>
+    <button data-b="100">+100</button>
+    <button data-b="max">MAX</button>
+  </div>
+</div>
+
+<!-- MULTI -->
+<div id="multi-area" class="hidden">
+  <div class="mboard" id="mboard"></div>
+  <div class="area"><div class="lab" id="m-turnlab"></div><div class="bowl" id="m-bowl"></div><div class="role" id="m-role"></div></div>
+  <div class="bet" id="m-betrow" style="display:none">
+    <button data-b="-50">&minus;50</button>
+    <span class="betv">Bet <span id="m-betv">100</span></span>
+    <button data-b="50">+50</button>
+    <button data-b="100">+100</button>
+    <button data-b="max">MAX</button>
+    <button id="m-betok" style="background:var(--gold);color:#13402A;font-weight:700;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px">Place Bet</button>
+  </div>
+</div>
+
+<div class="msg" id="msg">Set your bet and press "Roll"</div>
+<div class="actions">
+  <button id="roll">Roll</button>
+  <button id="m-next" class="hidden">Next Round</button>
+  <button id="mreset" class="alt hidden">Restart</button>
+</div>
+<div class="rule" id="rule"></div>
+<script>
+const PIPS={1:[[50,50]],2:[[28,28],[72,72]],3:[[26,26],[50,50],[74,74]],4:[[28,28],[72,28],[28,72],[72,72]],5:[[28,28],[72,28],[50,50],[28,72],[72,72]],6:[[28,26],[72,26],[28,50],[72,50],[28,74],[72,74]]};
+function dieHtml(v,roll){return `<div class="die${roll?' roll':''}">${PIPS[v].map(([x,y])=>`<span class="pip" style="left:${x}%;top:${y}%"></span>`).join('')}</div>`;}
+function miniDice(d){return `<div class="minidice">${d?d.map(v=>`<div class="md">${PIPS[v].map(([x,y])=>`<span class="pip" style="left:${x}%;top:${y}%"></span>`).join('')}</div>`).join(''):''}</div>`;}
+function showDice(sel,dice,roll){document.getElementById(sel).innerHTML=dice.map(v=>dieHtml(v,roll)).join('');}
+function rollDice(){return[1,2,3].map(()=>1+Math.floor(Math.random()*6));}
+// Hand ranking: {rank,mult,name,bad}  higher rank = stronger
+function judge(d){const s=d.slice().sort((a,b)=>a-b);const[a,b,c]=s;
+  if(a===1&&b===1&&c===1)return{rank:100,mult:5,name:'Triple Ones!'};
+  if(a===b&&b===c)return{rank:90+a,mult:3,name:'Triple '+a+'s'};
+  if(a===4&&b===5&&c===6)return{rank:80,mult:2,name:'4-5-6 (Shigoro)'};
+  if(a===1&&b===2&&c===3)return{rank:0,mult:2,name:'1-2-3 (Hifumi)',bad:true};
+  let eye=null;if(a===b)eye=c;else if(b===c)eye=a;else if(a===c)eye=b;
+  if(eye!==null)return{rank:10+eye,mult:1,name:'Point: '+eye};
+  return{rank:5,mult:0,name:'No hand',none:true};}
+function isFinalRole(r){return !r.none;}
+function rollUntilRole(){let res,dice;for(let i=0;i<3;i++){dice=rollDice();res=judge(dice);if(isFinalRole(res)||i===2)break;}return{dice,res};}
+function oneThrow(){const dice=rollDice();return {dice,res:judge(dice)};}
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+function msg(s){document.getElementById('msg').textContent=s;}
+
+let mode='solo',np=2,cpuLevel=1;
+let ONLINE=false,MYSEAT=0,roomSend=null;
+function myTurn(){return !ONLINE||curPlayer===MYSEAT;}
+
+/* ============ SOLO (vs CPU) ============ */
+let cpuChips=1000;
+function updateEval(){
+  const total=chips+cpuChips||1;
+  const mePct=Math.max(2,Math.min(98,(chips/total)*100));
+  document.getElementById('ev-cpu').style.width=(100-mePct)+'%';
+  document.getElementById('ev-me').style.width=mePct+'%';
+  document.getElementById('ev-cpu-lab').textContent='CPU: '+cpuChips;
+  document.getElementById('ev-me-lab').textContent='You: '+chips;
+  const diff=chips-cpuChips;
+  document.getElementById('ev-diff').textContent=(diff>0?'+':'')+diff;
+  document.getElementById('ev-diff').style.color=diff>0?'#6CC56C':diff<0?'#e0533e':'var(--sub)';
+}
+let chips=+(localStorage.getItem('chinchip')||1000),bet=100,busy=false;
+function saveChips(){localStorage.setItem('chinchip',chips);}
+function setBet(){document.getElementById('betv').textContent=bet;document.getElementById('betv2').textContent=bet;}
+let soloPhase='bet',meThrows=0,meRes=null;
+function startSoloHand(){soloPhase='me';meThrows=0;meRes=null;
+  document.getElementById('cpu-role').textContent='';document.getElementById('cpu-role').className='role';
+  document.getElementById('me-role').textContent='';document.getElementById('me-role').className='role';
+  showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);}
+function playSolo(){
+  if(busy)return;
+  if(soloPhase==='over')return;
+  if(soloPhase==='bet'){if(bet<=0){msg('Set your bet and press "Roll"');return;}startSoloHand();}
+  if(soloPhase!=='me')return;
+  meThrows++;
+  const {dice,res}=oneThrow();
+  showDice('me-bowl',dice,true);
+  const me=document.getElementById('me-role');me.textContent='You, throw '+meThrows+': '+res.name;me.className='role'+(res.bad?' bad':'');
+  if(isFinalRole(res)||meThrows>=3){meRes=res;soloPhase='cpu';busy=true;document.getElementById('roll').disabled=true;setTimeout(cpuRollSolo,650);}
+  else{msg('No hand. Roll again ('+meThrows+'/3)');}
+}
+function cpuShouldReroll(res,throwNum){
+  if(isFinalRole(res))return false;
+  if(throwNum>=3)return false;
+  return true;
+}
+function cpuShouldRerollSmart(res,throwNum,meR){
+  if(throwNum>=3)return false;
+  if(!isFinalRole(res))return true;
+  if(cpuLevel===1){return false;}
+  if(cpuLevel===2){
+    if(throwNum>=2)return false;
+    if(meR&&res.rank<meR.rank&&res.rank<=14)return true;
+    return false;}
+  if(meR&&res.rank>meR.rank)return false;
+  if(res.rank>=16)return false;
+  if(throwNum>=2&&res.rank>=12)return false;
+  return true;
+}
+async function cpuRollSolo(){
+  msg('Dealer (CPU) is rolling...');
+  let r;
+  for(let i=1;i<=3;i++){r=oneThrow();showDice('cpu-bowl',r.dice,true);
+    const cr=document.getElementById('cpu-role');cr.textContent='Dealer, throw '+i+': '+r.res.name;cr.className='role'+(r.res.bad?' bad':'');
+    await wait(650);
+    if(cpuLevel<=1){if(isFinalRole(r.res)||i>=3)break;}
+    else{if(!cpuShouldRerollSmart(r.res,i,meRes))break;}
+  }
+  document.getElementById('cpu-role').textContent=r.res.name;
+  await wait(350);
+  settleSolo(r.res,meRes);busy=false;
+}
+function settleSolo(cpuR,meR){
+  soloPhase='over';
+  let delta=0,text;
+  if(meR.rank>cpuR.rank){const m=meR.mult||1;delta=bet*m;text='You win! +'+delta+(m>1?' (x'+m+')':'');}
+  else if(meR.rank<cpuR.rank){const m=cpuR.mult||1;delta=-bet*m;text='Dealer wins... '+delta+(m>1?' (x'+m+')':'');}
+  else{text='Draw (bet returned)';}
+  chips+=delta;cpuChips-=delta;saveChips();document.getElementById('chips').textContent=chips;msg(text);updateEval();
+  setTimeout(()=>{document.getElementById('roll').disabled=false;soloPhase='bet';
+    if(chips<=0){chips=1000;cpuChips=1000;saveChips();document.getElementById('chips').textContent=chips;updateEval();msg('Out of chips! Refilled to 1000. Set bet and "Roll"');}
+    else msg('Next round. Set your bet and "Roll"');
+    bet=Math.min(bet,chips);setBet();},1300);
+}
+
+/* ============ MULTI ============ */
+let players=[],dealer=0,curPlayer=0,mPhase='bet',roundNo=1,pendBet=100;
+let betSeq=[],betIdx=0,rollSeq=[],rollIdx=0,throws=0;
+const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a'];
+function pname(i){return (ONLINE&&i===MYSEAT)?'You (P'+(i+1)+')':'P'+(i+1);}
+function turnName(i){return (ONLINE?(i===MYSEAT?'★ You':'Opponent (P'+(i+1)+')'):'Player '+(i+1));}
+function myAct(){return !ONLINE||curPlayer===MYSEAT;}
+function initMulti(){
+  players=[];for(let i=0;i<np;i++)players.push({chips:1000,bet:0,roll:null,last:''});
+  dealer=Math.floor(Math.random()*np);roundNo=1;startBetPhase();
+}
+function startBetPhase(){
+  mPhase='bet';
+  players.forEach(p=>{p.bet=0;p.roll=null;p.last='';});
+  betSeq=[];for(let k=1;k<np;k++)betSeq.push((dealer+k)%np);
+  betIdx=0;curPlayer=betSeq[0];pendBet=Math.min(100,players[curPlayer].chips);
+  showDice('m-bowl',[1,1,1]);document.getElementById('m-role').textContent='';document.getElementById('m-role').className='role';
+  renderMulti();updateMultiControls();
+  msg('R'+roundNo+': Dealer is P'+(dealer+1)+'. '+turnName(curPlayer)+' places a bet');autoKick();
+}
+function _placeBet(amt){
+  if(mPhase!=='bet')return;
+  const p=players[curPlayer];p.bet=Math.max(1,Math.min(p.chips,amt));
+  betIdx++;
+  if(betIdx<betSeq.length){curPlayer=betSeq[betIdx];pendBet=Math.min(100,players[curPlayer].chips);renderMulti();updateMultiControls();msg(turnName(curPlayer)+' places a bet');autoKick();}
+  else startRollPhase();
+}
+function startRollPhase(){
+  mPhase='roll';
+  rollSeq=[dealer];for(let k=1;k<np;k++)rollSeq.push((dealer+k)%np);
+  rollIdx=0;curPlayer=dealer;throws=0;
+  renderMulti();updateMultiControls();
+  msg('Dealer P'+(dealer+1)+' rolls. Tap "Roll"');autoKick();
+}
+function _roll(){
+  if(mPhase!=='roll'||players[curPlayer].roll)return;
+  throws++;
+  const {dice,res}=oneThrow();
+  showDice('m-bowl',dice,true);
+  const rl=document.getElementById('m-role');rl.textContent=pname(curPlayer)+' throw '+throws+': '+res.name;rl.className='role'+(res.bad?' bad':'');
+  if(!isFinalRole(res)&&throws<3){renderMulti();updateMultiControls();msg(pname(curPlayer)+': no hand, roll again ('+throws+'/3)');autoKick();return;}
+  players[curPlayer].roll={dice,res};
+  rollIdx++;throws=0;
+  if(rollIdx>=np){renderMulti();settleRound();return;}
+  curPlayer=rollSeq[rollIdx];
+  renderMulti();updateMultiControls();
+  msg((curPlayer===dealer?'Dealer ':'')+turnName(curPlayer)+' rolls. Tap "Roll"');autoKick();
+}
+function settleRound(){
+  mPhase='over';
+  const dr=players[dealer].roll.res;let parts=[];
+  for(let i=0;i<np;i++){
+    if(i===dealer){players[i].last='';continue;}
+    const cr=players[i].roll.res;let delta=0;
+    if(cr.rank>dr.rank)delta=players[i].bet*(cr.mult||1);
+    else if(cr.rank<dr.rank)delta=-players[i].bet*(dr.mult||1);
+    players[i].chips+=delta;players[dealer].chips-=delta;
+    players[i].last=delta>0?'+'+delta:delta<0?''+delta:'±0';
+    parts.push(pname(i)+' '+players[i].last);
+  }
+  renderMulti();updateMultiControls();
+  msg('Settlement (Dealer P'+(dealer+1)+': '+dr.name+') → '+(parts.join(' / ')||'—'));
+}
+function _next(){
+  players.forEach(p=>{if(p.chips<=0)p.chips=1000;});
+  dealer=(dealer+1)%np;roundNo++;startBetPhase();
+}
+function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&((OnlineRoom.isCpu&&OnlineRoom.isCpu(s))||(OnlineRoom.isGone&&OnlineRoom.isGone(s)));}
+function autoKick(){
+  if(!ONLINE||!OnlineRoom.isHost())return;
+  const a=curPlayer;if(!isAutoSeat(a))return;
+  const cpu=OnlineRoom.isCpu&&OnlineRoom.isCpu(a);
+  if(mPhase==='bet'){const amt=cpu?Math.max(1,Math.min(50,Math.ceil(players[a].chips*0.1))):Math.max(1,Math.min(50,players[a].chips));setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&mPhase==='bet'&&curPlayer===a&&isAutoSeat(a))OnlineRoom.send({k:'bet',amt});},700);}
+  else if(mPhase==='roll'){setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&mPhase==='roll'&&curPlayer===a&&isAutoSeat(a))OnlineRoom.send({k:'roll'});},700);}
+}
+function renderMulti(){
+  const bd=document.getElementById('mboard');bd.innerHTML='';
+  for(let i=0;i<np;i++){
+    const p=players[i],r=p.roll;
+    const active=(i===curPlayer&&mPhase!=='over');
+    const c=document.createElement('div');
+    c.className='pcard'+(active?' active':'')+(ONLINE&&i===MYSEAT?' me':'')+(i===dealer?' win':'');
+    const lastHtml=(p.last&&mPhase==='over')?'<div class="pr" style="color:'+(p.last[0]==='+'?'#6CC56C':p.last[0]==='-'?'#e0533e':'var(--sub)')+'">'+p.last+'</div>':'';
+    c.innerHTML='<div class="pn" style="color:'+PCOL[i]+';font-weight:800">'+pname(i)+(i===dealer?' \u{1F451} Dealer':'')+'</div>'+
+      '<div class="sc">'+p.chips+'</div>'+
+      '<div class="pr" style="color:var(--sub);min-height:14px">'+(i!==dealer&&p.bet?'Bet '+p.bet:'')+'</div>'+
+      miniDice(r?r.dice:null)+
+      '<div class="pr" style="'+(r&&r.res.bad?'color:#e0533e':'')+'">'+(r?r.res.name:'—')+'</div>'+lastHtml;
+    bd.appendChild(c);
+  }
+  const tl=document.getElementById('m-turnlab');
+  tl.textContent=mPhase==='bet'?'Betting Phase (R'+roundNo+')':mPhase==='roll'?('Dealer P'+(dealer+1)+' / '+turnName(curPlayer)+"'s turn"):('Settlement R'+roundNo);
+  tl.style.color=(mPhase==='roll'||mPhase==='bet')?PCOL[curPlayer]:'var(--gold)';tl.style.fontWeight='800';
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(curPlayer===MYSEAT&&mPhase!=='over');
+}
+function updateMultiControls(){
+  const betShow=mPhase==='bet'&&myAct();
+  const rollShow=mPhase==='roll'&&myAct()&&!players[curPlayer].roll;
+  const nextShow=mPhase==='over'&&(!ONLINE||MYSEAT===0);
+  document.getElementById('m-betrow').style.display=betShow?'flex':'none';
+  document.getElementById('roll').classList.toggle('hidden',!rollShow);
+  document.getElementById('m-next').classList.toggle('hidden',!nextShow);
+  if(betShow){pendBet=Math.min(pendBet||100,players[curPlayer].chips);document.getElementById('m-betv').textContent=pendBet;}
+}
+function emit(a){if(ONLINE){if(a.k==='next'){if(MYSEAT!==0)return;}else if(curPlayer!==MYSEAT)return;roomSend(a);}else doAction(a);}
+function doAction(a){if(a.k==='bet')_placeBet(a.amt);else if(a.k==='roll')_roll();else if(a.k==='next')_next();}
+
+/* ============ shared controls ============ */
+function rollClick(){if(mode==='solo'){playSolo();return;}if(mPhase==='roll')emit({k:'roll'});}
+const RULE_SOLO='Face off against the dealer (CPU). Roll 3 dice — <b>if you get a hand, you stop</b>; otherwise roll up to 3 times. Settle based on hand strength. Multipliers: Triple Ones=5x / Triples=3x / 4-5-6=2x / Point=1x / 1-2-3=lose at 2x.';
+const RULE_MULTI='<b>Dealer (rotating) vs challengers</b>. Challengers bet chips, then dealer and challengers roll in order (stop on any hand, max 3 throws). Settle by hand strength (challenger wins = bet × multiplier; loses = dealer takes). Multipliers: Triple Ones=5x / Triples=3x / 4-5-6=2x / Point=1x / 1-2-3=lose at 2x.';
+function setMode(m){
+  const isSolo=m.startsWith('cpu');
+  mode=isSolo?'solo':'multi';
+  if(isSolo)cpuLevel=m==='cpu1'?1:m==='cpu2'?2:3;
+  document.querySelectorAll('#mode button').forEach(x=>x.classList.toggle('on',x.dataset.m===m));
+  document.getElementById('nprow').classList.toggle('hidden',mode!=='multi');
+  document.getElementById('solo-area').classList.toggle('hidden',mode!=='solo');
+  document.getElementById('multi-area').classList.toggle('hidden',mode!=='multi');
+  document.getElementById('betrow').classList.toggle('hidden',mode!=='solo');
+  document.getElementById('mreset').classList.toggle('hidden',mode!=='multi');
+  document.getElementById('rule').innerHTML=mode==='solo'?RULE_SOLO:RULE_MULTI;
+  document.getElementById('eval-wrap').classList.toggle('hidden',mode!=='solo');
+  if(mode==='solo'){cpuChips=1000;document.getElementById('roll').classList.remove('hidden');document.getElementById('m-next').classList.add('hidden');document.getElementById('m-betrow').style.display='none';document.getElementById('roll').disabled=false;showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);setBet();updateEval();msg('Set your bet and press "Roll"');}
+  else initMulti();
+}
+document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;const m=b.dataset.m;setMode(m);});
+document.getElementById('nprow').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;np=+b.dataset.np;document.querySelectorAll('#nprow button').forEach(x=>x.classList.toggle('on',x===b));initMulti();});
+document.getElementById('betrow').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||busy||soloPhase!=='bet')return;const v=b.dataset.b;if(v==='max')bet=chips;else bet=Math.max(50,Math.min(chips,bet+ +v));setBet();});
+document.getElementById('m-betrow').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!b.dataset.b)return;if(mode!=='multi'||mPhase!=='bet'||!myAct())return;const mx=players[curPlayer].chips,v=b.dataset.b;if(v==='max')pendBet=mx;else pendBet=Math.max(Math.min(50,mx),Math.min(mx,pendBet+ +v));document.getElementById('m-betv').textContent=pendBet;});
+document.getElementById('m-betok').addEventListener('click',()=>{if(mode!=='multi'||mPhase!=='bet'||!myAct())return;emit({k:'bet',amt:pendBet});});
+document.getElementById('m-next').addEventListener('click',()=>{if(mode!=='multi')return;if(ONLINE&&MYSEAT!==0)return;emit({k:'next'});});
+document.getElementById('roll').addEventListener('click',rollClick);
+document.getElementById('mreset').addEventListener('click',()=>{if(ONLINE)return;initMulti();});
+// init solo view
+showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);setBet();
+document.getElementById('chips').textContent=chips;
+document.getElementById('rule').innerHTML=RULE_SOLO;
+updateEval();
+
+function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
+  document.getElementById('mode').classList.add('hidden');
+  document.getElementById('nprow').classList.add('hidden');
+  setMode('multi');
+}
+function getState(){return {players,dealer,curPlayer,mPhase,roundNo,betSeq,betIdx,rollSeq,rollIdx,throws,pendBet};}
+function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;mode='multi';
+  document.getElementById('mode').classList.add('hidden');
+  document.getElementById('nprow').classList.add('hidden');
+  document.getElementById('solo-area').classList.add('hidden');
+  document.getElementById('multi-area').classList.remove('hidden');
+  document.getElementById('betrow').classList.add('hidden');
+  document.getElementById('mreset').classList.add('hidden');
+  document.getElementById('rule').innerHTML=RULE_MULTI;
+  const s=o.state;players=s.players;dealer=s.dealer;curPlayer=s.curPlayer;mPhase=s.mPhase;roundNo=s.roundNo;betSeq=s.betSeq;betIdx=s.betIdx;rollSeq=s.rollSeq;rollIdx=s.rollIdx;throws=s.throws;pendBet=s.pendBet;
+  showDice('m-bowl',[1,1,1]);document.getElementById('m-role').textContent='';
+  renderMulti();updateMultiControls();autoKick();}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-room.js?v=8"></script>
+<script>
+OnlineRoom.init({gameId:'chinchiro',minPlayers:2,maxPlayers:4,note:'Everyone rolls to compete with dice hand rankings.',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>doAction(msg),
+  onLeft:(seat)=>{if(mode==='multi')autoKick();},
+  getState,applyState});
+</script>
+<script src="../../shared/firebase-counter.js"></script></body>
+</html>

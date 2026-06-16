@@ -1,0 +1,323 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Daifugo (President) | Free Browser Game</title>
+<meta name="description" content="Play Daifugo (President) card game for free in your browser. Revolution, eight-cut, and more rules included. CPU opponents available, no install required.">
+<meta name="keywords" content="Daifugo,President,free,browser game,card game,revolution">
+<meta property="og:title" content="Daifugo (President) | Free Browser Game">
+<meta property="og:description" content="Play Daifugo (President) for free in your browser. Revolution and special rules included.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/daifugo.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/daifugo.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/daifugo.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/daifugo.html">
+<style>
+:root{--bg:#0E1E2A;--felt:#123040;--txt:#EDE6D6;--sub:#8FA6B2;--gold:#C9A227;--cardbg:#F4EFE3;--cardline:#C9BFA8;--red:#C23B26;--blk:#1C1C1C;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(ellipse at 50% 35%,#16384c,#0E1E2A);color:var(--txt);font-family:'Segoe UI','Helvetica Neue',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:10px 8px 24px;user-select:none}
+h1{font-family:Georgia,'Times New Roman',serif;font-size:22px;letter-spacing:.12em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:6px}
+.setup{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.setup .lab{font-size:11px;color:var(--sub);margin-right:2px}
+.setup button{background:rgba(0,0,0,.25);border:1px solid #3a5a6a;color:var(--sub);padding:5px 13px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s}
+.setup button.on{border-color:var(--gold);color:var(--gold);font-weight:700}
+.cpus{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+.cpu{background:rgba(0,0,0,.25);border-radius:8px;padding:6px 12px;font-size:12px;text-align:center;min-width:78px}
+.cpu .nm{color:var(--txt)}.cpu .ct{color:var(--gold);font-size:11px}
+.cpu.active{box-shadow:0 0 0 2px var(--gold)}
+.cpu.done{opacity:.5}
+.field{min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:6px 0;gap:4px}
+.field .lab{font-size:10px;color:var(--sub);letter-spacing:.15em}
+.field .cards{display:flex;gap:5px}
+.flag{font-size:11px;color:var(--gold);min-height:16px;letter-spacing:.1em}
+.card{width:46px;height:65px;background:var(--cardbg);border:1px solid var(--cardline);border-radius:6px;position:relative;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.card .crn{position:absolute;top:3px;left:5px;font-size:13px;line-height:1.04}
+.card .big{position:absolute;bottom:2px;right:5px;font-size:18px;opacity:.8}
+.card.red{color:var(--red)}.card.blk{color:var(--blk)}
+.mini{width:30px;height:42px}.mini .crn{font-size:9px;top:2px;left:3px}.mini .big{display:none}
+.myhand{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:8px;width:min(96vw,540px)}
+.myhand .card{cursor:pointer;transition:transform .12s}
+.myhand .card.sel{transform:translateY(-12px);box-shadow:0 4px 10px rgba(201,162,39,.5);border-color:var(--gold)}
+.msg{min-height:20px;font-size:13px;color:var(--gold);margin:8px 0;text-align:center}
+.actions{display:flex;gap:10px;margin-top:6px}
+.actions button{background:var(--gold);border:none;color:#123040;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit}
+.actions button.alt{background:transparent;border:1px solid #3a5a6a;color:var(--txt)}
+.actions button:disabled{opacity:.4;cursor:default}
+.win{position:fixed;inset:0;background:rgba(8,16,22,.86);display:none;align-items:center;justify-content:center;z-index:30}
+.win.show{display:flex}
+.win .c{background:#123040;border:1px solid var(--gold);border-radius:10px;padding:24px 36px;text-align:center;max-width:90vw}
+.win .t{font-size:22px;color:var(--gold);font-family:Georgia,'Times New Roman',serif;margin-bottom:10px}
+.win .rank{font-size:13px;line-height:1.9;margin-bottom:14px}
+.win button{background:var(--gold);border:none;color:#123040;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.card.joker{background:linear-gradient(135deg,#4a1a7a,#1a3a9a);border-color:#b08aff;color:#fff}
+.card.joker .crn,.card.joker .big{color:#fff}
+.cpu.me .nm{color:#7fd6a0}
+.handlab{font-size:11px;color:var(--sub);min-height:14px;margin-top:6px}
+.handoff{position:fixed;inset:0;background:rgba(8,16,22,.9);display:none;align-items:center;justify-content:center;z-index:31}
+.handoff.show{display:flex}
+.handoff .c{background:#123040;border:1px solid var(--gold);border-radius:10px;padding:24px 36px;text-align:center}
+.handoff .t{font-size:20px;color:var(--gold);font-family:Georgia,'Times New Roman',serif;margin-bottom:8px}
+.handoff .s{font-size:13px;margin-bottom:16px}
+.handoff button{background:var(--gold);border:none;color:#123040;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.hidden{display:none!important}
+.eval-panel{margin:8px auto 0;width:min(96vw,400px);display:none}
+.eval-panel.show{display:block}
+.eval-panel .ep-t{font-size:10px;color:var(--sub);letter-spacing:.12em;margin-bottom:4px}
+.eval-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:11px}
+.eval-row .en{width:52px;text-align:right;color:var(--sub);flex-shrink:0}
+.eval-row .ebar{flex:1;height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
+.eval-row .efill{height:100%;border-radius:5px;transition:width .4s}
+.eval-row .ev{width:28px;font-size:10px;color:var(--sub)}
+
+@media(max-width:480px){
+  .card{width:36px;height:51px}
+  .card .crn{font-size:10px}
+  .card .big{font-size:14px}
+  .card.mini{width:24px;height:34px}
+  .actions{flex-wrap:wrap}
+}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Daifugo (President)","description":"Play Daifugo (President) card game for free in your browser.","url":"https://naganuma2003.github.io/game/en/games/daifugo.html","genre":["Card Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":"MultiPlayer","numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":4},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+</head><body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>DAIFUGO</h1><div class="sub">PRESIDENT &mdash; Eight-cut &amp; Revolution</div>
+<div class="setup" id="setup">
+  <span class="lab">Mode:</span><button data-g="cpu" class="on">CPU</button><button data-g="local">Local</button>
+  <span class="lab" style="margin-left:8px">Players:</span><button data-n="2">2</button><button data-n="3">3</button><button data-n="4" class="on">4</button>
+  <span class="lab" style="margin-left:8px">Jokers:</span><button data-j="0" class="on">0</button><button data-j="1">1</button><button data-j="2">2</button>
+  <span class="lab" style="margin-left:8px">CPU Level:</span><button data-lv="1">Easy</button><button data-lv="2" class="on">Normal</button><button data-lv="3">Hard</button>
+</div>
+<div class="cpus" id="cpus"></div>
+<div class="field"><div class="lab">Field</div><div class="cards" id="field"></div><div class="flag" id="flag"></div></div>
+<div class="msg" id="msg"></div>
+<div class="handlab" id="handlab"></div>
+<div class="myhand" id="myhand"></div>
+<div class="actions"><button id="play">Play</button><button id="pass" class="alt">Pass</button></div>
+<div class="eval-panel" id="evalpanel"><div class="ep-t">AI Evaluation</div><div id="evalrows"></div></div>
+<div class="foot" style="margin-top:8px"><button id="new" style="background:transparent;border:1px solid #3a5a6a;color:var(--txt);padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">Redeal</button></div>
+<div class="win" id="winov"><div class="c"><div class="t" id="wint">Results</div><div class="rank" id="winrank"></div><button id="again">Play Again</button></div></div>
+<div class="handoff" id="handoff"><div class="c"><div class="t" id="ho-t">Switch</div><div class="s" id="ho-s">Pass the device</div><button id="ho-ok">View Hand</button></div></div>
+<script>
+const SUITS=['♠','♥','♦','♣'],RED={'♥':1,'♦':1};
+const RANKS=['3','4','5','6','7','8','9','10','J','Q','K','A','2'];
+let hands,turn,field,fieldOwner,passes,revolution,np=4,jokerCount=0,finished,sel,gameOver,NAMES=['You','CPU A','CPU B','CPU C'];
+const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a'];
+let gmode='cpu',ONLINE=false,MYSEAT=0,roomSend=null,localView=0;
+function isHuman(o){return ONLINE||gmode==='local'||o===0;}
+function viewSeat(){return ONLINE?MYSEAT:(gmode==='cpu'?0:localView);}
+function myControlSeat(){return ONLINE?MYSEAT:(gmode==='cpu'?0:turn);}
+function canAct(){return turn===myControlSeat()&&!gameOver&&!finished.includes(turn)&&isHuman(turn);}
+function makeNames(n){const a=[];for(let i=0;i<n;i++){
+  if(ONLINE)a.push(i===MYSEAT?'You':'P'+(i+1));
+  else if(gmode==='cpu')a.push(i===0?'You':'CPU '+String.fromCharCode(64+i));
+  else a.push('Player '+(i+1));}return a;}
+function strength(c){return c.joker?13:c.r;}
+function makeDeck(){const d=[];for(let s=0;s<4;s++)for(let r=0;r<13;r++)d.push({s,r});for(let k=0;k<jokerCount;k++)d.push({joker:true,s:-1,r:-1});return d;}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function sortHand(h){h.sort((a,b)=>{if(a.joker&&b.joker)return 0;if(a.joker)return 1;if(b.joker)return -1;return a.r-b.r||a.s-b.s;});}
+function setRank(cards){const nj=cards.filter(c=>!c.joker);return nj.length?nj[0].r:13;}
+function setStrength(cards){const nj=cards.filter(c=>!c.joker);return nj.length?nj[0].r:13;}
+function init(){NAMES=makeNames(np);const d=shuffle(makeDeck());hands=Array.from({length:np},()=>[]);d.forEach((c,i)=>hands[i%np].push(c));hands.forEach(sortHand);turn=Math.floor(Math.random()*np);field=[];fieldOwner=-1;passes=0;revolution=false;finished=[];gameOver=false;sel=[];localView=ONLINE?MYSEAT:0;document.getElementById('winov').classList.remove('show');document.getElementById('handoff').classList.remove('show');beginTurn(true);}
+function beginTurn(first){
+  sel=[];
+  if(gameOver){render();return;}
+  if(!isHuman(turn)){render();setTimeout(cpuTurn,650);return;}
+  if(ONLINE){render();msg(turn===MYSEAT?'Your turn. Play cards of the same rank together':NAMES[turn]+"'s turn...");autoKick();return;}
+  if(gmode==='cpu'){localView=0;render();msg(turn===0?(first?'Your turn. Play cards of the same rank together':'Your turn'):NAMES[turn]+"'s turn");return;}
+  if(localView===turn){render();msg(NAMES[turn]+"'s turn");return;}
+  render();
+  document.getElementById('ho-t').textContent=NAMES[turn]+"'s turn";
+  document.getElementById('ho-s').textContent='Pass the device to '+NAMES[turn];
+  document.getElementById('handoff').classList.add('show');
+}
+function cardHtml(c,cls){if(c.joker)return '<div class="card joker'+(cls||'')+'"><span class="crn">JK</span><span class="big">🃏</span></div>';const col=RED[SUITS[c.s]]?'red':'blk';return '<div class="card '+col+(cls||'')+'"><span class="crn">'+RANKS[c.r]+'<br>'+SUITS[c.s]+'</span><span class="big">'+SUITS[c.s]+'</span></div>';}
+function render(){
+  const vs=viewSeat();
+  const cpus=document.getElementById('cpus');cpus.innerHTML='';
+  for(let p=0;p<np;p++){if(p===vs)continue;const d=document.createElement('div');d.className='cpu'+(turn===p?' active':'')+(hands[p].length===0?' done':'')+(ONLINE&&p===MYSEAT?' me':'');const rank=finishedRank(p);d.innerHTML='<div class="nm" style="color:'+PCOL[p]+';font-weight:800">'+NAMES[p]+'</div><div class="ct">'+(rank||hands[p].length+' cards')+'</div>';cpus.appendChild(d);}
+  document.getElementById('field').innerHTML=field.map(c=>cardHtml(c)).join('');
+  document.getElementById('flag').textContent=(revolution?'⚡ Revolution (ranks reversed) ':'')+(field.length?('Played by '+NAMES[fieldOwner]):'');
+  document.getElementById('handlab').textContent=(ONLINE||gmode==='local')?(NAMES[vs]+"'s hand"):'';
+  const act=canAct();
+  const mh=document.getElementById('myhand');mh.innerHTML='';hands[vs].forEach((c,i)=>{const w=document.createElement('div');w.innerHTML=cardHtml(c,(act&&sel.includes(i))?' sel':'');const el=w.firstChild;if(act)el.addEventListener('click',()=>toggle(i));mh.appendChild(el);});
+  document.getElementById('play').disabled=!act;document.getElementById('pass').disabled=!act||field.length===0;
+  document.getElementById('msg').style.color=gameOver?'var(--gold)':PCOL[turn];document.getElementById('msg').style.fontWeight='700';
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(turn===MYSEAT&&!gameOver);
+  if(typeof renderEval==='function')renderEval();
+}
+function rankTitles(n){if(n<=2)return['President','Beggar'];if(n===3)return['President','Citizen','Beggar'];return['President','Vice President','Vice Beggar','Beggar'];}
+function finishedRank(p){const i=finished.indexOf(p);if(i<0)return null;const t=rankTitles(np);return t[i]||'Finished';}
+function msg(t){document.getElementById('msg').textContent=t;}
+function toggle(i){const k=sel.indexOf(i);if(k>=0)sel.splice(k,1);else sel.push(i);render();}
+function validSet(cards){if(!cards.length)return false;const nj=cards.filter(c=>!c.joker);if(!nj.length)return true;const r=nj[0].r;return nj.every(c=>c.r===r);}
+function beats(cards){if(field.length===0)return cards.length>=1;if(cards.length!==field.length)return false;const cs=setStrength(cards),fs=setStrength(field);return revolution?cs<fs:cs>fs;}
+function playCards(p,idxs){const cards=idxs.map(i=>hands[p][i]);
+  idxs.sort((a,b)=>b-a).forEach(i=>hands[p].splice(i,1));
+  field=cards.slice();fieldOwner=p;passes=0;
+  let eight=cards.some(c=>!c.joker&&c.r===5);
+  let four=cards.length>=4;
+  if(four)revolution=!revolution;
+  if(hands[p].length===0){finished.push(p);}
+  render();
+  if(checkGameEnd())return;
+  if(eight){field=[];fieldOwner=-1;passes=0;turn=p;render();msg('Eight-cut! '+NAMES[p]+' clears the field and goes again');beginTurn();return;}
+  advance();
+}
+function advance(){let n=turn;for(let k=0;k<np;k++){n=(n+1)%np;if(hands[n].length>0&&!finished.includes(n)){turn=n;break;}}
+  if(activeCount()<=1){checkGameEnd(true);return;}
+  beginTurn();
+}
+function activeCount(){let c=0;for(let p=0;p<np;p++)if(hands[p].length>0)c++;return c;}
+function doPass(p){passes++;render();
+  const active=[...Array(np).keys()].filter(x=>hands[x].length>0&&!finished.includes(x));
+  if(passes>=active.length-1||(fieldOwner>=0&&hands[fieldOwner].length===0)){
+    field=[];const owner=fieldOwner;fieldOwner=-1;passes=0;
+    if(owner>=0&&hands[owner].length>0&&!finished.includes(owner)){turn=owner;}else{advanceFrom(owner);}
+    render();beginTurn();
+    return;
+  }
+  advance();
+}
+function advanceFrom(start){let n=start<0?turn:start;for(let k=0;k<np;k++){n=(n+1)%np;if(hands[n].length>0&&!finished.includes(n)){turn=n;return;}}}
+function cpuTurn(){if(gameOver)return;const p=turn;if(hands[p].length===0||finished.includes(p)){advance();return;}
+  const move=cpuChoose(p);
+  if(move){playCards(p,move);}else{doPass(p);}
+}
+function cpuChoose(p){const h=hands[p];
+  const jokerIdxs=h.map((c,i)=>c.joker?i:-1).filter(i=>i>=0);
+  const groups={};h.forEach((c,i)=>{if(!c.joker)(groups[c.r]=groups[c.r]||[]).push(i);});
+  const ranks=Object.keys(groups).map(Number).sort((a,b)=>revolution?b-a:a-b);
+  if(cpuLv===1){
+    const valid=[];
+    if(field.length===0){
+      for(const r of ranks)for(let k=1;k<=groups[r].length;k++)valid.push(groups[r].slice(0,k));
+      if(jokerIdxs.length)valid.push([jokerIdxs[0]]);
+    } else {
+      const need=field.length,fs=setStrength(field);
+      for(const r of ranks){const g=groups[r];if(g.length+jokerIdxs.length>=need){const cs=r;if(revolution?cs<fs:cs>fs){
+        const use=Math.min(need,g.length);valid.push(g.slice(0,use).concat(jokerIdxs.slice(0,need-use)));}}}
+    }
+    if(!valid.length)return null;
+    return valid[Math.floor(Math.random()*valid.length)];
+  }
+  if(field.length===0){
+    for(const r of ranks){
+      if(r===12&&h.length>3)continue;
+      const g=groups[r];
+      if(g.length>=3)return g.slice(0,3);
+      if(g.length>=2&&h.length>4)return g.slice(0,2);
+      return [g[0]];
+    }
+    if(jokerIdxs.length)return [jokerIdxs[0]];
+    return [groups[ranks[0]][0]];
+  }
+  const need=field.length,fs=setStrength(field);
+  let cand=[];
+  for(const r of ranks){const g=groups[r];const wildAvail=jokerIdxs.length;
+    if(g.length+wildAvail>=need){const cs=r;if(revolution?cs<fs:cs>fs){
+      const use=Math.min(need,g.length);const nj=need-use;
+      cand.push(g.slice(0,use).concat(jokerIdxs.slice(0,nj)));
+    }}}
+  if(jokerIdxs.length>=need&&h.length<=need+1){cand.push(jokerIdxs.slice(0,need));}
+  if(!cand.length)return null;
+  cand.sort((a,b)=>{const ra=h[a[0]].joker?13:h[a[0]].r;const rb=h[b[0]].joker?13:h[b[0]].r;
+    const jokA=a.filter(i=>h[i].joker).length,jokB=b.filter(i=>h[i].joker).length;
+    return (ra-rb)||(jokA-jokB);});
+  const pick=cand[0];
+  if(cpuLv===2)return pick;
+  if(!h[pick[0]].joker&&h[pick[0]].r===12&&h.length>need+1&&cand.length>1)return cand[1]||cand[0];
+  return pick;
+}
+function checkGameEnd(force){const active=[...Array(np).keys()].filter(p=>hands[p].length>0);
+  if(active.length<=1){if(active.length===1&&!finished.includes(active[0]))finished.push(active[0]);gameOver=true;showResult();return true;}
+  return false;}
+function showResult(){const titles=rankTitles(np);let html='';finished.forEach((p,i)=>{html+=(titles[i]||(i+1)+getSuffix(i+1))+'：'+NAMES[p]+'<br>';});
+  const meSeat=ONLINE?MYSEAT:0;const myRank=finished.indexOf(meSeat);
+  document.getElementById('wint').textContent=(ONLINE||gmode==='cpu')?('You are '+(titles[myRank]||'—')):'Results';
+  document.getElementById('winrank').innerHTML=html;document.getElementById('winov').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
+function getSuffix(n){if(n===1)return'st';if(n===2)return'nd';if(n===3)return'rd';return'th';}
+function emit(a){if(ONLINE){if(turn!==MYSEAT)return;roomSend(a);}else doAction(a);}
+function doAction(a){if(a.k==='play')_play(turn,a.idxs);else if(a.k==='pass')_pass(turn);}
+function _play(p,idxs){if(gameOver||finished.includes(p))return;const cards=idxs.map(i=>hands[p][i]);
+  if(cards.some(c=>!c)||!validSet(cards))return;if(field.length>0&&cards.length!==field.length)return;if(!beats(cards))return;
+  playCards(p,idxs);}
+function _pass(p){if(field.length===0)return;doPass(p);}
+function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&((OnlineRoom.isCpu&&OnlineRoom.isCpu(s))||(OnlineRoom.isGone&&OnlineRoom.isGone(s)));}
+function autoKick(){if(!ONLINE||!OnlineRoom.isHost()||gameOver)return;const a=turn;if(!isAutoSeat(a)||finished.includes(a))return;
+  setTimeout(()=>{
+    if(!(ONLINE&&OnlineRoom.isHost()&&!gameOver&&turn===a&&isAutoSeat(a)))return;
+    if(OnlineRoom.isCpu&&OnlineRoom.isCpu(a)){
+      const move=cpuChoose(a);
+      if(move&&move.length)OnlineRoom.send({k:'play',idxs:move});
+      else if(field.length>0)OnlineRoom.send({k:'pass'});
+      else{let idx=hands[a].findIndex(c=>!c.joker);if(idx<0)idx=0;OnlineRoom.send({k:'play',idxs:[idx]});}
+    }else if(field.length===0){
+      let idx=hands[a].findIndex(c=>!c.joker); if(idx<0)idx=0;
+      OnlineRoom.send({k:'play',idxs:[idx]});
+    }else{
+      OnlineRoom.send({k:'pass'});
+    }
+  },650);}
+document.getElementById('play').addEventListener('click',()=>{if(!canAct()||!sel.length)return;const vs=viewSeat();const cards=sel.map(i=>hands[vs][i]);if(!validSet(cards)){msg('Select cards of the same rank');return;}if(field.length>0&&cards.length!==field.length){msg('Must play '+field.length+' card(s) to match the field');return;}if(!beats(cards)){msg('Must play cards stronger than the field');return;}const idxs=sel.slice();sel=[];emit({k:'play',idxs});});
+document.getElementById('pass').addEventListener('click',()=>{if(!canAct()||field.length===0)return;sel=[];emit({k:'pass'});});
+document.getElementById('ho-ok').addEventListener('click',()=>{document.getElementById('handoff').classList.remove('show');localView=turn;render();msg(NAMES[turn]+"'s turn");});
+function newGame(){if(ONLINE)return;init();}
+document.getElementById('again').addEventListener('click',newGame);
+document.getElementById('new').addEventListener('click',newGame);
+document.getElementById('setup').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;
+  if(b.dataset.g){gmode=b.dataset.g;document.querySelectorAll('#setup button[data-g]').forEach(x=>x.classList.toggle('on',x===b));}
+  if(b.dataset.n){np=+b.dataset.n;document.querySelectorAll('#setup button[data-n]').forEach(x=>x.classList.toggle('on',x===b));}
+  if(b.dataset.j!==undefined){jokerCount=+b.dataset.j;document.querySelectorAll('#setup button[data-j]').forEach(x=>x.classList.toggle('on',x===b));}
+  if(b.dataset.lv){cpuLv=+b.dataset.lv;document.querySelectorAll('#setup button[data-lv]').forEach(x=>x.classList.toggle('on',x===b));return;}
+  init();});
+let cpuLv=2;
+function evalScore(p){
+  const h=hands[p];if(!h||h.length===0)return 100;
+  const total=Math.ceil((52+jokerCount)/np);
+  const cardScore=(1-h.length/total)*50;
+  const avg=h.reduce((s,c)=>s+strength(c),0)/h.length;
+  const strScore=(avg/13)*50;
+  return Math.round(cardScore+strScore);
+}
+function renderEval(){
+  const panel=document.getElementById('evalpanel');
+  if(gmode!=='cpu'||ONLINE||gameOver){panel.classList.remove('show');return;}
+  panel.classList.add('show');
+  const rows=document.getElementById('evalrows');
+  let html='';
+  for(let p=0;p<np;p++){
+    const sc=finished.includes(p)?100:evalScore(p);
+    const col=PCOL[p];
+    html+='<div class="eval-row"><span class="en" style="color:'+col+'">'+NAMES[p]+'</span><span class="ebar"><span class="efill" style="width:'+sc+'%;background:'+col+'"></span></span><span class="ev">'+sc+'</span></div>';
+  }
+  rows.innerHTML=html;
+}
+init();
+
+function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
+  document.getElementById('setup').classList.add('hidden');
+  document.querySelector('.foot').classList.add('hidden');
+  if(seat===0)roomSend({k:'setup',np:n,jokerCount});
+  else msg('Waiting for host setup...');}
+function applySetup(a){np=a.np;jokerCount=a.jokerCount;init();}
+function getState(){return {hands,turn,field,fieldOwner,passes,revolution,finished,gameOver,jokerCount};}
+function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;
+  document.getElementById('setup').classList.add('hidden');
+  document.querySelector('.foot').classList.add('hidden');
+  const s=o.state;jokerCount=s.jokerCount;hands=s.hands;turn=s.turn;field=s.field;fieldOwner=s.fieldOwner;passes=s.passes;revolution=s.revolution;finished=s.finished;gameOver=s.gameOver;sel=[];
+  NAMES=makeNames(np);
+  render();
+  if(gameOver)showResult();
+  else msg(turn===MYSEAT?'Your turn. Play cards of the same rank together':NAMES[turn]+"'s turn...");
+  autoKick();}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-room.js?v=8"></script>
+<script>
+OnlineRoom.init({gameId:'daifugo',minPlayers:2,maxPlayers:4,note:'Daifugo (President) with eight-cut and revolution rules.',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>{ if(msg.k==='setup')applySetup(msg); else doAction(msg); },
+  onLeft:(seat)=>autoKick(),
+  getState,applyState});
+</script><script src="../../shared/firebase-counter.js"></script></body></html>

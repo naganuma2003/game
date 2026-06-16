@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Hasami Shogi | Free Browser Game</title>
+<meta name="description" content="Play Hasami Shogi for free in your browser. Supports CPU and online multiplayer. Mobile-friendly so you can play anytime, anywhere.">
+<meta name="keywords" content="Hasami Shogi, free, browser game, CPU battle, online multiplayer, mobile-friendly">
+<meta property="og:title" content="Hasami Shogi | Free Browser Game">
+<meta property="og:description" content="Play Hasami Shogi for free in your browser. Supports CPU and online multiplayer. Mobile-friendly.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/hasami.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/hasami.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/hasami.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/hasami.html">
+<style>
+:root{
+  --bg:#181410;
+  --board:#D9A85C;
+  --grid:#5A3A1A;
+  --piece:#F2DCAE;
+  --piece-edge:#B98F4E;
+  --ink:#1E160C;
+  --red:#A32D2D;
+  --gold:#C9A227;
+  --txt:#E8E0D0;
+  --sub:#998F7B;
+  --sel:rgba(201,162,39,.45);
+  --dest:rgba(163,45,45,.35);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  background:var(--bg);color:var(--txt);
+  font-family:"Hiragino Sans","Yu Gothic UI","Noto Sans JP",sans-serif;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  padding:14px 8px 30px;
+}
+h1{
+  font-family:"Hiragino Mincho ProN","Yu Mincho",serif;
+  font-size:25px;font-weight:600;letter-spacing:.35em;text-indent:.35em;margin:2px 0;
+}
+.sub{font-size:10.5px;color:var(--sub);letter-spacing:.22em;margin-bottom:10px}
+.modes{display:flex;gap:8px;margin-bottom:10px}
+.modes button{
+  background:transparent;border:1px solid #463a2a;color:var(--sub);
+  padding:6px 13px;border-radius:18px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;
+}
+.modes button.on{border-color:var(--gold);color:var(--gold)}
+
+.status{
+  width:min(96vw,440px);display:flex;justify-content:space-between;align-items:center;
+  font-size:12.5px;color:var(--sub);margin:2px 0 8px;padding:0 4px;
+}
+.status b{color:var(--txt);font-variant-numeric:tabular-nums;font-size:15px}
+.status .turn{color:var(--gold)}
+
+.bwrap{
+  padding:8px;border-radius:8px;
+  background:linear-gradient(160deg,#3a2a16,#241808);
+  box-shadow:0 14px 44px rgba(0,0,0,.6);
+}
+svg.board{display:block;width:min(96vw,440px);height:auto}
+.sq{fill:transparent;cursor:pointer}
+.sq.sel{fill:var(--sel)}
+.sq.dest{fill:var(--dest)}
+.sq.last{fill:rgba(201,162,39,.22)}
+text.kanji{
+  font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-weight:600;
+  fill:var(--ink);text-anchor:middle;pointer-events:none;user-select:none;
+}
+text.kanji.promo{fill:var(--red)}
+
+.msg{min-height:22px;font-size:13.5px;color:var(--gold);letter-spacing:.06em;margin-top:10px;text-align:center}
+.foot{display:flex;gap:10px;margin-top:10px}
+.foot button{
+  background:transparent;border:1px solid #463a2a;color:var(--txt);
+  padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;
+}
+.foot button:hover{border-color:var(--gold)}
+.foot button:disabled{opacity:.35}
+
+.rule{
+  width:min(96vw,440px);margin-top:12px;font-size:11.5px;line-height:1.7;color:var(--sub);
+  border-top:1px solid #3a2c1a;padding-top:9px;
+}
+.rule b{color:var(--txt)}
+
+.overlay{
+  position:fixed;inset:0;background:rgba(12,9,5,.82);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .35s;z-index:20;
+}
+.overlay.show{opacity:1;pointer-events:auto}
+.card{
+  background:#221A10;border:1px solid var(--gold);border-radius:10px;
+  padding:28px 40px;text-align:center;
+}
+.card .t{
+  font-family:"Hiragino Mincho ProN","Yu Mincho",serif;
+  font-size:27px;letter-spacing:.25em;text-indent:.25em;color:var(--gold);margin-bottom:8px;
+}
+.card .s{font-size:13px;color:var(--sub);margin-bottom:18px;font-variant-numeric:tabular-nums}
+.card button{
+  background:var(--gold);border:none;color:#221A10;padding:9px 24px;
+  border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.eval-row{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
+.eval-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.45);padding:3px 9px;border-radius:12px;font-size:11px;cursor:pointer;font-family:inherit;transition:.2s;white-space:nowrap}
+.eval-btn.on{border-color:var(--gold,#c9a030);color:var(--gold,#c9a030)}
+.eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
+.eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
+.eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+.assist-toggle{display:inline-flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;cursor:pointer}
+.assist-toggle input{accent-color:var(--gold,#c9a227);cursor:pointer}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Hasami Shogi","description":"Play Hasami Shogi for free in your browser. Supports CPU and online multiplayer. Mobile-friendly so you can play anytime, anywhere.","url":"https://naganuma2003.github.io/game/en/games/hasami.html","genre":["Board Game","Strategy Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer","MultiPlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":2},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}
+</script>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>Hasami Shogi</h1>
+<div class="sub">HASAMI SHOGI &mdash; First player (Fu / You) is at the bottom</div>
+
+<div class="modes" id="modes">
+  <button data-m="cpu1" class="on">CPU Easy</button>
+  <button data-m="cpu2">CPU Normal</button>
+  <button data-m="cpu3">CPU Hard</button>
+  <button data-m="pvp">2 Players</button>
+</div>
+
+<div class="status">
+  <span>Fu captured <b id="cap1">0</b>/5</span>
+  <span class="turn" id="tlabel">Your turn</span>
+  <span>To captured <b id="cap2">0</b>/5</span>
+</div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">Eval</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<label class="assist-toggle"><input type="checkbox" id="assist"> AI Assistant (show best move)</label>
+
+<div class="bwrap"><svg class="board" id="bd"></svg></div>
+
+<div class="msg" id="msg"></div>
+<div class="foot">
+  <button id="undo">Undo</button>
+  <button id="reset">Restart</button>
+</div>
+
+<div class="rule">
+<b>Rules</b>: Pieces move like a rook &mdash; any number of squares horizontally or vertically (no jumping). <b>Capture by flanking</b> an opponent's piece(s) between two of yours in a line (captures entire group). Corner pieces are captured by covering both diagonal approaches. Moving into a flanked position yourself is safe. <b>First to capture 5 wins</b>.
+</div>
+
+<div class="overlay" id="gov">
+  <div class="card">
+    <div class="t" id="g-t">Victory</div>
+    <div class="s" id="g-s"></div>
+    <button id="g-again">Play Again</button>
+  </div>
+</div>
+
+<script>
+/* ============ core ============ */
+/* board[81]: 0=empty, 1=first player(Fu/bottom), 2=second player(To/top) */
+const N=9,DIRS=[[-1,0],[1,0],[0,-1],[0,1]];
+const WIN_CAPS=5;
+let board,turn,mode='cpu1',history=[],last=[-1,-1],over=false,busy=false,sel=null,caps,humanMark=1;
+
+const inB=(r,c)=>r>=0&&r<N&&c>=0&&c<N;
+
+function init(){
+  board=new Array(81).fill(0);
+  for(let c=0;c<9;c++){board[c]=2;board[72+c]=1;}
+  turn=1;history=[];last=[-1,-1];over=false;busy=false;sel=null;caps={1:0,2:0};
+  humanMark=(mode.startsWith('cpu')&&Math.random()<0.5)?2:1;
+  document.getElementById('gov').classList.remove('show');
+  render();
+  msg((turn===humanMark?'Your':'CPU')+'('+(turn===1?'Fu':'To')+') turn');
+  if(!humanTurn()){
+    busy=true;render();
+    setTimeout(()=>{
+      const m=cpuMove();
+      busy=false;
+      pushHist();
+      doMove(m[0],m[1]);
+    },520);
+  }
+}
+
+function movesFrom(bd,i){
+  const r=Math.floor(i/9),c=i%9,out=[];
+  for(const[dr,dc]of DIRS){
+    let nr=r+dr,nc=c+dc;
+    while(inB(nr,nc)&&!bd[nr*9+nc]){out.push(nr*9+nc);nr+=dr;nc+=dc;}
+  }
+  return out;
+}
+
+function captures(bd,to,p){
+  const opp=3-p,r=Math.floor(to/9),c=to%9,out=[];
+  for(const[dr,dc]of DIRS){
+    const line=[];
+    let nr=r+dr,nc=c+dc;
+    while(inB(nr,nc)&&bd[nr*9+nc]===opp){line.push(nr*9+nc);nr+=dr;nc+=dc;}
+    if(line.length&&inB(nr,nc)&&bd[nr*9+nc]===p)out.push(...line);
+  }
+  for(const[ci,a,b]of[[0,1,9],[8,7,17],[72,63,73],[80,71,79]]){
+    if(bd[ci]===opp&&(to===a||to===b)&&bd[a]===p&&bd[b]===p)out.push(ci);
+  }
+  return out;
+}
+
+function applyMove(bd,from,to,p){
+  bd[to]=p;bd[from]=0;
+  const cs=captures(bd,to,p);
+  for(const i of cs)bd[i]=0;
+  return cs.length;
+}
+
+function allMoves(bd,p){
+  const out=[];
+  for(let i=0;i<81;i++)if(bd[i]===p)for(const t of movesFrom(bd,i))out.push([i,t]);
+  return out;
+}
+
+/* ============ UI ============ */
+const NS='http://www.w3.org/2000/svg';
+const bdSvg=document.getElementById('bd');
+const CELL=46,PAD=14;
+bdSvg.setAttribute('viewBox',`0 0 ${CELL*9+PAD*2} ${CELL*9+PAD*2}`);
+let sqEls=[],pieceLayer,assistLayer;
+
+(function buildBoard(){
+  const bg=document.createElementNS(NS,'rect');
+  bg.setAttribute('x',PAD-4);bg.setAttribute('y',PAD-4);
+  bg.setAttribute('width',CELL*9+8);bg.setAttribute('height',CELL*9+8);
+  bg.setAttribute('fill','var(--board)');bg.setAttribute('rx',3);
+  bdSvg.appendChild(bg);
+  for(let k=0;k<=9;k++){
+    for(const[x1,y1,x2,y2]of[[PAD+k*CELL,PAD,PAD+k*CELL,PAD+9*CELL],[PAD,PAD+k*CELL,PAD+9*CELL,PAD+k*CELL]]){
+      const l=document.createElementNS(NS,'line');
+      l.setAttribute('x1',x1);l.setAttribute('y1',y1);l.setAttribute('x2',x2);l.setAttribute('y2',y2);
+      l.setAttribute('stroke','var(--grid)');l.setAttribute('stroke-width',k===0||k===9?2:1);
+      bdSvg.appendChild(l);
+    }
+  }
+  for(const[r,c]of[[3,3],[3,6],[6,3],[6,6]]){
+    const d=document.createElementNS(NS,'circle');
+    d.setAttribute('cx',PAD+c*CELL);d.setAttribute('cy',PAD+r*CELL);
+    d.setAttribute('r',2.6);d.setAttribute('fill','var(--grid)');
+    bdSvg.appendChild(d);
+  }
+  pieceLayer=document.createElementNS(NS,'g');bdSvg.appendChild(pieceLayer);
+  assistLayer=document.createElementNS(NS,'g');assistLayer.setAttribute('pointer-events','none');bdSvg.appendChild(assistLayer);
+  const clickLayer=document.createElementNS(NS,'g');bdSvg.appendChild(clickLayer);
+  for(let i=0;i<81;i++){
+    const r=Math.floor(i/9),c=i%9;
+    const rc=document.createElementNS(NS,'rect');
+    rc.setAttribute('x',PAD+c*CELL);rc.setAttribute('y',PAD+r*CELL);
+    rc.setAttribute('width',CELL);rc.setAttribute('height',CELL);
+    rc.setAttribute('class','sq');
+    rc.addEventListener('click',()=>onSquare(i));
+    clickLayer.appendChild(rc);
+    sqEls[i]=rc;
+  }
+})();
+
+function pentPath(cx,cy,s,flip){
+  const w=s*.82,h=s*.92,t=s*.30;
+  let pts=[[0,-h/2],[w/2,-h/2+t],[w/2*.92,h/2],[-w/2*.92,h/2],[-w/2,-h/2+t]];
+  if(flip)pts=pts.map(([x,y])=>[-x,-y]);
+  return pts.map(([x,y],k)=>(k?'L':'M')+(cx+x).toFixed(1)+','+(cy+y).toFixed(1)).join('')+'Z';
+}
+
+function render(){
+  pieceLayer.innerHTML='';if(assistLayer)assistLayer.innerHTML='';
+  for(let i=0;i<81;i++){
+    sqEls[i].classList.toggle('last',i===last[0]||i===last[1]);
+    sqEls[i].classList.remove('sel','dest');
+  }
+  if(sel){
+    sqEls[sel.i].classList.add('sel');
+    for(const t of sel.moves)sqEls[t].classList.add('dest');
+  }
+  for(let i=0;i<81;i++){
+    const p=board[i];
+    if(!p)continue;
+    const r=Math.floor(i/9),c=i%9;
+    const cx=PAD+c*CELL+CELL/2,cy=PAD+r*CELL+CELL/2;
+    const path=document.createElementNS(NS,'path');
+    path.setAttribute('d',pentPath(cx,cy,CELL*.94,p===2));
+    path.setAttribute('fill','var(--piece)');
+    path.setAttribute('stroke','var(--piece-edge)');
+    path.setAttribute('stroke-width',1.2);
+    pieceLayer.appendChild(path);
+    const tx=document.createElementNS(NS,'text');
+    tx.setAttribute('x',cx);tx.setAttribute('y',cy);
+    tx.setAttribute('class','kanji'+(p===2?' promo':''));
+    tx.setAttribute('font-size',CELL*.52);
+    tx.setAttribute('dominant-baseline','central');
+    if(p===2)tx.setAttribute('transform',`rotate(180 ${cx} ${cy})`);
+    tx.textContent=p===1?'歩':'と';
+    pieceLayer.appendChild(tx);
+  }
+  document.getElementById('cap1').textContent=caps[1];
+  document.getElementById('cap2').textContent=caps[2];
+  document.getElementById('tlabel').textContent=over?'Game Over':mode==='pvp'?(turn===1?'Player 1\'s turn':'Player 2\'s turn'):(turn===humanMark?'Your turn':'CPU\'s turn');
+  document.getElementById('undo').disabled=!history.length||busy||over;
+  if(assistLayer){
+    const bm=computeAssist();
+    if(bm){
+      [[bm[0],'#6cd08a'],[bm[1],'#ff4d4d']].forEach(([i,col])=>{
+        const ar=Math.floor(i/9),ac=i%9;
+        const rc=document.createElementNS(NS,'rect');
+        rc.setAttribute('x',PAD+ac*CELL+2);rc.setAttribute('y',PAD+ar*CELL+2);
+        rc.setAttribute('width',CELL-4);rc.setAttribute('height',CELL-4);
+        rc.setAttribute('fill','none');rc.setAttribute('stroke',col);
+        rc.setAttribute('stroke-width',3);rc.setAttribute('rx',2);
+        assistLayer.appendChild(rc);
+      });
+    }
+  }
+  updateEval();
+}
+
+function msg(s){document.getElementById('msg').textContent=s;}
+const humanTurn=()=>mode==='pvp'||turn===humanMark;
+
+function onSquare(i){
+  if(over||busy)return;
+  if(sel&&sel.moves.includes(i)){
+    pushHist();
+    doMove(sel.i,i);
+    return;
+  }
+  if(board[i]===turn&&humanTurn()){
+    sel={i,moves:movesFrom(board,i)};
+  }else sel=null;
+  render();
+}
+
+function pushHist(){
+  history.push({bd:board.slice(),turn,caps:{...caps},last:[...last]});
+  if(history.length>200)history.shift();
+}
+
+function doMove(from,to){
+  const mover=turn;
+  const got=applyMove(board,from,to,mover);
+  caps[mover]+=got;
+  last=[from,to];sel=null;
+  if(caps[mover]>=WIN_CAPS){render();finish(mover,(mover===1?'Player 1 (Fu)':'Player 2 (To)')+' captured '+WIN_CAPS);return;}
+  turn=3-turn;
+  if(!allMoves(board,turn).length){render();finish(3-turn,(turn===1?'Player 1':'Player 2')+' cannot move');return;}
+  render();
+  const pn=m=>mode==='pvp'?(m===1?'Player 1':'Player 2'):(m===humanMark?'You':'CPU');
+  msg((got?pn(mover)+' captured '+got+'! — ':'')+pn(turn)+'('+(turn===1?'Fu':'To')+')\'s turn');
+  if(!humanTurn()){
+    busy=true;render();
+    setTimeout(()=>{
+      const m=cpuMove();
+      busy=false;
+      pushHist();
+      doMove(m[0],m[1]);
+    },520);
+  }
+}
+
+function finish(winner,how){
+  over=true;busy=false;
+  const t=document.getElementById('g-t');
+  if(mode==='pvp')t.textContent=winner===1?'Player 1 Wins':'Player 2 Wins';
+  else t.textContent=winner===humanMark?'Victory':'Defeat';
+  document.getElementById('g-s').textContent=`${how} (Fu ${caps[1]} − To ${caps[2]})`;
+  msg('Game Over');render();
+  setTimeout(()=>document.getElementById('gov').classList.add('show'),500);
+}
+
+/* ============ CPU ============ */
+function bestReply(bd,p){
+  let best=0;
+  for(const[f,t]of allMoves(bd,p)){
+    const nb=bd.slice();
+    const g=applyMove(nb,f,t,p);
+    if(g>best)best=g;
+  }
+  return best;
+}
+
+function cpuMove(){
+  const cp=3-humanMark,hp=humanMark;
+  const ms=allMoves(board,cp);
+  if(mode==='cpu1'){
+    const scored=ms.map(([f,t])=>{
+      const nb=board.slice();
+      const g=applyMove(nb,f,t,cp);
+      return[g*100+Math.random()*40,f,t];
+    }).sort((a,b)=>b[0]-a[0]);
+    const top=scored.slice(0,Math.min(6,scored.length));
+    const p=top[Math.floor(Math.random()*top.length)];
+    return[p[1],p[2]];
+  }
+  const replyWeight=mode==='cpu2'?40:95;
+  const noise=mode==='cpu2'?12:3;
+  let best=ms[0],bs=-Infinity;
+  for(const[f,t]of ms){
+    const nb=board.slice();
+    const g=applyMove(nb,f,t,cp);
+    let s=g*100;
+    if(caps[cp]+g>=WIN_CAPS)s+=10000;
+    const rep=bestReply(nb,hp);
+    s-=rep*replyWeight;
+    if(caps[hp]+rep>=WIN_CAPS)s-=9000;
+    s+=(cp===2?1:-1)*Math.floor(t/9)*1.2;
+    s+=Math.random()*noise;
+    if(s>bs){bs=s;best=[f,t];}
+  }
+  return best;
+}
+
+/* ============ controls ============ */
+document.getElementById('undo').addEventListener('click',()=>{
+  if(!history.length||busy)return;
+  let h=history.pop();
+  if(mode!=='pvp'){while(history.length&&h.turn!==humanMark)h=history.pop();}
+  board=h.bd;turn=h.turn;caps=h.caps;last=h.last;over=false;sel=null;
+  document.getElementById('gov').classList.remove('show');
+  render();
+  msg((mode==='pvp'?(turn===1?'Player 1 (Fu)':'Player 2 (To)'):(turn===humanMark?'You':'CPU')+'('+(turn===1?'Fu':'To')+')')+'\'s turn');
+});
+document.getElementById('reset').addEventListener('click',init);
+document.getElementById('g-again').addEventListener('click',init);
+document.getElementById('modes').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  mode=b.dataset.m;
+  document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');init();
+});
+
+init();
+// ===== AI Assistant =====
+const assistEl=document.getElementById('assist');
+if(assistEl) assistEl.addEventListener('change', render);
+function computeAssist(){
+  if(!assistEl||!assistEl.checked||over||busy||!humanTurn())return null;
+  const ms=allMoves(board,turn);
+  if(!ms.length)return null;
+  const sign=turn===1?1:-1;
+  let best=null,bestS=-Infinity;
+  const savedBd=board;
+  for(const[f,t]of ms){
+    const nb=board.slice();
+    applyMove(nb,f,t,turn);
+    board=nb;
+    const s=sign*evalScore();
+    board=savedBd;
+    if(s>bestS){bestS=s;best=[f,t];}
+  }
+  board=savedBd;
+  return best;
+}
+// ===== AI Evaluation =====
+var evalOn=false;
+function toggleEval(){
+  evalOn=!evalOn;
+  document.getElementById('eval-btn').classList.toggle('on',evalOn);
+  document.getElementById('eval-bar').style.display=evalOn?'block':'none';
+  document.getElementById('eval-lbl').style.display=evalOn?'inline':'none';
+  updateEval();
+}
+function updateEval(){
+  if(!evalOn)return;
+  const s=evalScore(),MAX=9;
+  const C1='#5b9bd5',C2='#e0533e',N1='P1',N2='P2';
+  const pct=Math.min(Math.max((s+MAX)/(2*MAX),0),1);
+  document.getElementById('eval-fill').style.cssText=`width:${pct*100}%;background:${s>0.3?C1:s<-0.3?C2:'#888'}`;
+  document.getElementById('eval-lbl').textContent=Math.abs(s)<0.3?'Even':s>0?`${N1}+${Math.round(Math.abs(s))}`:`${N2}+${Math.round(Math.abs(s))}`;
+}
+function evalScore(){
+  if(over)return 0;
+  let p1=0,p2=0;
+  for(let i=0;i<81;i++){if(board[i]===1)p1++;else if(board[i]===2)p2++;}
+  return p1-p2;
+}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-core.js?v=8"></script>
+<script>OnlineCore.init({gameId:'hasami',statusSel:'#tlabel',hostMark:'Player 1',guestMark:'Player 2',pvpSel:'#modes button[data-m=\"pvp\"]',hideSel:'#modes',flip:{board:'#bd',upright:'text'}});</script>
+<script src="../../shared/firebase-counter.js"></script></body>
+</html>

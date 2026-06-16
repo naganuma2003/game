@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Algo - Number Deduction Card Game | Free Browser Game</title>
+<meta name="description" content="Play Algo for free in your browser. A number deduction card game where you guess hidden numbers. AI opponents, no registration required.">
+<meta name="keywords" content="Algo,free,browser game,card game,deduction,number guessing">
+<meta property="og:title" content="Algo - Number Deduction Card Game | Free Browser Game">
+<meta property="og:description" content="Play the number deduction card game Algo for free in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/algo.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/algo.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/algo.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/algo.html">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Algo","description":"Play Algo for free in your browser. A number deduction card game where you guess hidden numbers. AI opponents, no registration required.","url":"https://naganuma2003.github.io/game/en/games/algo.html","genre":["Card Game","Puzzle Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer","MultiPlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":4},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+<style>
+:root{--bg:#0e0e18;--surf:#1a1a28;--gold:#c9a030;--gold2:#f0d060;--txt:#e8e8f0;--dim:#555;--red:#d94040;--grn:#3dba6a;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:56px 10px 32px}
+.back{position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.25)}
+/* SETUP */
+#setup{width:100%;max-width:360px;margin-top:12px;background:var(--surf);border-radius:16px;padding:22px 18px}
+#setup h1{font-size:22px;text-align:center;color:var(--gold);margin-bottom:2px}
+.subtitle{font-size:11px;color:var(--dim);text-align:center;margin-bottom:18px}
+.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.form-row label{font-size:11px;color:var(--gold2)}
+.form-row select{background:#141420;border:1px solid #333;color:var(--txt);padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit}
+.start-btn{width:100%;padding:11px;background:var(--gold);color:#111;border:none;border-radius:10px;font:700 15px 'Segoe UI',sans-serif;cursor:pointer}
+.start-btn:hover{background:var(--gold2)}
+.rules-box{margin-top:14px;padding:11px;background:rgba(255,255,255,.04);border-radius:8px;font-size:11px;color:var(--dim);line-height:1.7}
+.rules-box b{color:var(--txt)}
+/* GAME */
+#game{display:none;width:100%;max-width:520px;flex-direction:column;align-items:center;gap:10px}
+/* Players area */
+.opponents{width:100%;display:flex;flex-direction:column;gap:8px}
+.p-row{background:var(--surf);border-radius:10px;padding:8px 10px}
+.p-name{font-size:11px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.p-turn-badge{font-size:9px;background:var(--gold);color:#111;padding:1px 6px;border-radius:99px}
+.p-cards{display:flex;gap:5px;flex-wrap:wrap}
+/* Card elements */
+.card-el{width:40px;height:56px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;font-size:16px;border:2px solid transparent;transition:all .12s;position:relative;user-select:none;flex-shrink:0}
+.card-el.bc{background:#1e1e2e;color:#e0e0ff;border-color:#3a3a5a}
+.card-el.wc{background:#e8e4d0;color:#1a1a2a;border-color:#c8c4a8}
+.card-el.hb{background:#1e1e2e;border-color:#3a3a5a}
+.card-el.hw{background:#e8e4d0;border-color:#c8c4a8}
+.card-el.selectable{cursor:pointer}
+.card-el.selectable:hover{border-color:var(--gold2)!important;transform:translateY(-3px)}
+.card-el.targeted{border-color:var(--gold2)!important;box-shadow:0 0 0 3px rgba(240,208,96,.35)}
+.card-el.elim{opacity:.25}
+.cval{font-size:16px;font-weight:900;line-height:1}
+.cclr{font-size:8px;opacity:.6;margin-top:1px}
+.cq{font-size:18px;opacity:.35}
+@keyframes reveal{0%{transform:rotateY(90deg);opacity:.4}100%{transform:rotateY(0);opacity:1}}
+.just-rev{animation:reveal .3s ease-out}
+/* Drawn card */
+.drawn-box{display:none;width:100%;background:var(--surf);border-radius:10px;padding:10px 14px;align-items:center;gap:10px}
+.drawn-lbl{font-size:11px;color:var(--dim);flex-shrink:0}
+/* Status */
+#status{font-size:13px;min-height:20px;text-align:center;font-weight:600;color:var(--gold2)}
+/* Actions */
+.act-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.act-btn{padding:8px 18px;border-radius:8px;font:700 13px 'Segoe UI',sans-serif;cursor:pointer;border:none}
+.act-btn.p{background:var(--gold);color:#111}.act-btn.p:hover{background:var(--gold2)}
+.act-btn.s{background:#2a2a3e;color:var(--txt)}.act-btn.s:hover{background:#34344e}
+/* Number picker */
+.num-pick{display:none;width:100%;background:var(--surf);border-radius:10px;padding:10px}
+.num-lbl{font-size:11px;color:var(--dim);margin-bottom:7px;text-align:center}
+.num-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+.num-btn{padding:8px 4px;border-radius:6px;border:2px solid #2e2e44;background:#1e1e30;color:var(--txt);font:700 14px 'Segoe UI',sans-serif;cursor:pointer;transition:all .1s}
+.num-btn:hover{border-color:var(--gold);background:#252535}
+.num-btn.sel{border-color:var(--gold2);background:#302808;color:var(--gold2)}
+.num-btn.imp{opacity:.2}
+/* My cards */
+.my-area{width:100%}
+.my-lbl{font-size:11px;color:var(--dim);margin-bottom:7px;text-align:center}
+.my-cards{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+/* AI Eval */
+.ai-eval{width:100%;background:var(--surf);border-radius:10px;padding:8px 12px}
+.ai-eval-title{font-size:10px;color:var(--dim);margin-bottom:6px}
+.eval-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.eval-name{font-size:11px;width:56px;text-align:right;flex-shrink:0}
+.eval-bar-bg{flex:1;height:14px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;position:relative}
+.eval-bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.eval-pct{font-size:10px;color:var(--dim);width:32px;flex-shrink:0}
+/* Log */
+.log-area{width:100%;background:var(--surf);border-radius:10px;padding:8px 12px;max-height:80px;overflow-y:auto}
+.log-line{font-size:11px;color:var(--dim);line-height:1.7}
+.log-line.hit{color:var(--grn)}.log-line.miss{color:var(--red)}
+/* Gameover */
+#gameover{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.83);align-items:center;justify-content:center;padding:16px}
+.go-card{background:var(--surf);border-radius:16px;padding:22px 18px;max-width:360px;width:100%;text-align:center}
+.go-card h2{font-size:20px;color:var(--gold);margin-bottom:14px}
+.go-rows{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+.go-row{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-radius:8px;background:rgba(255,255,255,.04)}
+.go-row.top{background:rgba(201,160,48,.12);border:1px solid var(--gold)}
+.go-btns{display:flex;gap:8px;justify-content:center}
+.go-btns button{padding:9px 20px;border-radius:8px;font:700 13px 'Segoe UI',sans-serif;cursor:pointer;border:none}
+.go-btns .again{background:var(--gold);color:#111}.go-btns .home{background:#2a2a38;color:var(--txt)}
+
+@media (max-width:480px){
+  .card-el{width:34px;height:48px}
+}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back">&larr; Back to List</a>
+
+<section id="setup">
+  <h1>🔍 Algo</h1>
+  <p class="subtitle">Number Deduction Card Game, 2-4 Players</p>
+  <div class="form-row">
+    <label>Players (including CPU)</label>
+    <select id="sel-players">
+      <option value="2">2 Players (1 CPU)</option>
+      <option value="3" selected>3 Players (2 CPUs)</option>
+      <option value="4">4 Players (3 CPUs)</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label>CPU Difficulty</label>
+    <select id="sel-diff">
+      <option value="easy">Easy</option>
+      <option value="normal" selected>Normal</option>
+      <option value="hard">Hard</option>
+    </select>
+  </div>
+  <button class="start-btn" id="start-btn">Start Game</button>
+  <div class="rules-box">
+    <b>Rules:</b> 24 cards total: Black 0-11 and White 0-11. Each player receives 4 cards, placed face-down in ascending order (you can see your own cards). On your turn, draw 1 card from the deck and look at it, then choose an opponent's face-down card and declare a number. <b>Correct:</b> That card is revealed and you may attack again (or stop and add the drawn card face-down). <b>Wrong:</b> The drawn card is added face-up to your hand. If all your cards are revealed, you're eliminated. <b>Order:</b> Ascending; same value = Black goes left.
+  </div>
+</section>
+
+<div id="game">
+  <div class="opponents" id="opponents"></div>
+  <div class="drawn-box" id="drawn-box">
+    <span class="drawn-lbl">Drawn Card</span>
+    <div id="drawn-slot"></div>
+    <span id="drawn-hint" style="font-size:11px;color:var(--dim)"></span>
+  </div>
+  <div id="status">Preparing...</div>
+  <div class="act-row" id="act-row"></div>
+  <div class="num-pick" id="num-pick">
+    <div class="num-lbl">Choose a number (0-11)</div>
+    <div class="num-grid" id="num-grid"></div>
+  </div>
+  <div class="my-area">
+    <div class="my-lbl">Your Cards</div>
+    <div class="my-cards" id="my-cards"></div>
+  </div>
+  <div class="ai-eval" id="ai-eval" style="display:none">
+    <div class="ai-eval-title">AI Assessment (Revealed card rate — lower is better)</div>
+    <div id="eval-bars"></div>
+  </div>
+  <div class="log-area" id="log-area"></div>
+</div>
+
+<div id="gameover">
+  <div class="go-card">
+    <h2>Game Over</h2>
+    <div class="go-rows" id="go-rows"></div>
+    <div class="go-btns">
+      <button class="again" id="again-btn">Play Again</button>
+      <button class="home" onclick="location.href='../index.html'">Back to List</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PCOLS=['#c9a030','#e0473a','#3e87d6','#4ec05e'];
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+function cardSort(a,b){return a.value!==b.value?a.value-b.value:a.color==='B'?-1:1;}
+function insertSorted(arr,c){const n=[...arr,{...c}];n.sort(cardSort);return n;}
+function cardLabel(c){return(c.color==='B'?'Black ':'White ')+c.value;}
+
+let G={};
+
+function initGame(numP,diff,online,mySeat){
+  const deck=shuffle([...Array(12).keys()].flatMap(v=>[{value:v,color:'B'},{value:v,color:'W'}]));
+  const myIdx=online?mySeat:0;
+  const names=online?(mySeat===0?['You','Opponent']:['Opponent','You']):['You',...Array.from({length:numP-1},(_,i)=>`CPU ${i+1}`)];
+  const players=[];
+  for(let i=0;i<numP;i++){
+    const cards=deck.splice(0,4).sort(cardSort).map(c=>({...c,revealed:false}));
+    players.push({name:names[i],cards,eliminated:false});
+  }
+  const firstTurn=online?0:Math.floor(Math.random()*numP);
+  G={players,deck,numP,diff,online,myIdx,cur:firstTurn,drawn:null,phase:'idle',target:null,selectedNum:null,log:[]};
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').style.display='flex';
+  buildNumGrid();
+  beginTurn(firstTurn);
+}
+
+// ===== TURN FLOW =====
+function beginTurn(pi){
+  G.cur=pi;G.target=null;G.selectedNum=null;
+  if(G.deck.length===0||activePlayers()<=1){endGame();return;}
+  G.drawn=G.deck.pop();
+  const isMe=pi===G.myIdx;
+  if(isMe){
+    G.phase='attack';
+    renderAll();
+    document.getElementById('status').textContent='Drawn card: '+cardLabel(G.drawn)+' — Select an opponent\'s card to guess';
+    renderDrawn(true);
+    showActs([]);
+    document.getElementById('num-pick').style.display='none';
+  } else if(G.online){
+    G.phase='watching';
+    G.drawn=G.deck[G.deck.length];
+    renderAll();
+    document.getElementById('status').textContent=G.players[pi].name+'\'s turn...';
+    renderDrawn(false);
+    showActs([]);
+  } else {
+    G.phase='cpu';
+    renderAll();
+    document.getElementById('status').textContent=G.players[pi].name+'\'s turn...';
+    renderDrawn(false);
+    showActs([]);
+    setTimeout(cpuPlay,700);
+  }
+}
+
+function isMyTurn(){return G.cur===G.myIdx;}
+
+// ===== ATTACK =====
+function selectTarget(pi,pos){
+  if(G.phase!=='attack')return;
+  G.target={player:pi,pos};G.selectedNum=null;
+  renderOpponents();
+  document.getElementById('num-pick').style.display='block';
+  renderNumPick();
+  document.getElementById('status').textContent=G.players[pi].name+' position '+(pos+1)+' ('+( G.players[pi].cards[pos].color==='B'?'Black':'White')+') — Choose a number';
+  showActs([]);
+}
+
+function selectNum(v){
+  G.selectedNum=v;
+  renderNumPick();
+  showActs([{label:`Declare ${v}`,fn:humanDeclare,cls:'p'}]);
+}
+
+function humanDeclare(){
+  if(G.target===null||G.selectedNum===null)return;
+  if(G.online){
+    OnlineCore.send({t:'attack',pos:G.target.pos,guess:G.selectedNum});
+  }
+  applyAttack(G.target.player,G.target.pos,G.selectedNum);
+}
+
+function applyAttack(targetPi,pos,guess){
+  const card=G.players[targetPi].cards[pos];
+  const hit=card.value===guess;
+  document.getElementById('num-pick').style.display='none';
+  G.target=null;G.selectedNum=null;
+
+  if(hit){
+    card.revealed=true;card.justRev=true;
+    addLog(`✅ ${G.players[G.cur].name}: ${G.players[targetPi].name}'s ${cardLabel(card)} — Correct!`,'hit');
+    setTimeout(()=>{card.justRev=false;},400);
+    checkElim(targetPi);
+    if(activePlayers()<=1){renderAll();setTimeout(endGame,700);return;}
+    G.phase='continue';
+    renderAll();
+    if(isMyTurn()){
+      document.getElementById('status').textContent='Correct! Continue attacking?';
+      showActs([
+        {label:'Continue Attack',fn:continueAttack,cls:'p'},
+        {label:'Stop (add card face-down)',fn:stopAttack,cls:'s'}
+      ]);
+    } else {
+      document.getElementById('status').textContent=G.players[G.cur].name+' is deciding whether to continue...';
+      showActs([]);
+      setTimeout(()=>{G.phase='cpu';cpuPlay();},900);
+    }
+  } else {
+    addLog(`❌ ${G.players[G.cur].name}: Miss (actually ${cardLabel(card)})`,'miss');
+    G.drawn.revealed=true;
+    G.players[G.cur].cards=insertSorted(G.players[G.cur].cards,G.drawn);
+    G.drawn=null;
+    checkElim(G.cur);
+    renderAll();
+    setTimeout(()=>nextTurn(),700);
+  }
+}
+
+function continueAttack(){
+  G.phase='attack';
+  document.getElementById('status').textContent='You still have the drawn card — guess another!';
+  showActs([]);
+  renderOpponents();
+}
+
+function stopAttack(){
+  if(G.online)OnlineCore.send({t:'stop'});
+  doStop();
+}
+
+function doStop(){
+  G.players[G.cur].cards=insertSorted(G.players[G.cur].cards,G.drawn);
+  G.drawn=null;
+  renderAll();
+  setTimeout(()=>nextTurn(),400);
+}
+
+function nextTurn(){
+  G.drawn=null;G.target=null;G.selectedNum=null;
+  const next=nextAlive(G.cur);
+  if(next===G.cur||activePlayers()<=1){endGame();return;}
+  beginTurn(next);
+}
+
+function nextAlive(from){
+  let n=(from+1)%G.numP,t=0;
+  while(G.players[n].eliminated&&t<G.numP){n=(n+1)%G.numP;t++;}
+  return n;
+}
+function activePlayers(){return G.players.filter(p=>!p.eliminated).length;}
+
+// ===== ONLINE =====
+function handleOnlineMsg(msg){
+  if(msg.t==='attack'){
+    applyAttack(G.myIdx,msg.pos,msg.guess);
+  } else if(msg.t==='stop'){
+    doStop();
+  }
+}
+
+// ===== CPU =====
+function cpuPlay(){
+  if(G.phase!=='cpu')return;
+  const known=buildKnown(G.cur);
+  const t=cpuPickTarget(G.cur,known);
+  if(!t){doStop();return;}
+  G.target={player:t.pi,pos:t.pos};
+  G.selectedNum=t.guess;
+  renderOpponents();
+  setTimeout(()=>{applyAttack(t.pi,t.pos,t.guess);},800);
+}
+
+function buildKnown(viewerIdx){
+  const s={};
+  for(const p of G.players){for(const c of p.cards){if(c.revealed)s[c.color+c.value]=1;}}
+  for(const c of G.players[viewerIdx].cards)s[c.color+c.value]=1;
+  if(G.drawn&&G.cur===viewerIdx)s[G.drawn.color+G.drawn.value]=1;
+  return s;
+}
+
+function leftRev(cards,pos){for(let i=pos-1;i>=0;i--)if(cards[i].revealed)return cards[i];return null;}
+function rightRev(cards,pos){for(let i=pos+1;i<cards.length;i++)if(cards[i].revealed)return cards[i];return null;}
+
+function possVals(cards,pos,known){
+  const col=cards[pos].color;
+  const L=leftRev(cards,pos),R=rightRev(cards,pos);
+  const p=[];
+  for(let v=0;v<=11;v++){
+    if(L&&cardSort({value:v,color:col},L)<=0)continue;
+    if(R&&cardSort({value:v,color:col},R)>=0)continue;
+    if(!known[col+v])p.push(v);
+  }
+  return p;
+}
+
+function cpuPickTarget(cpuIdx,known){
+  let best=null,bestLen=Infinity;
+  for(let pi=0;pi<G.numP;pi++){
+    if(pi===cpuIdx||G.players[pi].eliminated)continue;
+    const cards=G.players[pi].cards;
+    for(let i=0;i<cards.length;i++){
+      if(cards[i].revealed)continue;
+      const poss=possVals(cards,i,known);
+      if(!poss.length)continue;
+      if(poss.length<bestLen){
+        bestLen=poss.length;
+        const guess=G.diff==='easy'?(0|Math.random()*12):G.diff==='normal'?poss[0|Math.random()*poss.length]:poss[0|poss.length/2];
+        best={pi,pos:i,guess};
+      }
+    }
+  }
+  if(!best){
+    for(let pi=0;pi<G.numP;pi++){
+      if(pi===cpuIdx||G.players[pi].eliminated)continue;
+      for(let i=0;i<G.players[pi].cards.length;i++)
+        if(!G.players[pi].cards[i].revealed)return{pi,pos:i,guess:0|Math.random()*12};
+    }
+  }
+  return best;
+}
+
+function checkElim(pi){
+  if(G.players[pi].cards.every(c=>c.revealed)){
+    G.players[pi].eliminated=true;
+    addLog(`💀 ${G.players[pi].name} — all cards revealed — Eliminated`,'miss');
+  }
+}
+
+// ===== RENDER =====
+function renderAll(){
+  renderOpponents();
+  renderMyCards();
+  renderNumPick();
+  renderEval();
+}
+
+function renderEval(){
+  const el=document.getElementById('ai-eval');
+  if(G.online){el.style.display='none';return;}
+  el.style.display='';
+  const bars=document.getElementById('eval-bars');bars.innerHTML='';
+  for(let pi=0;pi<G.numP;pi++){
+    const p=G.players[pi];
+    const total=p.cards.length;
+    const rev=p.cards.filter(c=>c.revealed).length;
+    const pct=total?Math.round(rev/total*100):0;
+    const col=PCOLS[pi];
+    const d=document.createElement('div');d.className='eval-row';
+    d.innerHTML=`<div class="eval-name" style="color:${col}">${p.name}</div>`
+      +`<div class="eval-bar-bg"><div class="eval-bar-fill" style="width:${pct}%;background:${pct>=80?'var(--red)':pct>=50?'var(--gold)':'var(--grn)'}"></div></div>`
+      +`<div class="eval-pct">${pct}%</div>`;
+    if(p.eliminated)d.style.opacity='.35';
+    bars.appendChild(d);
+  }
+}
+
+function renderOpponents(){
+  const area=document.getElementById('opponents');area.innerHTML='';
+  for(let pi=0;pi<G.numP;pi++){
+    if(pi===G.myIdx)continue;
+    const p=G.players[pi];
+    const div=document.createElement('div');div.className='p-row';
+    const isCur=pi===G.cur;
+    div.innerHTML=`<div class="p-name" style="color:${PCOLS[pi]}">${p.name}${isCur?'<span class="p-turn-badge">Turn</span>':''}${p.eliminated?' <span style="color:var(--red);font-size:9px">Eliminated</span>':''}</div>`;
+    const cards=document.createElement('div');cards.className='p-cards';
+    p.cards.forEach((c,i)=>{
+      const el=document.createElement('div');
+      const isHid=!c.revealed;
+      let cls=c.revealed?(c.color==='B'?'bc':'wc'):(c.color==='B'?'hb':'hw');
+      const canSelect=G.phase==='attack'&&isMyTurn()&&!p.eliminated&&isHid;
+      if(canSelect)cls+=' selectable';
+      if(G.target&&G.target.player===pi&&G.target.pos===i)cls+=' targeted';
+      if(p.eliminated)cls+=' elim';
+      if(c.justRev)cls+=' just-rev';
+      el.className='card-el '+cls;
+      if(c.revealed)el.innerHTML=`<div class="cval">${c.value}</div><div class="cclr">${c.color==='B'?'B':'W'}</div>`;
+      else el.innerHTML='<div class="cq">?</div>';
+      if(canSelect)el.addEventListener('click',()=>selectTarget(pi,i));
+      cards.appendChild(el);
+    });
+    div.appendChild(cards);area.appendChild(div);
+  }
+}
+
+function renderDrawn(show){
+  const box=document.getElementById('drawn-box'),slot=document.getElementById('drawn-slot');
+  if(!show||!G.drawn){box.style.display='none';return;}
+  box.style.display='flex';
+  const c=G.drawn;
+  const el=document.createElement('div');
+  el.className='card-el '+(c.color==='B'?'bc':'wc');
+  el.innerHTML=`<div class="cval">${c.value}</div><div class="cclr">${c.color==='B'?'B':'W'}</div>`;
+  slot.innerHTML='';slot.appendChild(el);
+}
+
+function renderMyCards(){
+  const area=document.getElementById('my-cards');area.innerHTML='';
+  const p=G.players[G.myIdx];
+  p.cards.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='card-el '+(c.color==='B'?'bc':'wc')+(c.revealed?' elim':'')+(p.eliminated?' elim':'');
+    if(c.revealed)el.style.opacity='.45';
+    el.innerHTML=`<div class="cval">${c.value}</div><div class="cclr">${c.color==='B'?'B':'W'}</div>`;
+    area.appendChild(el);
+  });
+}
+
+function buildNumGrid(){
+  const grid=document.getElementById('num-grid');grid.innerHTML='';
+  for(let v=0;v<=11;v++){
+    const btn=document.createElement('button');btn.className='num-btn';btn.textContent=v;btn.dataset.v=v;
+    btn.addEventListener('click',()=>selectNum(v));
+    grid.appendChild(btn);
+  }
+}
+
+function renderNumPick(){
+  const pick=document.getElementById('num-pick');
+  if(G.phase!=='attack'||!G.target||!isMyTurn()){pick.style.display='none';return;}
+  pick.style.display='block';
+  const known=buildKnown(G.myIdx);
+  const poss=new Set(possVals(G.players[G.target.player].cards,G.target.pos,known));
+  document.querySelectorAll('.num-btn').forEach(btn=>{
+    const v=+btn.dataset.v;
+    btn.classList.toggle('imp',!poss.has(v));
+    btn.classList.toggle('sel',v===G.selectedNum);
+  });
+}
+
+function showActs(acts){
+  const row=document.getElementById('act-row');row.innerHTML='';
+  for(const a of acts){
+    const btn=document.createElement('button');btn.className='act-btn '+(a.cls||'p');btn.textContent=a.label;
+    btn.addEventListener('click',a.fn);row.appendChild(btn);
+  }
+}
+
+function addLog(msg,cls){
+  G.log.unshift({msg,cls});if(G.log.length>30)G.log.pop();
+  const area=document.getElementById('log-area');area.innerHTML='';
+  G.log.forEach(l=>{const d=document.createElement('div');d.className='log-line '+(l.cls||'');d.textContent=l.msg;area.appendChild(d);});
+}
+
+function endGame(){
+  G.phase='gameover';
+  const rows=document.getElementById('go-rows');rows.innerHTML='';
+  const ranked=[...G.players].sort((a,b)=>{
+    if(a.eliminated&&!b.eliminated)return 1;
+    if(!a.eliminated&&b.eliminated)return-1;
+    return b.cards.filter(c=>!c.revealed).length-a.cards.filter(c=>!c.revealed).length;
+  });
+  ranked.forEach((p,rank)=>{
+    const oi=G.players.indexOf(p);
+    const d=document.createElement('div');d.className='go-row'+(rank===0?' top':'');
+    const hid=p.cards.filter(c=>!c.revealed).length;
+    d.innerHTML=`<span><span style="margin-right:6px">${rank===0?'🏆':ordinal(rank+1)}</span><span style="color:${PCOLS[oi]};font-weight:700">${p.name}</span></span><span style="color:var(--dim);font-size:12px">${hid} hidden${p.eliminated?' (Eliminated)':''}</span>`;
+    rows.appendChild(d);
+  });
+  document.getElementById('gameover').style.display='flex';
+}
+
+function ordinal(n){const s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
+
+document.getElementById('start-btn').addEventListener('click',()=>{
+  initGame(+document.getElementById('sel-players').value,document.getElementById('sel-diff').value,false,-1);
+});
+document.getElementById('again-btn').addEventListener('click',()=>{
+  document.getElementById('gameover').style.display='none';
+  if(G.online){location.reload();}else{document.getElementById('game').style.display='none';document.getElementById('setup').style.display='';}
+});
+</script>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-core.js?v=8"></script>
+<script>
+OnlineCore.init({
+  gameId:'algo',
+  statusSel:'#status',
+  hostMark:'\x00',guestMark:'\x00',
+  blockRelay:()=>true,pvpSel:null,hideSel:null,
+  afterStart:(seat)=>{
+    const b=document.getElementById('oc-badge');if(b)b.style.display='none';
+    document.getElementById('setup').style.display='none';
+    initGame(2,'normal',true,seat);
+  },
+  customMsg:handleOnlineMsg,
+});
+</script>
+<script src="../../shared/firebase-counter.js"></script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Tetris | Free Browser Game</title>
+<meta name="description" content="Play Tetris for free in your browser. The classic falling block puzzle. Works on mobile and PC, no registration required.">
+<meta name="keywords" content="Tetris,free,browser game,puzzle,falling blocks">
+<meta property="og:title" content="Tetris | Free Browser Game">
+<meta property="og:description" content="Play the classic puzzle game Tetris for free.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/tetris.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/tetris.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/tetris.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/tetris.html">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Tetris","description":"Play Tetris for free in your browser. The classic falling block puzzle. Works on mobile and PC, no registration required.","url":"https://naganuma2003.github.io/game/en/games/tetris.html","genre":["Puzzle Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":1},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+<style>
+:root{--bg:#14110E;--panel:#1F1A14;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#352C20;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 8px 26px;user-select:none;touch-action:manipulation}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.3em;text-indent:.3em;margin:2px 0}
+.sub{font-size:10.5px;color:var(--sub);letter-spacing:.25em;margin-bottom:10px}
+.wrap{display:flex;gap:12px;align-items:flex-start}
+canvas{background:#0E0C09;border:2px solid var(--line);border-radius:6px;display:block}
+.side{display:flex;flex-direction:column;gap:10px;width:104px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:center}
+.box .l{font-size:9px;color:var(--sub);letter-spacing:.15em}
+.box .v{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+#next{background:#0E0C09;border-radius:4px;margin-top:4px}
+.msg{min-height:22px;font-size:13px;color:var(--gold);margin-top:10px;letter-spacing:.05em}
+.pads{display:grid;grid-template-columns:repeat(5,minmax(50px,60px));gap:7px;margin-top:12px}
+.pads button{background:var(--panel);border:1px solid var(--line);color:var(--txt);font-size:20px;padding:13px 0;border-radius:10px;cursor:pointer}
+.pads button:active{border-color:var(--gold)}
+.foot{margin-top:10px;display:flex;gap:10px}
+.foot button{background:var(--gold);border:none;color:#14110E;font-weight:700;padding:9px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit}
+.hint{font-size:11px;color:var(--sub);margin-top:8px;text-align:center;line-height:1.6}
+.over{position:fixed;inset:0;background:rgba(10,8,5,.85);display:none;align-items:center;justify-content:center;z-index:30}
+.over.show{display:flex}
+.over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:26px 38px;text-align:center}
+.over .t{font-size:24px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:8px}
+.ai-eval{text-align:left}
+.gauge-row{display:flex;align-items:center;gap:5px;margin-top:5px}
+.gauge-lbl{font-size:9px;color:var(--sub);width:30px;flex-shrink:0}
+.gauge{flex:1;height:8px;background:#0E0C09;border-radius:4px;overflow:hidden}
+.gauge-fill{height:100%;border-radius:4px;transition:width .3s,background .3s;width:0%}
+.gauge-val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.over .s{font-size:13px;color:var(--sub);margin-bottom:16px}
+.over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>Tetris</h1><div class="sub">TETRIS</div>
+<div class="wrap">
+  <canvas id="bd" width="240" height="480"></canvas>
+  <div class="side">
+    <div class="box"><div class="l">SCORE</div><div class="v" id="score">0</div></div>
+    <div class="box"><div class="l">BEST</div><div class="v" id="best">0</div></div>
+    <div class="box"><div class="l">LINES</div><div class="v" id="lines">0</div></div>
+    <div class="box"><div class="l">LEVEL</div><div class="v" id="level">1</div></div>
+    <div class="box"><div class="l">NEXT</div><canvas id="next" width="80" height="80"></canvas></div>
+    <div class="box ai-eval">
+      <div class="l">AI EVAL</div>
+      <div class="gauge-row"><span class="gauge-lbl">Danger</span><div class="gauge"><div class="gauge-fill" id="g-danger"></div></div></div>
+      <div class="gauge-row"><span class="gauge-lbl">Holes</span><div class="gauge-val" id="g-holes">0</div></div>
+      <div class="gauge-row"><span class="gauge-lbl">Next Lv</span><div class="gauge-val" id="g-nextlv">10</div></div>
+    </div>
+  </div>
+</div>
+<div class="msg" id="msg"></div>
+<div class="pads">
+  <button id="p-left">&#9664;</button>
+  <button id="p-rot">&#10227;</button>
+  <button id="p-right">&#9654;</button>
+  <button id="p-soft">&#9660;</button>
+  <button id="p-drop">&#10515;</button>
+</div>
+<div class="foot"><button id="start">Start / Pause</button></div>
+<div class="hint">PC: &larr;&rarr; Move &uarr; Rotate &darr; Soft drop Space = Hard drop<br>Mobile: Tap board = Rotate &#9664;&#9654; Move &#9660; = Soft drop &#10515; = Hard drop<br>Soft drop +1pt / Hard drop = rows dropped &times;2 pts</div>
+<div class="over" id="over"><div class="c"><div class="t">GAME OVER</div><div class="s" id="ov-s"></div><button id="again">Play Again</button></div></div>
+<script>
+const COLS=10,ROWS=20,CELL=24;
+const SHAPES={
+  I:[[0,1],[1,1],[2,1],[3,1]], O:[[1,0],[2,0],[1,1],[2,1]],
+  T:[[0,1],[1,1],[2,1],[1,0]], S:[[1,0],[2,0],[0,1],[1,1]],
+  Z:[[0,0],[1,0],[1,1],[2,1]], J:[[0,0],[0,1],[1,1],[2,1]],
+  L:[[2,0],[0,1],[1,1],[2,1]]
+};
+const COLORS={I:'#4FC3E8',O:'#E8C84F',T:'#B07ACF',S:'#6CC56C',Z:'#E0533E',J:'#5B7BD5',L:'#E0913E'};
+const KEYS=Object.keys(SHAPES);
+let grid,cur,next,score,lines,level,best=+(localStorage.getItem('tetbest')||0),
+    over=false,paused=true,dropT=0,lastT=0,raf=null;
+const cv=document.getElementById('bd'),cx=cv.getContext('2d');
+const nv=document.getElementById('next'),nx=nv.getContext('2d');
+document.getElementById('best').textContent=best;
+
+function newPiece(){const k=KEYS[Math.floor(Math.random()*KEYS.length)];return{k,cells:SHAPES[k].map(c=>c.slice()),x:3,y:k==='I'?-1:0};}
+function init(){grid=Array.from({length:ROWS},()=>new Array(COLS).fill(null));cur=newPiece();next=newPiece();score=0;lines=0;level=1;over=false;paused=false;dropT=0;lastT=performance.now();
+  document.getElementById('over').classList.remove('show');msg('');update();if(!raf)raf=requestAnimationFrame(loop);}
+function msg(s){document.getElementById('msg').textContent=s;}
+function cellsOf(p){return p.cells.map(([dx,dy])=>[p.x+dx,p.y+dy]);}
+function fits(p){return cellsOf(p).every(([x,y])=>x>=0&&x<COLS&&y<ROWS&&(y<0||!grid[y][x]));}
+function rotate(p){if(p.k==='O')return p;const c=p.cells.map(([x,y])=>[y,-x+2]);const np={...p,cells:c};
+  for(const dx of[0,-1,1,-2,2]){const t={...np,x:np.x+dx};if(fits(t))return t;}return p;}
+function move(dx){const t={...cur,x:cur.x+dx};if(fits(t))cur=t;draw();}
+function softDrop(manual){const t={...cur,y:cur.y+1};if(fits(t)){cur=t;if(manual){score++;update();}draw();}else lock();}
+function hardDrop(){let t={...cur},d=0;while(fits({...t,y:t.y+1})){t.y++;d++;}cur=t;score+=d*2;update();lock();}
+function lock(){for(const[x,y]of cellsOf(cur)){if(y<0){gameOver();return;}grid[y][x]=COLORS[cur.k];}
+  let cleared=0;
+  for(let y=ROWS-1;y>=0;y--){if(grid[y].every(c=>c)){grid.splice(y,1);grid.unshift(new Array(COLS).fill(null));cleared++;y++;}}
+  if(cleared){const pts=[0,100,300,500,800][cleared]*level;score+=pts;lines+=cleared;level=1+Math.floor(lines/10);
+    msg(cleared===4?'Tetris! +'+pts:cleared+' line'+(cleared>1?'s':'')+' cleared +'+pts);}
+  cur=next;next=newPiece();
+  if(!fits(cur)){gameOver();return;}
+  update();draw();}
+function gameOver(){over=true;paused=true;if(score>best){best=score;localStorage.setItem('tetbest',best);}
+  document.getElementById('ov-s').textContent='Score '+score+' / '+lines+' lines';
+  document.getElementById('over').classList.add('show');update();}
+function evalBoard(){
+  if(!grid)return;
+  let maxH=0,holes=0;
+  for(let x=0;x<COLS;x++){let found=false;for(let y=0;y<ROWS;y++){if(grid[y][x])found=true;else if(found)holes++;}}
+  for(let y=0;y<ROWS;y++){if(grid[y].some(c=>c)){maxH=ROWS-y;break;}}
+  const danger=Math.min(100,Math.round(maxH/ROWS*100));
+  const gd=document.getElementById('g-danger');
+  gd.style.width=danger+'%';
+  gd.style.background=danger<40?'#6CC56C':danger<70?'#E8C84F':'#E0533E';
+  document.getElementById('g-holes').textContent=holes;
+  document.getElementById('g-nextlv').textContent=Math.max(0,level*10-lines);
+}
+function update(){document.getElementById('score').textContent=score;document.getElementById('lines').textContent=lines;
+  document.getElementById('level').textContent=level;document.getElementById('best').textContent=best;evalBoard();}
+function draw(){cx.clearRect(0,0,cv.width,cv.height);
+  cx.strokeStyle='#1c1812';for(let x=0;x<=COLS;x++){cx.beginPath();cx.moveTo(x*CELL,0);cx.lineTo(x*CELL,ROWS*CELL);cx.stroke();}
+  for(let y=0;y<=ROWS;y++){cx.beginPath();cx.moveTo(0,y*CELL);cx.lineTo(COLS*CELL,y*CELL);cx.stroke();}
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(grid[y][x])cell(cx,x,y,grid[y][x],CELL);
+  // ghost
+  let g={...cur};while(fits({...g,y:g.y+1}))g.y++;
+  for(const[x,y]of cellsOf(g))if(y>=0){cx.fillStyle='rgba(255,255,255,.08)';cx.fillRect(x*CELL+1,y*CELL+1,CELL-2,CELL-2);}
+  for(const[x,y]of cellsOf(cur))if(y>=0)cell(cx,x,y,COLORS[cur.k],CELL);
+  // next
+  nx.clearRect(0,0,80,80);for(const[dx,dy]of next.cells)cell(nx,dx+(next.k==='O'?0.5:0.2),dy+1,COLORS[next.k],18);}
+function cell(ctx,x,y,col,s){ctx.fillStyle=col;ctx.fillRect(x*s+1,y*s+1,s-2,s-2);
+  ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(x*s+1,y*s+1,s-2,3);}
+function loop(t){raf=requestAnimationFrame(loop);if(paused||over)return;
+  const dt=t-lastT;lastT=t;dropT+=dt;
+  const speed=Math.max(80,650-(level-1)*55);
+  if(dropT>speed){dropT=0;softDrop(false);}}
+window.addEventListener('keydown',e=>{
+  if(over)return;
+  if(e.key==='ArrowLeft'){e.preventDefault();if(!paused)move(-1);}
+  else if(e.key==='ArrowRight'){e.preventDefault();if(!paused)move(1);}
+  else if(e.key==='ArrowUp'){e.preventDefault();if(!paused){cur=rotate(cur);draw();}}
+  else if(e.key==='ArrowDown'){e.preventDefault();if(!paused){softDrop(true);dropT=0;}}
+  else if(e.key===' '){e.preventDefault();if(!paused)hardDrop();}
+});
+document.getElementById('p-left').addEventListener('click',()=>!paused&&!over&&move(-1));
+document.getElementById('p-right').addEventListener('click',()=>!paused&&!over&&move(1));
+document.getElementById('p-rot').addEventListener('click',()=>{if(!paused&&!over){cur=rotate(cur);draw();}});
+document.getElementById('p-soft').addEventListener('click',()=>{if(!paused&&!over){softDrop(true);dropT=0;}});
+document.getElementById('p-drop').addEventListener('click',()=>!paused&&!over&&hardDrop());
+document.getElementById('start').addEventListener('click',()=>{
+  if(over||!grid){init();draw();return;}
+  paused=!paused;lastT=performance.now();msg(paused?'Paused':'');});
+document.getElementById('again').addEventListener('click',()=>{init();draw();});
+// Mobile: tap board to rotate
+(function(){
+  let tx=0,ty=0;
+  cv.addEventListener('touchstart',function(e){e.preventDefault();tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:false});
+  cv.addEventListener('touchend',function(e){e.preventDefault();const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dx)<15&&Math.abs(dy)<15&&!paused&&!over){cur=rotate(cur);draw();}},{passive:false});
+})();
+init();draw();paused=true;msg('Press "Start" to begin');
+</script>
+<script src="../../shared/firebase-counter.js"></script></body>
+</html>

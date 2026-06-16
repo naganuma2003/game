@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>15 Puzzle (Slide Puzzle) | Free Browser Game</title>
+<meta name="description" content="Play the 15 Puzzle (Slide Puzzle) for free in your browser. Supports 3x3, 4x4, and 5x5 sizes. Race against the clock for the fastest clear. Works on mobile and PC.">
+<meta name="keywords" content="15 Puzzle,Slide Puzzle,free,browser game,puzzle game">
+<meta property="og:title" content="15 Puzzle (Slide Puzzle) | Free Browser Game">
+<meta property="og:description" content="Play the 15 Puzzle for free in your browser. Multiple sizes supported, playable on mobile and PC.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/15puzzle.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/15puzzle.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/15puzzle.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/15puzzle.html">
+<style>
+:root{--bg:#0e0e18;--surf:#1a1a28;--gold:#c9a030;--gold2:#f0d060;--txt:#e8e8f0;--dim:#555;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:56px 12px 40px}
+.back{position:fixed;top:12px;left:12px;z-index:999;background:rgba(0,0,0,.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.25)}
+h1{font-size:22px;color:var(--gold);margin-bottom:6px;text-align:center}
+.subtitle{font-size:12px;color:var(--dim);text-align:center;margin-bottom:20px}
+
+/* Size selector */
+.size-row{display:flex;gap:8px;margin-bottom:20px}
+.size-btn{padding:7px 18px;background:var(--surf);border:1px solid #333;color:var(--txt);border-radius:999px;cursor:pointer;font:600 13px 'Segoe UI',sans-serif;transition:all .15s}
+.size-btn.on{background:rgba(201,160,48,.2);border-color:var(--gold);color:var(--gold)}
+.size-btn:hover{border-color:var(--gold)}
+
+/* Stats */
+.stats{display:flex;gap:20px;margin-bottom:16px;font-size:13px;color:var(--dim)}
+.stat span{color:var(--txt);font-weight:700}
+
+/* Eval bar */
+#eval-bar{width:100%;max-width:400px;margin-bottom:16px}
+#eval-bar .ev-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--dim);margin-bottom:4px}
+#eval-bar .ev-label{min-width:56px;text-align:right}
+#eval-bar .ev-track{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+#eval-bar .ev-fill{height:100%;border-radius:3px;transition:width .25s}
+#eval-bar .ev-fill.pos{background:linear-gradient(90deg,#4ec05e,#6fd87c)}
+#eval-bar .ev-fill.dist{background:linear-gradient(90deg,var(--gold),var(--gold2))}
+#eval-bar .ev-val{min-width:40px;font-weight:700;color:var(--txt);font-size:11px}
+
+/* Board */
+#board-wrap{position:relative}
+#board{display:grid;gap:6px;padding:10px;background:var(--surf);border-radius:16px}
+.tile{display:flex;align-items:center;justify-content:center;border-radius:10px;font-weight:800;cursor:pointer;user-select:none;transition:transform .1s,background .15s;background:linear-gradient(135deg,#252538,#1e1e30);border:1px solid rgba(255,255,255,.08);color:var(--txt)}
+.tile:hover:not(.empty){background:linear-gradient(135deg,#2e2e48,#252540);transform:scale(1.03)}
+.tile.empty{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.04);cursor:default}
+.tile.correct{background:linear-gradient(135deg,#1a3a1a,#162816);border-color:rgba(78,192,94,.3);color:#4ec05e}
+.tile.moving{transform:scale(0.95)}
+
+/* Buttons */
+.btns{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;justify-content:center}
+.gbtn{padding:9px 20px;border:none;border-radius:10px;font:700 13px 'Segoe UI',sans-serif;cursor:pointer}
+.gbtn.primary{background:var(--gold);color:#111}
+.gbtn.primary:hover{background:var(--gold2)}
+.gbtn.secondary{background:var(--surf);color:var(--txt);border:1px solid #333}
+.gbtn.secondary:hover{border-color:var(--gold)}
+
+/* Solve animation */
+.tile.hint{border-color:var(--gold);color:var(--gold)}
+#ai-stop-btn{border-color:rgba(224,80,80,.5)!important;color:#e05050!important}
+#ai-stop-btn:hover{border-color:#e05050!important}
+
+/* Win banner */
+#win{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+#win.show{display:flex}
+#win-box{background:var(--surf);border-radius:16px;padding:32px;text-align:center;max-width:320px}
+#win-box h2{color:var(--gold);font-size:24px;margin-bottom:8px}
+#win-box p{color:var(--dim);font-size:14px;margin-bottom:20px}
+#win-box .gbtn{margin:4px}
+
+/* Opponent board panel (persistent, below main board) */
+#opp-section{display:none;width:100%;max-width:400px;margin-top:20px;text-align:center}
+.opp-header{display:flex;align-items:center;justify-content:center;gap:10px;font-size:12px;color:var(--dim);margin-bottom:8px}
+.opp-header .opp-label{font-weight:700;color:var(--gold2)}
+.opp-header .opp-info{font-size:11px;color:var(--dim)}
+#opp-mini-board{display:inline-grid;gap:3px;padding:8px;background:var(--surf);border-radius:12px}
+.opp-tile{display:flex;align-items:center;justify-content:center;border-radius:5px;font-weight:800;background:linear-gradient(135deg,#252538,#1e1e30);border:1px solid rgba(255,255,255,.08);color:var(--txt)}
+.opp-tile.empty{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.04)}
+.opp-tile.correct{background:linear-gradient(135deg,#1a3a1a,#162816);border-color:rgba(78,192,94,.3);color:#4ec05e}
+
+/* Mode select modal */
+#mode-select{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;align-items:center;justify-content:center;padding:16px}
+#mode-select.show{display:flex}
+.mode-box{background:var(--surf);border-radius:16px;padding:24px 20px;max-width:300px;width:100%;text-align:center}
+.mode-box h3{color:var(--gold);font-size:17px;margin-bottom:6px}
+.mode-box p{font-size:12px;color:var(--dim);margin-bottom:20px;line-height:1.6}
+.mode-btns{display:flex;flex-direction:column;gap:10px}
+.mode-btn{padding:14px;border:none;border-radius:10px;font:700 14px 'Segoe UI',sans-serif;cursor:pointer;transition:all .12s}
+.mode-btn.same{background:var(--gold);color:#111}
+.mode-btn.same:hover{background:var(--gold2)}
+.mode-btn.rand{background:#2a2a3e;color:var(--txt);border:1px solid #444}
+.mode-btn.rand:hover{border-color:var(--gold)}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"15 Puzzle (Slide Puzzle)","description":"Play the 15 Puzzle (Slide Puzzle) for free in your browser. Supports 3x3, 4x4, and 5x5 sizes. Race against the clock for the fastest clear. Works on mobile and PC.","url":"https://naganuma2003.github.io/game/en/games/15puzzle.html","genre":["Puzzle Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":1},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+</head>
+<body>
+<a href="../index.html" class="back">&larr; Back to List</a>
+<h1>15 Puzzle</h1>
+<p class="subtitle">Arrange the numbers in order</p>
+
+<div class="size-row">
+  <button class="size-btn" onclick="setSize(3)">3&times;3</button>
+  <button class="size-btn on" onclick="setSize(4)">4&times;4</button>
+  <button class="size-btn" onclick="setSize(5)">5&times;5</button>
+</div>
+
+<div class="stats">
+  <div>Moves: <span id="moves">0</span></div>
+  <div>Time: <span id="timer">0:00</span></div>
+  <div id="best-wrap">Best: <span id="best">-</span></div>
+</div>
+
+<div id="eval-bar">
+  <div class="ev-row"><span class="ev-label">In Place</span><div class="ev-track"><div class="ev-fill pos" id="ev-pos"></div></div><span class="ev-val" id="ev-pos-val">0/0</span></div>
+  <div class="ev-row"><span class="ev-label">Distance</span><div class="ev-track"><div class="ev-fill dist" id="ev-dist"></div></div><span class="ev-val" id="ev-dist-val">0%</span></div>
+</div>
+
+<div id="board-wrap">
+  <div id="board"></div>
+</div>
+
+<div class="btns">
+  <button class="gbtn primary" onclick="newGame()">Shuffle</button>
+  <button class="gbtn secondary" onclick="showHint()">Hint</button>
+  <button class="gbtn secondary" id="ai-best-btn" onclick="showBestMove()">Best Move</button>
+  <button class="gbtn secondary" id="ai-slow-btn" onclick="startAI(500)">AI (Slow)</button>
+  <button class="gbtn secondary" id="ai-fast-btn" onclick="startAI(100)">AI (Fast)</button>
+  <button class="gbtn secondary" id="ai-stop-btn" onclick="stopAI()" style="display:none">Stop</button>
+</div>
+
+<!-- Opponent board (always-visible panel) -->
+<div id="opp-section">
+  <div class="opp-header">
+    <span class="opp-label">Opponent's Board</span>
+    <span class="opp-info" id="opp-info">-</span>
+  </div>
+  <div id="opp-mini-board"></div>
+</div>
+
+<!-- Race mode selection modal (host only) -->
+<div id="mode-select">
+  <div class="mode-box">
+    <h3>Choose Race Mode</h3>
+    <p>The host selects the mode to start the race</p>
+    <div class="mode-btns">
+      <button class="mode-btn same" onclick="startRace('same')">Same Board<br><span style="font-size:11px;font-weight:400;opacity:.8">Both players solve the same puzzle</span></button>
+      <button class="mode-btn rand" onclick="startRace('random')">Random Boards<br><span style="font-size:11px;font-weight:400;opacity:.8">Each player solves a different puzzle</span></button>
+    </div>
+  </div>
+</div>
+
+<div id="win">
+  <div id="win-box">
+    <h2>Cleared! &#127881;</h2>
+    <p id="win-msg"></p>
+    <button class="gbtn primary" onclick="newGame();closeWin()">Play Again</button>
+    <button class="gbtn secondary" onclick="closeWin()">View Board</button>
+  </div>
+</div>
+
+<script>
+let N=4,tiles=[],moveCount=0,timerSec=0,timerInt=null,started=false;
+let bestMoves={3:null,4:null,5:null};
+
+function setSize(n){
+  N=n;
+  document.querySelectorAll('.size-btn').forEach((b,i)=>{
+    b.classList.toggle('on',[3,4,5][i]===n);
+  });
+  newGame();
+}
+
+function newGame(){
+  stopAI();
+  clearInterval(timerInt);started=false;moveCount=0;timerSec=0;
+  document.getElementById('moves').textContent='0';
+  document.getElementById('timer').textContent='0:00';
+  updateBest();
+  tiles=shuffle(makeSolved());
+  render();
+}
+
+function makeSolved(){
+  const t=[];
+  for(let i=1;i<N*N;i++)t.push(i);
+  t.push(0);
+  return t;
+}
+
+function shuffle(t){
+  const a=[...t];
+  do{
+    for(let i=a.length-1;i>0;i--){const j=Math.random()*i|0;[a[i],a[j]]=[a[j],a[i]];}
+  }while(!isSolvable(a)||isSolved(a));
+  return a;
+}
+
+function isSolvable(t){
+  let inv=0;
+  const flat=t.filter(x=>x!==0);
+  for(let i=0;i<flat.length;i++) for(let j=i+1;j<flat.length;j++) if(flat[i]>flat[j]) inv++;
+  const blankRow=Math.floor(t.indexOf(0)/N);
+  if(N%2===1) return inv%2===0;
+  return (inv+(N-1-blankRow))%2===0;
+}
+
+function isSolved(t){
+  for(let i=0;i<t.length-1;i++) if(t[i]!==i+1) return false;
+  return t[t.length-1]===0;
+}
+
+function render(){
+  const board=document.getElementById('board');
+  const cs=Math.min(Math.floor((Math.min(window.innerWidth-40,400)-20-6*(N-1))/N),90);
+  board.style.gridTemplateColumns=`repeat(${N},${cs}px)`;
+  board.style.gridTemplateRows=`repeat(${N},${cs}px)`;
+  board.style.gap='6px';
+  board.innerHTML='';
+  tiles.forEach((v,i)=>{
+    const el=document.createElement('div');
+    el.className='tile'+(v===0?' empty':v===i+1?' correct':'');
+    el.style.width=cs+'px';el.style.height=cs+'px';
+    el.style.fontSize=cs*0.38+'px';
+    if(v!==0){
+      el.textContent=v;
+      el.addEventListener('click',()=>clickTile(i));
+      el.addEventListener('touchstart',e=>{e.preventDefault();clickTile(i);},{passive:false});
+    }
+    board.appendChild(el);
+  });
+  updateEval();
+}
+
+function updateEval(){
+  const total=N*N-1;
+  let correct=0;
+  for(let i=0;i<tiles.length;i++) if(tiles[i]!==0&&tiles[i]===i+1) correct++;
+  const maxDist=2*(N-1)*total;
+  const dist=_mh(tiles);
+  const distPct=maxDist?Math.round((1-dist/maxDist)*100):100;
+  document.getElementById('ev-pos').style.width=(correct/total*100)+'%';
+  document.getElementById('ev-pos-val').textContent=correct+'/'+total;
+  document.getElementById('ev-dist').style.width=distPct+'%';
+  document.getElementById('ev-dist-val').textContent=distPct+'%';
+}
+
+function startRaceTimer(){
+  if(started)return;
+  started=true;
+  clearInterval(timerInt);
+  timerInt=setInterval(()=>{
+    timerSec++;
+    const m=Math.floor(timerSec/60),s=timerSec%60;
+    document.getElementById('timer').textContent=m+':'+(s<10?'0':'')+s;
+  },1000);
+}
+
+function clickTile(idx){
+  const blank=tiles.indexOf(0);
+  const r1=Math.floor(idx/N),c1=idx%N;
+  const r2=Math.floor(blank/N),c2=blank%N;
+  if(Math.abs(r1-r2)+Math.abs(c1-c2)!==1)return;
+
+  if(!started&&!ONLINE){
+    startRaceTimer();
+  }
+
+  [tiles[idx],tiles[blank]]=[tiles[blank],tiles[idx]];
+  moveCount++;
+  document.getElementById('moves').textContent=moveCount;
+
+  const el=document.getElementById('board').children[idx];
+  el.classList.add('moving');
+  setTimeout(()=>{render();if(isSolved(tiles))win();},80);
+}
+
+function win(){
+  stopAI();
+  clearInterval(timerInt);
+  clearInterval(peekInterval);
+  if(ONLINE){
+    if(raceOver)return;
+    raceOver=true;
+    roomSend({t:'done',moves:moveCount,sec:timerSec});
+    const m=Math.floor(timerSec/60),s=timerSec%60;
+    const st=createRaceStatus(`You win! ${moveCount} moves in ${m}:${s<10?'0':''}${s}`);
+    st.style.color='#4ec05e';
+    document.getElementById('win-msg').textContent=`Cleared in ${moveCount} moves, ${m}:${s<10?'0':''}${s}!`;
+    document.getElementById('win-box').querySelector('h2').textContent='You Win!';
+    document.getElementById('win').classList.add('show');
+    try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
+    return;
+  }
+  if(!bestMoves[N]||moveCount<bestMoves[N]){bestMoves[N]=moveCount;updateBest();}
+  const m=Math.floor(timerSec/60),s=timerSec%60;
+  document.getElementById('win-msg').textContent=`Cleared in ${moveCount} moves, ${m}:${s<10?'0':''}${s}!`;
+  document.getElementById('win').classList.add('show');
+}
+
+function closeWin(){document.getElementById('win').classList.remove('show');}
+
+function updateBest(){
+  const b=bestMoves[N];
+  document.getElementById('best').textContent=b?b+' moves':'-';
+}
+
+function showHint(){
+  const blank=tiles.indexOf(0);
+  const br=Math.floor(blank/N),bc=blank%N;
+  const neighbors=[];
+  if(br>0)neighbors.push(blank-N);
+  if(br<N-1)neighbors.push(blank+N);
+  if(bc>0)neighbors.push(blank-1);
+  if(bc<N-1)neighbors.push(blank+1);
+  let best=null,bestScore=Infinity;
+  for(const n of neighbors){
+    const v=tiles[n];
+    const goalIdx=v-1;
+    const gr=Math.floor(goalIdx/N),gc=goalIdx%N;
+    const nr=Math.floor(n/N),nc=n%N;
+    const dist=Math.abs(nr-gr)+Math.abs(nc-gc);
+    if(dist<bestScore){bestScore=dist;best=n;}
+  }
+  if(best===null)return;
+  const els=document.getElementById('board').children;
+  els[best].classList.add('hint');
+  setTimeout(()=>els[best]?.classList.remove('hint'),800);
+}
+
+// ===== ONLINE RACE MODE =====
+let ONLINE=false,MYSEAT=0,roomSend=null,raceOver=false;
+let peekInterval=null;
+
+function sendPeek(){
+  if(raceOver||!roomSend)return;
+  roomSend({t:'peek',tiles:[...tiles],moves:moveCount,n:N});
+}
+
+function startPeekInterval(){
+  clearInterval(peekInterval);
+  sendPeek();
+  peekInterval=setInterval(()=>{
+    if(raceOver){clearInterval(peekInterval);return;}
+    sendPeek();
+  },30000);
+}
+
+function renderOppMini(oppTiles,oppN){
+  const mini=document.getElementById('opp-mini-board');
+  const maxW=Math.min(window.innerWidth-80,200);
+  const cs=Math.min(Math.floor((maxW-16-3*(oppN-1))/oppN),42);
+  mini.style.gridTemplateColumns=`repeat(${oppN},${cs}px)`;
+  mini.style.gridTemplateRows=`repeat(${oppN},${cs}px)`;
+  mini.innerHTML='';
+  oppTiles.forEach((v,i)=>{
+    const el=document.createElement('div');
+    el.className='opp-tile'+(v===0?' empty':v===i+1?' correct':'');
+    el.style.width=cs+'px';el.style.height=cs+'px';
+    el.style.fontSize=cs*0.38+'px';
+    if(v!==0)el.textContent=v;
+    mini.appendChild(el);
+  });
+}
+
+function showOppSectionWaiting(n){
+  const section=document.getElementById('opp-section');
+  section.style.display='block';
+  document.getElementById('opp-info').textContent='Receiving...';
+  const dummy=[];
+  for(let i=0;i<n*n-1;i++)dummy.push(i+1);
+  dummy.push(0);
+  renderOppMini(dummy,n);
+}
+
+function showOpponentBoard(oppTiles,oppMoves,oppN){
+  const section=document.getElementById('opp-section');
+  section.style.display='block';
+  const solved=oppTiles.filter((v,i)=>v!==0&&v===i+1).length;
+  document.getElementById('opp-info').textContent=`${oppMoves} moves, ${solved}/${oppN*oppN-1} tiles done`;
+  renderOppMini(oppTiles,oppN);
+}
+
+function onStart(seat,n,send){
+  stopAI();
+  ONLINE=true;MYSEAT=seat;roomSend=send;raceOver=false;
+  document.querySelector('.size-row').style.display='none';
+  document.querySelectorAll('.btns .gbtn.secondary').forEach(b=>b.style.display='none');
+  document.getElementById('best-wrap').style.display='none';
+  document.getElementById('opp-section').style.display='none';
+  if(seat===0){
+    document.getElementById('mode-select').classList.add('show');
+  } else {
+    document.getElementById('board').innerHTML='';
+    document.getElementById('status-race')||createRaceStatus('Waiting for opponent...');
+  }
+}
+
+function startRace(mode){
+  document.getElementById('mode-select').classList.remove('show');
+  clearInterval(timerInt);timerSec=0;moveCount=0;started=false;
+  document.getElementById('moves').textContent='0';
+  document.getElementById('timer').textContent='0:00';
+
+  if(mode==='same'){
+    const t=shuffle(makeSolved());
+    tiles=[...t];
+    render();
+    createRaceStatus('Go! First to solve wins (same board)');
+    showOpponentBoard([...t],0,N);
+    roomSend({t:'start',mode:'same',tiles:t,n:N});
+  } else {
+    tiles=shuffle(makeSolved());
+    render();
+    createRaceStatus('Go! First to solve wins (random boards)');
+    showOppSectionWaiting(N);
+    roomSend({t:'start',mode:'random',n:N});
+  }
+  startRaceTimer();
+  startPeekInterval();
+}
+
+function createRaceStatus(msg){
+  let el=document.getElementById('status-race');
+  if(!el){el=document.createElement('div');el.id='status-race';
+    el.style.cssText='text-align:center;padding:10px 0;font-size:14px;color:var(--gold2)';
+    document.getElementById('board-wrap').after(el);}
+  el.textContent=msg;
+  return el;
+}
+
+function handleMsg(from,msg){
+  if(msg.t==='start'){
+    clearInterval(timerInt);timerSec=0;moveCount=0;started=false;
+    document.getElementById('moves').textContent='0';
+    document.getElementById('timer').textContent='0:00';
+    if(msg.mode==='same'){
+      N=msg.n||N;
+      tiles=[...msg.tiles];
+      render();
+      createRaceStatus('Go! First to solve wins (same board)');
+      showOpponentBoard([...tiles],0,N);
+    } else {
+      N=msg.n||N;
+      tiles=shuffle(makeSolved());
+      render();
+      createRaceStatus('Go! First to solve wins (random boards)');
+      showOppSectionWaiting(N);
+    }
+    startRaceTimer();
+    startPeekInterval();
+  } else if(msg.t==='peek'){
+    showOpponentBoard(msg.tiles,msg.moves,msg.n||N);
+  } else if(msg.t==='done'){
+    if(raceOver)return;raceOver=true;
+    clearInterval(peekInterval);
+    clearInterval(timerInt);
+    const myWin=from===MYSEAT;
+    const m=Math.floor(msg.sec/60),s=msg.sec%60;
+    const st=createRaceStatus(myWin?`You win! ${msg.moves} moves in ${m}:${s<10?'0':''}${s}`:`Opponent wins (${msg.moves} moves in ${m}:${s<10?'0':''}${s})`);
+    st.style.color=myWin?'#4ec05e':'#e05050';
+    document.getElementById('win').classList.add('show');
+    document.getElementById('win-msg').textContent=myWin?`Cleared in ${msg.moves} moves, ${m}:${s<10?'0':''}${s}!`:`Your opponent solved it first`;
+    document.getElementById('win-box').querySelector('h2').textContent=myWin?'You Win!':'So Close...';
+    try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
+  }
+}
+
+// ===== AI SOLVER (IDA* + greedy fallback) =====
+let aiInterval = null;
+const _SLIM = 600000;
+let _sN = 0, _sAbort = false;
+
+function _mh(t) {
+  let h = 0;
+  for (let i = 0; i < t.length; i++) {
+    if (!t[i]) continue;
+    const v = t[i]-1;
+    h += Math.abs((i/N|0)-(v/N|0)) + Math.abs(i%N-v%N);
+  }
+  return h;
+}
+
+function _ida(t, blank, g, bound, path, prev) {
+  if (++_sN > _SLIM) { _sAbort = true; return 0; }
+  const h = _mh(t), f = g+h;
+  if (f > bound) return f;
+  if (!h) return -1;
+  const br = blank/N|0, bc = blank%N;
+  const nb = [];
+  if (br > 0) nb.push(blank-N);
+  if (br < N-1) nb.push(blank+N);
+  if (bc > 0) nb.push(blank-1);
+  if (bc < N-1) nb.push(blank+1);
+  let min = Infinity;
+  for (const nx of nb) {
+    if (nx === prev) continue;
+    [t[blank],t[nx]] = [t[nx],t[blank]];
+    path.push(nx);
+    const r = _ida(t, nx, g+1, bound, path, blank);
+    if (r === -1) return -1;
+    if (_sAbort) return 0;
+    if (r < min) min = r;
+    [t[blank],t[nx]] = [t[nx],t[blank]];
+    path.pop();
+  }
+  return min;
+}
+
+function _greedy(st) {
+  const t = [...st], path = [], vis = new Set([t.join(',')]);
+  for (let s = 0; s < 5000 && !isSolved(t); s++) {
+    const blank = t.indexOf(0);
+    const br = blank/N|0, bc = blank%N;
+    const nb = [];
+    if (br > 0) nb.push(blank-N);
+    if (br < N-1) nb.push(blank+N);
+    if (bc > 0) nb.push(blank-1);
+    if (bc < N-1) nb.push(blank+1);
+    let best = null, bestH = Infinity, sawNew = false;
+    for (const nx of nb) {
+      [t[blank],t[nx]] = [t[nx],t[blank]];
+      const h = _mh(t), isV = vis.has(t.join(','));
+      if (!isV && (!sawNew || h < bestH)) { bestH = h; best = nx; sawNew = true; }
+      else if (!sawNew && h < bestH) { bestH = h; best = nx; }
+      [t[blank],t[nx]] = [t[nx],t[blank]];
+    }
+    if (!best) best = nb[0];
+    [t[blank],t[best]] = [t[best],t[blank]];
+    path.push(best); vis.add(t.join(','));
+  }
+  return path;
+}
+
+function _solve() {
+  if (isSolved(tiles)) return [];
+  if (N >= 5) return _greedy(tiles);
+  const t = [...tiles];
+  let bound = _mh(t);
+  const path = [];
+  _sAbort = false;
+  while (!_sAbort && bound < 150) {
+    _sN = 0;
+    const r = _ida(t, t.indexOf(0), 0, bound, path, -1);
+    if (r === -1) return path;
+    if (_sAbort) break;
+    bound = r;
+  }
+  return _greedy(tiles);
+}
+
+function _setAIUI(running) {
+  ['ai-slow-btn','ai-fast-btn','ai-best-btn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = running ? 'none' : '';
+  });
+  const s = document.getElementById('ai-stop-btn');
+  if (s) s.style.display = running ? '' : 'none';
+}
+
+function startAI(delay) {
+  stopAI();
+  const sol = _solve();
+  if (!sol.length) return;
+  let idx = 0;
+  _setAIUI(true);
+  aiInterval = setInterval(() => {
+    if (idx >= sol.length || isSolved(tiles)) { stopAI(); return; }
+    clickTile(sol[idx++]);
+  }, delay);
+}
+
+function stopAI() {
+  clearInterval(aiInterval); aiInterval = null;
+  _setAIUI(false);
+}
+
+function showBestMove() {
+  const sol = _solve();
+  if (!sol.length) return;
+  const els = document.getElementById('board').children;
+  els[sol[0]]?.classList.add('hint');
+  setTimeout(() => els[sol[0]]?.classList.remove('hint'), 900);
+}
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  const blank=tiles.indexOf(0);
+  const br=Math.floor(blank/N),bc=blank%N;
+  let target=-1;
+  if(e.key==='ArrowUp'&&br<N-1)target=blank+N;
+  if(e.key==='ArrowDown'&&br>0)target=blank-N;
+  if(e.key==='ArrowLeft'&&bc<N-1)target=blank+1;
+  if(e.key==='ArrowRight'&&bc>0)target=blank-1;
+  if(target>=0)clickTile(target);
+});
+
+// Init
+newGame();
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-room.js?v=7"></script>
+<script>
+OnlineRoom.init({
+  gameId:'puzzle15',minPlayers:2,maxPlayers:2,
+  note:'First to solve wins (race mode)',
+  onStart:(seat,n,send)=>onStart(seat,n,send),
+  onMessage:(from,msg)=>handleMsg(from,msg),
+  getState:()=>({tiles:[...tiles],N}),
+  applyState:(o)=>{
+    ONLINE=true;MYSEAT=o.seat;roomSend=o.send;raceOver=false;
+    document.querySelector('.size-row').style.display='none';
+    const s=o.state;N=s.N;
+    tiles=[...s.tiles];moveCount=0;timerSec=0;started=false;
+    render();createRaceStatus('Joined the game. Waiting for next round...');
+  }
+});
+</script>
+</body>
+</html>

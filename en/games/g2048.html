@@ -1,0 +1,121 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>2048 | Free Browser Game</title>
+<meta name="description" content="Play 2048 for free in your browser. Slide and merge number tiles in this addictive puzzle. Works on mobile and PC, no registration required.">
+<meta name="keywords" content="2048,free,browser game,puzzle,number,slide,tile">
+<meta property="og:title" content="2048 | Free Browser Game">
+<meta property="og:description" content="Play the number slide puzzle 2048 for free.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/g2048.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/g2048.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/g2048.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/g2048.html">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"2048","description":"Play 2048 for free in your browser. Slide and merge number tiles in this addictive puzzle. Works on mobile and PC, no registration required.","url":"https://naganuma2003.github.io/game/en/games/g2048.html","genre":["Puzzle Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":1},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+<style>
+:root{--bg:#15120E;--board:#2C261D;--cell:#3A3225;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:none}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:18px 12px 32px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:30px;letter-spacing:.1em;margin:2px 0}
+.sub{font-size:11px;color:var(--sub);letter-spacing:.2em;margin-bottom:14px}
+.bar{display:flex;gap:10px;align-items:center;margin-bottom:14px;width:min(92vw,420px);justify-content:space-between}
+.scores{display:flex;gap:8px}
+.sc{background:var(--board);border-radius:8px;padding:6px 14px;text-align:center;min-width:74px}
+.sc .l{font-size:9px;color:var(--sub);letter-spacing:.15em}
+.sc .v{font-size:20px;font-weight:700}
+.newbtn{background:var(--gold);border:none;color:#15120E;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit}
+#wrap{position:relative;width:min(92vw,420px);aspect-ratio:1/1;background:var(--board);border-radius:12px;padding:10px}
+#grid{position:absolute;inset:10px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:10px}
+.bg{background:var(--cell);border-radius:8px}
+#tiles{position:absolute;inset:10px}
+.tile{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:8px;font-weight:800;transition:left .12s ease,top .12s ease;}
+.tile.pop{animation:pop .14s ease}
+@keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+.hint{font-size:12px;color:var(--sub);margin-top:16px;text-align:center;line-height:1.7}
+#eval{width:min(92vw,420px);margin-top:14px;background:var(--board);border-radius:10px;padding:12px 14px}
+#eval .label{font-size:10px;color:var(--sub);letter-spacing:.15em;margin-bottom:8px}
+.gauge-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.gauge-row:last-child{margin-bottom:0}
+.gauge-row .gl{font-size:10px;color:var(--sub);width:62px;text-align:right;flex-shrink:0}
+.gauge-bar{flex:1;height:8px;background:var(--cell);border-radius:4px;overflow:hidden}
+.gauge-fill{height:100%;border-radius:4px;transition:width .25s ease}
+.gauge-row .gv{font-size:11px;font-weight:700;width:32px;text-align:right;flex-shrink:0}
+.over{position:absolute;inset:0;background:rgba(20,17,14,.82);border-radius:12px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.over.show{display:flex}
+.over .t{font-size:30px;font-weight:800;font-family:"Hiragino Mincho ProN",serif;letter-spacing:.1em}
+.over .t.win{color:var(--gold)}
+.over button{background:var(--gold);border:none;color:#15120E;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
+</style></head><body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>2048</h1><div class="sub">SLIDE &amp; MERGE</div>
+<div class="bar">
+  <div class="scores">
+    <div class="sc"><div class="l">SCORE</div><div class="v" id="score">0</div></div>
+    <div class="sc"><div class="l">BEST</div><div class="v" id="best">0</div></div>
+  </div>
+  <button class="newbtn" id="undobtn" style="margin-right:6px">Undo</button>
+  <button class="newbtn" id="newbtn">New Game</button>
+</div>
+<div id="wrap">
+  <div id="grid"></div>
+  <div id="tiles"></div>
+  <div class="over" id="over"><div class="t" id="ovt">GAME OVER</div><button id="again">Play Again</button></div>
+</div>
+<div class="hint">Swipe (mobile) / Arrow keys (PC) to move<br>Same numbers merge when they collide</div>
+<div id="eval">
+  <div class="label">AI EVALUATION</div>
+  <div class="gauge-row"><span class="gl">Merges</span><div class="gauge-bar"><div class="gauge-fill" id="gMerge" style="width:0;background:#D45F38"></div></div><span class="gv" id="vMerge">0</span></div>
+  <div class="gauge-row"><span class="gl">Openness</span><div class="gauge-bar"><div class="gauge-fill" id="gOpen" style="width:0;background:#C9A227"></div></div><span class="gv" id="vOpen">0</span></div>
+  <div class="gauge-row"><span class="gl">Progress</span><div class="gauge-bar"><div class="gauge-fill" id="gProg" style="width:0;background:#3ABF7A"></div></div><span class="gv" id="vProg">0%</span></div>
+</div>
+<script>
+const N=4;let board,score,best=+(localStorage.getItem('p2048best')||0),won=false,over=false,hist=[];
+const COLORS={2:'#3A3225,#EDE6D6',4:'#4A3E2A,#EDE6D6',8:'#B07A3A,#fff',16:'#C9762A,#fff',32:'#D45F38,#fff',64:'#E04A2E,#fff',128:'#C9A227,#fff',256:'#D4A91E,#fff',512:'#E0B81A,#fff',1024:'#E6C418,#fff',2048:'#F0CE10,#15120E'};
+const tilesEl=document.getElementById('tiles');
+const gridEl=document.getElementById('grid');
+for(let i=0;i<16;i++){const d=document.createElement('div');d.className='bg';gridEl.appendChild(d);}
+document.getElementById('best').textContent=best;
+function init(){board=[];for(let r=0;r<N;r++)board.push([0,0,0,0]);score=0;won=false;over=false;hist=[];document.getElementById('over').classList.remove('show');addRandom();addRandom();render(true);updateScore();}
+function addRandom(){const e=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!board[r][c])e.push([r,c]);if(!e.length)return;const[r,c]=e[Math.floor(Math.random()*e.length)];board[r][c]=Math.random()<.9?2:4;}
+function cellSize(){const w=tilesEl.clientWidth;return (w-30)/4;}
+function render(fresh){tilesEl.innerHTML='';const s=cellSize();for(let r=0;r<N;r++)for(let c=0;c<N;c++){const v=board[r][c];if(!v)continue;const t=document.createElement('div');t.className='tile'+(fresh?' pop':'');const col=(COLORS[v]||'#F0CE10,#15120E').split(',');t.style.background=col[0];t.style.color=col[1];t.style.width=s+'px';t.style.height=s+'px';t.style.left=(c*(s+10))+'px';t.style.top=(r*(s+10))+'px';t.style.fontSize=(v<100?s*.42:v<1000?s*.34:s*.27)+'px';t.textContent=v;tilesEl.appendChild(t);}if(typeof updateEval==='function')updateEval();}
+function updateScore(){document.getElementById('score').textContent=score;if(score>best){best=score;localStorage.setItem('p2048best',best);document.getElementById('best').textContent=best;}}
+function slide(row){let a=row.filter(x=>x);for(let i=0;i<a.length-1;i++){if(a[i]===a[i+1]){a[i]*=2;score+=a[i];if(a[i]===2048)won=true;a.splice(i+1,1);}}while(a.length<N)a.push(0);return a;}
+function rotate(b){const n=[];for(let c=0;c<N;c++){n.push([]);for(let r=N-1;r>=0;r--)n[c].push(b[r][c]);}return n;}
+function move(dir){if(over)return;const prev={board:board.map(r=>r.slice()),score,won};let b=board.map(r=>r.slice());for(let i=0;i<dir;i++)b=rotate(b);let moved=false;for(let r=0;r<N;r++){const ns=slide(b[r]);if(ns.join()!==b[r].join())moved=true;b[r]=ns;}for(let i=0;i<(4-dir)%4;i++)b=rotate(b);if(!moved)return;hist.push(prev);if(hist.length>20)hist.shift();board=b;addRandom();render();updateScore();setTimeout(()=>render(),120);if(won){showOver(true);}else if(isStuck()){showOver(false);}}
+function isStuck(){for(let r=0;r<N;r++)for(let c=0;c<N;c++){if(!board[r][c])return false;if(c<N-1&&board[r][c]===board[r][c+1])return false;if(r<N-1&&board[r][c]===board[r+1][c])return false;}return true;}
+function showOver(win){over=true;const t=document.getElementById('ovt');t.textContent=win?'You reached 2048!':'GAME OVER';t.className='t'+(win?' win':'');document.getElementById('over').classList.add('show');}
+window.addEventListener('keydown',e=>{const k={ArrowLeft:0,ArrowUp:3,ArrowRight:2,ArrowDown:1}[e.key];if(k!==undefined){e.preventDefault();move(k);}});
+let sx,sy;const w=document.getElementById('wrap');
+w.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+w.addEventListener('touchend',e=>{if(sx==null)return;const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)<24&&Math.abs(dy)<24)return;if(Math.abs(dx)>Math.abs(dy))move(dx>0?2:0);else move(dy>0?1:3);sx=sy=null;},{passive:true});
+document.getElementById('newbtn').addEventListener('click',init);
+document.getElementById('again').addEventListener('click',init);
+document.getElementById('undobtn').addEventListener('click',()=>{if(!hist.length)return;const p=hist.pop();board=p.board;score=p.score;won=p.won;over=false;document.getElementById('over').classList.remove('show');render();updateScore();});
+function updateEval(){
+  let merges=0,empty=0,maxT=0;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const v=board[r][c];
+    if(!v){empty++;continue;}
+    if(v>maxT)maxT=v;
+    if(c<N-1&&v===board[r][c+1])merges++;
+    if(r<N-1&&v===board[r+1][c])merges++;
+  }
+  const mPct=Math.min(merges/6,1)*100;
+  const oPct=(empty/15)*100;
+  const pPct=Math.min(Math.log2(maxT||1)/11,1)*100;
+  document.getElementById('gMerge').style.width=mPct+'%';
+  document.getElementById('vMerge').textContent=merges;
+  document.getElementById('gOpen').style.width=oPct+'%';
+  document.getElementById('vOpen').textContent=empty;
+  document.getElementById('gProg').style.width=pPct+'%';
+  document.getElementById('vProg').textContent=Math.round(pPct)+'%';
+}
+window.addEventListener('resize',()=>render());
+init();
+</script><script src="../../shared/firebase-counter.js"></script></body></html>

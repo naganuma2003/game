@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Quoridor | Free Browser Game</title>
+<meta name="description" content="Play Quoridor for free in your browser. Supports CPU and online multiplayer. Mobile-friendly so you can play anytime, anywhere.">
+<meta name="keywords" content="Quoridor, free, browser game, CPU battle, online multiplayer, mobile-friendly">
+<meta property="og:title" content="Quoridor | Free Browser Game">
+<meta property="og:description" content="Play Quoridor for free in your browser. Supports CPU and online multiplayer. Mobile-friendly.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/quoridor.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/quoridor.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/quoridor.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/quoridor.html">
+<style>
+:root{--bg:#0E1E2A;--felt:#123040;--txt:#EDE6D6;--sub:#8FA6B2;--gold:#C9A227;--cell:#2c5a7a;--gap:#0a1620;--wall:#d4a04a;--wallg:#5a3a18;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(ellipse at 50% 30%,#16384c,#0E1E2A);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 8px 28px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:22px;letter-spacing:.15em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:8px}
+.row{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.row .lab{font-size:11px;color:var(--sub);margin-right:2px}
+.row button{background:transparent;border:1px solid #3a5a6a;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit}
+.row button.on{border-color:var(--gold);color:var(--gold)}
+.turn{font-size:13px;color:var(--gold);min-height:20px;margin:4px 0}
+.actbar{display:flex;gap:6px;justify-content:center;margin-bottom:6px}
+.actbar button{background:rgba(0,0,0,.3);border:1px solid #3a5a6a;color:var(--txt);padding:6px 14px;border-radius:6px;font-size:12.5px;cursor:pointer;font-family:inherit}
+.actbar button.on{background:var(--gold);color:#123040;border-color:var(--gold);font-weight:700}
+.actbar button:disabled{opacity:.4;cursor:default}
+.bwrap{padding:8px;border-radius:10px;background:var(--felt);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+svg{display:block;width:min(95vw,440px);height:auto}
+.cell{fill:var(--cell);cursor:pointer}
+.cell.dest{fill:var(--gold);opacity:.65}
+.wallhit{fill:transparent;cursor:pointer}
+.wallhit:hover{fill:rgba(212,160,74,.55)}
+.wall{fill:var(--wall);stroke:var(--wallg);stroke-width:.5}
+.stock{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:6px 0;font-size:12px}
+.stock .s{background:rgba(0,0,0,.25);padding:4px 9px;border-radius:5px}
+.msg{min-height:20px;font-size:12.5px;color:var(--gold);margin:6px 0;text-align:center}
+.rule{width:min(94vw,420px);margin-top:10px;font-size:11px;line-height:1.7;color:var(--sub);border-top:1px solid #1c4a64;padding-top:8px}
+.rule b{color:var(--txt)}
+.over{position:fixed;inset:0;background:rgba(8,16,22,.86);display:none;align-items:center;justify-content:center;z-index:30}
+.over.show{display:flex}
+.over .c{background:#123040;border:1px solid var(--gold);border-radius:10px;padding:24px 36px;text-align:center}
+.over .t{font-size:22px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:14px}
+.over button{background:var(--gold);border:none;color:#123040;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.hidden{display:none!important}
+.eval-row{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
+.eval-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.45);padding:3px 9px;border-radius:12px;font-size:11px;cursor:pointer;font-family:inherit;transition:.2s;white-space:nowrap}
+.eval-btn.on{border-color:var(--gold,#c9a030);color:var(--gold,#c9a030)}
+.eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
+.eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
+.eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+.assist-toggle{display:inline-flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;cursor:pointer}
+.assist-toggle input{accent-color:var(--gold,#c9a227);cursor:pointer}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Quoridor","description":"Play Quoridor for free in your browser. Supports CPU and online multiplayer. Mobile-friendly so you can play anytime, anywhere.","url":"https://naganuma2003.github.io/game/en/games/quoridor.html","genre":["Board Game","Strategy Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer","MultiPlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":2},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}
+</script>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z:index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>Quoridor</h1><div class="sub">QUORIDOR &mdash; Advance or Block</div>
+<div class="row" id="np"><span class="lab">Players:</span><button data-np="2" class="on">2 Players</button><button data-np="4">4 Players</button></div>
+<div class="row" id="mode"><span class="lab">Mode:</span><button data-m="cpu" class="on">vs CPU</button><button data-m="pvp">Local PvP</button></div>
+<div class="row" id="lv"><span class="lab">CPU Level:</span><button data-lv="1">Easy</button><button data-lv="2" class="on">Normal</button><button data-lv="3">Hard</button></div>
+<div class="turn" id="turn"></div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">Eval</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<label class="assist-toggle"><input type="checkbox" id="assist"> AI Assistant (show best move)</label>
+<div class="actbar"><button data-a="move" class="on" id="abMove">Move Pawn</button><button data-a="wall" id="abWall">Place Wall</button></div>
+<div class="bwrap"><svg id="bd"></svg></div>
+<div class="stock" id="stock"></div>
+<div class="msg" id="msg"></div>
+<div class="rule">
+<b>Rules:</b> On your turn, choose to "move your pawn 1 space" or "place a wall." If an opponent's pawn is directly ahead, you can jump over it (diagonally if the straight path is blocked). Walls cannot completely block any player's path to their goal. The first player to reach the opposite edge wins.<br>
+<b>Goal:</b> 2 players = opposite edge / 4 players = the edge facing you. Walls: 10 each in 2-player mode, 5 each in 4-player mode.
+</div>
+<div style="display:flex;gap:8px;justify-content:center;margin-top:8px"><button id="undo" style="background:transparent;border:1px solid #3a5a6a;color:#EDE6D6;font-weight:700;padding:7px 16px;border-radius:6px;font-size:12.5px;cursor:pointer;font-family:inherit">Undo</button><button id="reset" style="background:transparent;border:1px solid #3a5a6a;color:#EDE6D6;font-weight:700;padding:7px 16px;border-radius:6px;font-size:12.5px;cursor:pointer;font-family:inherit">Restart</button></div>
+<div class="over" id="over"><div class="c"><div class="t" id="ovt">Victory</div><button id="again">Play Again</button></div></div>
+<script>
+const N=9, NS='http://www.w3.org/2000/svg';
+const COLORS=[
+  {nm:'Blue',c:'#3e87d6'},
+  {nm:'Red',c:'#e0473a'},
+  {nm:'Green',c:'#4ec05e'},
+  {nm:'Yellow',c:'#e0c34a'}
+];
+const SETUPS={
+  2:{starts:[[8,4],[0,4]], goals:['r0','r8'], walls:10},
+  4:{starts:[[8,4],[0,4],[4,0],[4,8]], goals:['r0','r8','c8','c0'], walls:5}
+};
+let np=2, mode='cpu';
+let pawns, walls, turn, over, winners, wallsLeft, action='move', hist=[];
+function snapQ(){return JSON.stringify({pawns,walls,turn,over,winners,wallsLeft,action});}
+function restoreQ(s){const o=JSON.parse(s);pawns=o.pawns;walls=o.walls;turn=o.turn;over=o.over;winners=o.winners;wallsLeft=o.wallsLeft;action=o.action;}
+let ONLINE=false,MYSEAT=0,roomSend=null;
+function myTurn(){return !ONLINE||turn===MYSEAT;}
+const svg=document.getElementById('bd');
+
+function init(){
+  const su=SETUPS[np];
+  pawns=su.starts.map(p=>({r:p[0],c:p[1]}));
+  walls=[]; turn=(mode==='cpu'&&!ONLINE&&Math.random()<0.5)?1:0; over=false; winners=[]; hist=[];
+  wallsLeft=new Array(np).fill(su.walls);
+  action='move';
+  document.getElementById('over').classList.remove('show');
+  document.getElementById('msg').textContent='';
+  setActionUI();
+  render(); updateTurn(); updateStock();
+  if(!isHuman()) setTimeout(cpuMove, 600);
+}
+function isCpuSeat(){return ONLINE&&window.OnlineRoom&&OnlineRoom.isCpu(turn);}
+function isHuman(){if(ONLINE){if(isCpuSeat())return false;return turn===MYSEAT;}return mode==='pvp'||turn===0;}
+function shouldRunCpu(){if(over)return false;if(ONLINE)return isCpuSeat()&&OnlineRoom.isHost();return !isHuman();}
+function setActionUI(){
+  document.getElementById('abMove').classList.toggle('on',action==='move');
+  document.getElementById('abWall').classList.toggle('on',action==='wall');
+  document.getElementById('abWall').disabled = !!wallsLeft && wallsLeft[turn]<=0;
+}
+function updateTurn(){
+  const t=document.getElementById('turn');
+  if(over){t.textContent='Game Over';return;}
+  const nm=COLORS[turn].nm;
+  if(ONLINE)t.textContent=(turn===MYSEAT?'★ You':'Opponent')+'('+nm+')\'s turn';
+  else t.textContent = mode==='pvp' ? (nm+'\'s turn') : (turn===0 ? 'Your ('+nm+') turn' : 'CPU ('+nm+')\'s turn');
+}
+function updateStock(){
+  const s=document.getElementById('stock'); s.innerHTML='';
+  for(let p=0;p<np;p++){
+    const e=document.createElement('span');e.className='s';e.style.color=COLORS[p].c;
+    e.textContent=COLORS[p].nm+': Walls '+wallsLeft[p];
+    s.appendChild(e);
+  }
+}
+
+function hasWallBetween(r1,c1,r2,c2){
+  if(r1===r2){
+    const c=Math.min(c1,c2), r=r1;
+    return walls.some(w=>w.d==='v' && w.c===c && (w.r===r-1||w.r===r));
+  }
+  if(c1===c2){
+    const r=Math.min(r1,r2), c=c1;
+    return walls.some(w=>w.d==='h' && w.r===r && (w.c===c-1||w.c===c));
+  }
+  return false;
+}
+function inBoard(r,c){return r>=0&&r<N&&c>=0&&c<N;}
+function pawnAt(r,c){return pawns.findIndex((p,i)=>!winners.includes(i) && p.r===r && p.c===c);}
+
+function pawnMoves(p){
+  const {r,c}=pawns[p]; const res=[];
+  for(const [dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
+    const nr=r+dr, nc=c+dc;
+    if(!inBoard(nr,nc)) continue;
+    if(hasWallBetween(r,c,nr,nc)) continue;
+    const op=pawnAt(nr,nc);
+    if(op<0){res.push([nr,nc]); continue;}
+    const jr=nr+dr, jc=nc+dc;
+    if(inBoard(jr,jc) && !hasWallBetween(nr,nc,jr,jc) && pawnAt(jr,jc)<0){
+      res.push([jr,jc]);
+    } else {
+      const perps=dr===0?[[-1,0],[1,0]]:[[0,-1],[0,1]];
+      for(const [pr,pc] of perps){
+        const d2r=nr+pr, d2c=nc+pc;
+        if(inBoard(d2r,d2c) && !hasWallBetween(nr,nc,d2r,d2c) && pawnAt(d2r,d2c)<0){
+          res.push([d2r,d2c]);
+        }
+      }
+    }
+  }
+  const seen=new Set();return res.filter(([r,c])=>{const k=r*N+c;if(seen.has(k))return false;seen.add(k);return true;});
+}
+
+function isGoal(p, r, c){
+  const g=SETUPS[np].goals[p];
+  return (g==='r0'&&r===0)||(g==='r8'&&r===8)||(g==='c0'&&c===0)||(g==='c8'&&c===8);
+}
+function distFrom(p, sr, sc){
+  const seen=new Set([sr*N+sc]); const q=[[sr,sc,0]];
+  while(q.length){
+    const[r,c,d]=q.shift();
+    if(isGoal(p,r,c))return d;
+    for(const[dr,dc] of [[-1,0],[1,0],[0,-1],[0,1]]){
+      const nr=r+dr,nc=c+dc;
+      if(!inBoard(nr,nc))continue;
+      if(hasWallBetween(r,c,nr,nc))continue;
+      const k=nr*N+nc;if(seen.has(k))continue;
+      seen.add(k);q.push([nr,nc,d+1]);
+    }
+  }
+  return Infinity;
+}
+function hasPath(p){return distFrom(p,pawns[p].r,pawns[p].c)!==Infinity;}
+
+function canPlaceWall(r,c,d){
+  if(r<0||r>=N-1||c<0||c>=N-1) return false;
+  for(const w of walls){
+    if(w.d===d){
+      if(d==='h' && w.r===r && Math.abs(w.c-c)<=1) return false;
+      if(d==='v' && w.c===c && Math.abs(w.r-r)<=1) return false;
+    } else if(w.r===r && w.c===c) return false;
+  }
+  walls.push({r,c,d});
+  let ok=true;
+  for(let p=0;p<np;p++){if(!winners.includes(p) && !hasPath(p)){ok=false;break;}}
+  walls.pop();
+  return ok;
+}
+
+function render(){
+  const CELL=38, GAP=4, PAD=10;
+  const S=N*CELL + (N-1)*GAP;
+  const W=S+PAD*2;
+  svg.setAttribute('viewBox',`0 0 ${W} ${W}`);
+  const cxy=(r,c)=>[PAD+c*(CELL+GAP), PAD+r*(CELL+GAP)];
+  let html='';
+  const myMoves = (!over && isHuman() && action==='move') ? pawnMoves(turn) : [];
+  const destSet=new Set(myMoves.map(m=>m[0]*N+m[1]));
+  const assistBest=computeAssist();
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const [x,y]=cxy(r,c);
+    const isDest = destSet.has(r*N+c);
+    const isAssist=assistBest&&assistBest[0]===r&&assistBest[1]===c;
+    html += `<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="4" class="cell${isDest?' dest':''}" data-mc="${r},${c}"/>`;
+    if(isAssist) html += `<text x="${x+CELL/2}" y="${y+CELL/2}" text-anchor="middle" dominant-baseline="central" font-size="18" fill="rgba(108,208,138,0.9)" pointer-events="none">★</text>`;
+  }
+  for(const w of walls){
+    const [x,y]=cxy(w.r, w.c);
+    if(w.d==='h'){
+      html += `<rect x="${x}" y="${y+CELL+GAP/2-2}" width="${CELL*2+GAP}" height="4" rx="2" class="wall"/>`;
+    } else {
+      html += `<rect x="${x+CELL+GAP/2-2}" y="${y}" width="4" height="${CELL*2+GAP}" rx="2" class="wall"/>`;
+    }
+  }
+  if(!over && isHuman() && action==='wall' && wallsLeft[turn]>0){
+    for(let r=0;r<N-1;r++)for(let c=0;c<N-1;c++){
+      const [x,y]=cxy(r,c);
+      if(canPlaceWall(r,c,'h'))
+        html += `<rect x="${x}" y="${y+CELL+GAP/2-3}" width="${CELL*2+GAP}" height="6" class="wallhit" data-wh="${r},${c}"/>`;
+      if(canPlaceWall(r,c,'v'))
+        html += `<rect x="${x+CELL+GAP/2-3}" y="${y}" width="6" height="${CELL*2+GAP}" class="wallhit" data-wv="${r},${c}"/>`;
+    }
+  }
+  for(let p=0;p<np;p++){
+    if(winners.includes(p))continue;
+    const [x,y]=cxy(pawns[p].r,pawns[p].c);
+    html += `<circle cx="${x+CELL/2}" cy="${y+CELL/2}" r="${CELL*0.34}" fill="${COLORS[p].c}" stroke="#fff" stroke-width="1.5"/>`;
+  }
+  svg.innerHTML=html;
+  svg.querySelectorAll('[data-mc]').forEach(el=>{const[r,c]=el.dataset.mc.split(',').map(Number); el.addEventListener('click',()=>onCellClick(r,c));});
+  svg.querySelectorAll('[data-wh]').forEach(el=>{const[r,c]=el.dataset.wh.split(',').map(Number); el.addEventListener('click',()=>onWallClick(r,c,'h'));});
+  svg.querySelectorAll('[data-wv]').forEach(el=>{const[r,c]=el.dataset.wv.split(',').map(Number); el.addEventListener('click',()=>onWallClick(r,c,'v'));});
+  updateEval();
+}
+
+function onCellClick(r,c){
+  if(over||!isHuman()||action!=='move') return;
+  const moves=pawnMoves(turn);
+  if(moves.some(m=>m[0]===r&&m[1]===c))emit({k:'move',r,c});
+}
+function onWallClick(r,c,d){
+  if(over||!isHuman()||action!=='wall') return;
+  if(wallsLeft[turn]<=0) return;
+  if(!canPlaceWall(r,c,d)) return;
+  emit({k:'wall',r,c,d});
+}
+function emit(a){if(ONLINE)roomSend(a);else doAction(a);}
+function doAction(a){
+  if(over)return;
+  if(a.k==='move'){
+    const moves=pawnMoves(turn);
+    if(!moves.some(m=>m[0]===a.r&&m[1]===a.c))return;
+    if(!ONLINE)hist.push(snapQ());
+    pawns[turn]={r:a.r,c:a.c};finishTurn();
+  } else if(a.k==='wall'){
+    if(wallsLeft[turn]<=0)return;
+    if(!canPlaceWall(a.r,a.c,a.d))return;
+    if(!ONLINE)hist.push(snapQ());
+    walls.push({r:a.r,c:a.c,d:a.d});wallsLeft[turn]--;finishTurn();
+  }
+}
+function finishTurn(){
+  if(isGoal(turn, pawns[turn].r, pawns[turn].c)){
+    winners.push(turn); over=true; render(); finish(); return;
+  }
+  nextTurn();
+  action='move';
+  setActionUI();
+  render(); updateTurn(); updateStock();
+  if(shouldRunCpu()) setTimeout(cpuMove, 600);
+  else if(!ONLINE && !over && !isHuman()) setTimeout(cpuMove, 600);
+}
+function nextTurn(){let n=turn;for(let k=0;k<np;k++){n=(n+1)%np;if(!winners.includes(n)){turn=n;return;}}}
+
+function cpuMove(){
+  if(over)return;
+  if(ONLINE&&(!OnlineRoom.isHost()||!isCpuSeat()))return;
+  const p=turn;
+  const myMoves=pawnMoves(p);
+  for(const [r,c] of myMoves){if(isGoal(p,r,c)){emit({k:'move',r,c});return;}}
+  if(cpuLv===1&&myMoves.length){
+    const[r,c]=myMoves[Math.floor(Math.random()*myMoves.length)];
+    emit({k:'move',r,c});return;
+  }
+  const myDist=distFrom(p,pawns[p].r,pawns[p].c);
+  let bestMove=null, bestMoveDist=Infinity;
+  for(const [r,c] of myMoves){
+    const dnew=distFrom(p,r,c);
+    if(dnew<bestMoveDist){bestMoveDist=dnew; bestMove=[r,c];}
+  }
+  let bestWall=null, bestWallScore=-Infinity;
+  if(wallsLeft[p]>0&&cpuLv===3){
+    let leader=-1, leaderDist=999;
+    for(let q=0;q<np;q++){if(q===p||winners.includes(q))continue;const d=distFrom(q,pawns[q].r,pawns[q].c);if(d<leaderDist){leaderDist=d;leader=q;}}
+    if(leader>=0 && leaderDist<=myDist+1){
+      for(let r=0;r<N-1;r++)for(let c=0;c<N-1;c++){
+        for(const d of ['h','v']){
+          if(!canPlaceWall(r,c,d))continue;
+          walls.push({r,c,d});
+          const dn=distFrom(leader,pawns[leader].r,pawns[leader].c);
+          const dnme=distFrom(p,pawns[p].r,pawns[p].c);
+          walls.pop();
+          if(dn===Infinity)continue;
+          const score=(dn-leaderDist)*2 - Math.max(0,dnme-myDist)*2;
+          if(score>bestWallScore){bestWallScore=score; bestWall={r,c,d};}
+        }
+      }
+    }
+  }
+  if(bestWall && bestWallScore>=3){emit({k:'wall',r:bestWall.r,c:bestWall.c,d:bestWall.d});return;}
+  if(bestMove){emit({k:'move',r:bestMove[0],c:bestMove[1]});return;}
+  if(myMoves.length){const[r,c]=myMoves[0];emit({k:'move',r,c});return;}
+  nextTurn(); render(); updateTurn(); if(shouldRunCpu())setTimeout(cpuMove,600); else if(!ONLINE&&!over&&!isHuman())setTimeout(cpuMove,600);
+}
+
+function finish(){
+  const nm=COLORS[winners[0]].nm;
+  const t = mode==='pvp' ? (nm+' wins!') : (winners[0]===0 ? 'You ('+nm+') win! 🎉' : 'CPU ('+nm+') wins');
+  document.getElementById('ovt').textContent=t;
+  document.getElementById('over').classList.add('show');
+}
+
+document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
+document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
+let cpuLv=2;
+document.getElementById('lv').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;cpuLv=+b.dataset.lv;document.querySelectorAll('#lv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
+document.querySelector('.actbar').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;action=b.dataset.a;setActionUI();render();});
+document.getElementById('again').addEventListener('click',init);
+document.getElementById('reset').addEventListener('click',init);
+document.getElementById('undo').addEventListener('click',()=>{if(!hist.length||ONLINE)return;let s=hist.pop();if(mode==='cpu'){while(hist.length&&JSON.parse(s).turn!==0)s=hist.pop();}restoreQ(s);setActionUI();document.getElementById('over').classList.remove('show');render();updateTurn();updateStock();});
+init();
+
+const assistEl=document.getElementById('assist');
+if(assistEl) assistEl.addEventListener('change', render);
+function computeAssist(){
+  if(!assistEl||!assistEl.checked||over||!isHuman()||action!=='move')return null;
+  const moves=pawnMoves(turn);
+  if(!moves.length)return null;
+  for(const[r,c]of moves)if(isGoal(turn,r,c))return[r,c];
+  let best=moves[0],bestS=-Infinity;
+  const savedPawn={...pawns[turn]};
+  for(const[r,c]of moves){
+    pawns[turn]={r,c};
+    const s=evalScore();
+    pawns[turn]=savedPawn;
+    const ownS=turn===0?s:-s;
+    if(ownS>bestS){bestS=ownS;best=[r,c];}
+  }
+  return best;
+}
+
+var evalOn=false;
+function toggleEval(){
+  evalOn=!evalOn;
+  document.getElementById('eval-btn').classList.toggle('on',evalOn);
+  document.getElementById('eval-bar').style.display=evalOn?'block':'none';
+  document.getElementById('eval-lbl').style.display=evalOn?'inline':'none';
+  updateEval();
+}
+function updateEval(){
+  if(!evalOn)return;
+  const s=evalScore(),MAX=20;
+  const C1=COLORS[0].c,C2=COLORS[1].c,N1='1st',N2='2nd';
+  const pct=Math.min(Math.max((s+MAX)/(2*MAX),0),1);
+  document.getElementById('eval-fill').style.cssText=`width:${pct*100}%;background:${s>0.3?C1:s<-0.3?C2:'#888'}`;
+  document.getElementById('eval-lbl').textContent=Math.abs(s)<0.3?'Even':s>0?`${N1}+${Math.round(Math.abs(s))}`:`${N2}+${Math.round(Math.abs(s))}`;
+}
+function evalScore(){
+  if(typeof ONLINE!=='undefined'&&ONLINE)return 0;
+  if(!pawns||pawns.length<2)return 0;
+  const d0=distFrom(0,pawns[0].r,pawns[0].c);
+  const d1=distFrom(1,pawns[1].r,pawns[1].c);
+  if(d0===Infinity||d1===Infinity)return 0;
+  return d1-d0;
+}
+
+function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
+  document.getElementById('np').classList.add('hidden');
+  document.getElementById('mode').classList.add('hidden');
+  document.getElementById('eval-row').style.display='none';
+  init();
+  if(shouldRunCpu())setTimeout(cpuMove,600);}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-room.js?v=8"></script>
+<script>
+OnlineRoom.init({gameId:'quoridor',minPlayers:2,maxPlayers:4,note:'Move your pawn or place a wall. Race to the opposite edge.',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>doAction(msg)});
+</script>
+<script src="../../shared/firebase-counter.js"></script></body></html>

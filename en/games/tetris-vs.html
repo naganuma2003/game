@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Tetris VS | Free Browser Game</title>
+<meta name="description" content="Play Tetris VS for free in your browser. Compete against AI in Tetris battle mode. Features garbage blocks, no registration, works on mobile and PC.">
+<meta name="keywords" content="Tetris,VS,battle,free,browser game,puzzle,AI battle">
+<meta property="og:title" content="Tetris VS | Free Browser Game">
+<meta property="og:description" content="Play AI battle Tetris VS for free.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/tetris-vs.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/tetris-vs.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/tetris-vs.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/tetris-vs.html">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Tetris VS","description":"Play Tetris VS for free in your browser. Compete against AI in Tetris battle mode. Features garbage blocks, no registration, works on mobile and PC.","url":"https://naganuma2003.github.io/game/en/games/tetris-vs.html","genre":["Puzzle Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer","MultiPlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":2},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+<style>
+:root{--bg:#14110E;--panel:#1F1A14;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#352C20;--p1:#5B9BD5;--p2:#E0533E;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:10px 4px 22px;user-select:none;touch-action:manipulation}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:20px;letter-spacing:.2em;text-indent:.2em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:8px}
+.arena{display:flex;gap:10px;align-items:flex-start;justify-content:center;width:100%}
+.player{display:flex;flex-direction:column;align-items:center;gap:5px}
+.ptitle{font-size:12px;font-weight:800;letter-spacing:.08em;min-height:16px}
+.p1 .ptitle{color:var(--p1)}.p2 .ptitle{color:var(--p2)}
+.top{display:flex;gap:5px;align-items:flex-start}
+.mini{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px;text-align:center}
+.mini .l{font-size:8px;color:var(--sub);letter-spacing:.1em;margin-bottom:2px}
+.boardwrap{position:relative;display:flex;align-items:stretch;gap:3px}
+canvas.bd{background:#0E0C09;border:2px solid var(--line);border-radius:5px;display:block}
+.p1 canvas.bd{border-color:#2a4a6a}.p2 canvas.bd{border-color:#5a2a22}
+.gauge{width:10px;background:#0E0C09;border:1px solid var(--line);border-radius:4px;position:relative;overflow:hidden}
+.gauge .fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#e0533e,#c01818);transition:height .15s}
+.stat{display:flex;gap:8px;font-size:10px;color:var(--sub)}
+.stat b{color:var(--gold);font-variant-numeric:tabular-nums}
+.pads{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;width:160px;margin-top:2px}
+.pads button{background:var(--panel);border:1px solid var(--line);color:var(--txt);font-size:16px;padding:9px 0;border-radius:8px;cursor:pointer}
+.pads button:active{border-color:var(--gold)}
+.pads button.hold{font-size:11px;font-weight:700}
+.center{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:6px}
+.foot{display:flex;gap:8px}
+.foot button{background:var(--gold);border:none;color:#14110E;font-weight:700;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit}
+.foot .alt{background:transparent;border:1px solid var(--line);color:var(--txt)}
+.lvbtn{padding:7px 14px!important;font-size:12px!important}
+.lvbtn.on{border-color:var(--gold)!important;color:var(--gold)!important}
+.hint{font-size:10px;color:var(--sub);text-align:center;line-height:1.7;margin-top:4px}
+.hint b{color:var(--txt)}
+.msg{min-height:18px;font-size:12px;color:var(--gold);text-align:center}
+.over{position:fixed;inset:0;background:rgba(10,8,5,.86);display:none;align-items:center;justify-content:center;z-index:30}
+.over.show{display:flex}
+.over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:24px 34px;text-align:center}
+.over .t{font-size:24px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:14px}
+.over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.eval-bar{display:none;flex-direction:column;align-items:center;gap:4px;min-width:36px;align-self:center}
+.eval-bar.show{display:flex}
+.eval-bar .el{font-size:8px;color:var(--sub);letter-spacing:.05em;text-align:center;white-space:nowrap}
+.eval-bar .track{width:10px;height:180px;background:#0E0C09;border:1px solid var(--line);border-radius:5px;position:relative;overflow:hidden}
+.eval-bar .ind{position:absolute;left:0;right:0;height:6px;background:var(--gold);border-radius:3px;transition:top .3s;top:50%}
+.eval-bar .pct{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>Tetris VS</h1><div class="sub">TETRIS VS &mdash; Clear lines to attack your opponent</div>
+
+<div class="arena">
+  <!-- Player 1 -->
+  <div class="player p1" id="pl0">
+    <div class="ptitle" id="t0">PLAYER 1</div>
+    <div class="top">
+      <div class="mini"><div class="l">HOLD</div><canvas id="hold0" width="52" height="40"></canvas></div>
+      <div class="mini"><div class="l">NEXT</div><canvas id="next0" width="52" height="40"></canvas></div>
+    </div>
+    <div class="boardwrap">
+      <div class="gauge"><div class="fill" id="gauge0" style="height:0%"></div></div>
+      <canvas class="bd" id="bd0" width="160" height="320"></canvas>
+    </div>
+    <div class="stat">Lines <b id="ln0">0</b> &middot; Sent <b id="atk0">0</b></div>
+    <div class="pads" id="pads0">
+      <button data-a="rot">&#10227;</button><button data-a="up" style="visibility:hidden"></button><button data-a="hold" class="hold">HOLD</button>
+      <button data-a="left">&#9664;</button><button data-a="soft">&#9660;</button><button data-a="right">&#9654;</button>
+      <button data-a="drop" style="grid-column:1/4">&#10515; Drop</button>
+    </div>
+  </div>
+
+  <!-- Eval Bar (CPU mode only) -->
+  <div class="eval-bar" id="evalBar">
+    <div class="el">AI Eval</div>
+    <div class="pct" id="evalPct" style="color:var(--p1)">50%</div>
+    <div class="track"><div class="ind" id="evalInd"></div></div>
+    <div class="el" id="evalDetail">&mdash;</div>
+  </div>
+
+  <!-- Player 2 -->
+  <div class="player p2" id="pl1">
+    <div class="ptitle" id="t1">PLAYER 2</div>
+    <div class="top">
+      <div class="mini"><div class="l">HOLD</div><canvas id="hold1" width="52" height="40"></canvas></div>
+      <div class="mini"><div class="l">NEXT</div><canvas id="next1" width="52" height="40"></canvas></div>
+    </div>
+    <div class="boardwrap">
+      <canvas class="bd" id="bd1" width="160" height="320"></canvas>
+      <div class="gauge"><div class="fill" id="gauge1" style="height:0%"></div></div>
+    </div>
+    <div class="stat">Lines <b id="ln1">0</b> &middot; Sent <b id="atk1">0</b></div>
+    <div class="pads" id="pads1">
+      <button data-a="rot">&#10227;</button><button data-a="up" style="visibility:hidden"></button><button data-a="hold" class="hold">HOLD</button>
+      <button data-a="left">&#9664;</button><button data-a="soft">&#9660;</button><button data-a="right">&#9654;</button>
+      <button data-a="drop" style="grid-column:1/4">&#10515; Drop</button>
+    </div>
+  </div>
+</div>
+
+<div class="center">
+  <div class="foot" id="lvrow" style="gap:6px">
+    <span style="font-size:11px;color:var(--sub);align-self:center">CPU Difficulty:</span>
+    <button class="lvbtn alt" data-lv="1">Easy</button>
+    <button class="lvbtn alt on" data-lv="2">Normal</button>
+    <button class="lvbtn alt" data-lv="3">Hard</button>
+  </div>
+  <div class="msg" id="msg">Press "Start" to battle the CPU</div>
+  <div class="foot"><button id="start">Start</button><button id="pause" class="alt">Pause</button></div>
+  <div class="hint">
+    <b>Controls</b>: &larr;/&rarr; Move &middot; &darr; Soft drop &middot; <b>&uarr; Hard drop</b> &middot; Space/Z Rotate &middot; Shift Hold (WASD also works)<br>
+    Clearing lines sends garbage to your opponent (1&rarr;1 / 2&rarr;2 / 3&rarr;3 / Tetris&rarr;4). Clearing while receiving cancels incoming garbage.
+  </div>
+</div>
+
+<div class="over" id="over"><div class="c"><div class="t" id="ovt">Result</div><button id="again">Play Again</button></div></div>
+
+<script>
+const COLS=10,ROWS=20,CELL=16;
+const SHAPES={
+  I:[[0,1],[1,1],[2,1],[3,1]], O:[[1,0],[2,0],[1,1],[2,1]],
+  T:[[0,1],[1,1],[2,1],[1,0]], S:[[1,0],[2,0],[0,1],[1,1]],
+  Z:[[0,0],[1,0],[1,1],[2,1]], J:[[0,0],[0,1],[1,1],[2,1]],
+  L:[[2,0],[0,1],[1,1],[2,1]]
+};
+const COLORS={I:'#4FC3E8',O:'#E8C84F',T:'#B07ACF',S:'#6CC56C',Z:'#E0533E',J:'#5B7BD5',L:'#E0913E'};
+const GARB='#6b6b6b';
+const KEYS=Object.keys(SHAPES);
+const ATTACK=[0,1,2,3,4];
+const KEY2COL={I:'#4FC3E8',O:'#E8C84F',T:'#B07ACF',S:'#6CC56C',Z:'#E0533E',J:'#5B7BD5',L:'#E0913E',G:GARB};
+const COL2KEY={};for(const k in KEY2COL)COL2KEY[KEY2COL[k]]=k;
+let running=false,paused=false,raf=null,lastT=0,gameOver=false;
+let ONLINE=false,MYSEAT=0,roomSend=null,lastSnap=0;
+let cpuLevel=2;
+const ROT={};
+(function(){for(const k of KEYS){const states=[];let cur=SHAPES[k].map(c=>c.slice());for(let r=0;r<4;r++){states.push(cur.map(c=>c.slice()));cur=cur.map(([x,y])=>[y,-x+2]);}ROT[k]=states;}})();
+function humanSeat(){return ONLINE?MYSEAT:0;}
+function isCPU(p){return !ONLINE&&p.idx===1;}
+
+function rnd(n){return Math.floor(Math.random()*n);}
+
+function makePlayer(idx){
+  return {
+    idx,
+    grid:Array.from({length:ROWS},()=>new Array(COLS).fill(null)),
+    cur:null,next:null,hold:null,canHold:true,
+    bag:[],
+    pending:0,
+    lines:0,attack:0,level:1,
+    dropT:0,dead:false,
+    plan:null,aiAcc:0,
+    cv:document.getElementById('bd'+idx),
+    hv:document.getElementById('hold'+idx),
+    nv:document.getElementById('next'+idx),
+    gauge:document.getElementById('gauge'+idx)
+  };
+}
+let P=[makePlayer(0),makePlayer(1)];
+const other=p=>P[1-p.idx];
+
+function bagNext(p){
+  if(p.bag.length===0){p.bag=KEYS.slice();for(let i=p.bag.length-1;i>0;i--){const j=rnd(i+1);[p.bag[i],p.bag[j]]=[p.bag[j],p.bag[i]];}}
+  const k=p.bag.pop();
+  return{k,cells:SHAPES[k].map(c=>c.slice()),x:3,y:k==='I'?-1:0,rot:0};
+}
+function spawn(p){p.cur=p.next||bagNext(p);p.next=bagNext(p);p.canHold=true;
+  if(!fits(p,p.cur)){p.dead=true;}}
+
+function cellsOf(pc){return pc.cells.map(([dx,dy])=>[pc.x+dx,pc.y+dy]);}
+function fits(p,pc){return cellsOf(pc).every(([x,y])=>x>=0&&x<COLS&&y<ROWS&&(y<0||!p.grid[y][x]));}
+function rotate(p,pc){if(pc.k==='O')return pc;const c=pc.cells.map(([x,y])=>[y,-x+2]);const np={...pc,cells:c,rot:((pc.rot||0)+1)%4};
+  for(const dx of[0,-1,1,-2,2]){const t={...np,x:np.x+dx};if(fits(p,t))return t;}return pc;}
+
+function move(p,dx){const t={...p.cur,x:p.cur.x+dx};if(fits(p,t)){p.cur=t;draw(p);}}
+function rot(p){p.cur=rotate(p,p.cur);draw(p);}
+function soft(p){const t={...p.cur,y:p.cur.y+1};if(fits(p,t)){p.cur=t;draw(p);}else lock(p);}
+function hard(p){let t={...p.cur};while(fits(p,{...t,y:t.y+1}))t.y++;p.cur=t;lock(p);}
+
+function holdSwap(p){
+  if(!p.canHold)return;
+  const curK=p.cur.k;
+  if(p.hold){const hk=p.hold;p.hold=curK;p.cur={k:hk,cells:SHAPES[hk].map(c=>c.slice()),x:3,y:hk==='I'?-1:0,rot:0};
+    if(!fits(p,p.cur)){p.dead=true;}}
+  else{p.hold=curK;spawn(p);}
+  p.canHold=false;draw(p);
+}
+
+function lock(p){
+  for(const[x,y]of cellsOf(p.cur)){if(y<0){p.dead=true;return;}p.grid[y][x]=COLORS[p.cur.k];}
+  let cleared=0;
+  for(let y=ROWS-1;y>=0;y--){if(p.grid[y].every(c=>c)){p.grid.splice(y,1);p.grid.unshift(new Array(COLS).fill(null));cleared++;y++;}}
+  if(cleared>0){
+    p.lines+=cleared;p.level=1+Math.floor(p.lines/10);
+    let atk=ATTACK[cleared];
+    if(p.pending>0){const c=Math.min(p.pending,atk);p.pending-=c;atk-=c;updateGauge(p);}
+    if(atk>0){
+      p.attack+=atk;
+      if(ONLINE){roomSend&&roomSend({k:'attack',n:atk});}
+      else{other(p).pending+=atk;updateGauge(other(p));}
+    }
+  } else {
+    if(p.pending>0){dumpGarbage(p,p.pending);p.pending=0;updateGauge(p);}
+  }
+  spawn(p);
+  updateStats(p);draw(p);
+  if(!ONLINE)evalAdvantage();
+  if(ONLINE)sendBoard(true);
+  if(p.dead){if(ONLINE){roomSend&&roomSend({k:'dead'});endOnline(false);}else endGame(p);return;}
+}
+
+function dumpGarbage(p,n){
+  const hole=rnd(COLS);
+  for(let i=0;i<n;i++){
+    const top=p.grid.shift();
+    if(top.some(c=>c)){p.dead=true;}
+    const row=new Array(COLS).fill(GARB);row[hole]=null;
+    p.grid.push(row);
+  }
+}
+
+function updateGauge(p){const h=Math.min(100,p.pending/ROWS*100);p.gauge.style.height=h+'%';}
+function updateStats(p){document.getElementById('ln'+p.idx).textContent=p.lines;document.getElementById('atk'+p.idx).textContent=p.attack;}
+
+/* ===== CPU AI ===== */
+function fitsGrid(grid,k,cells,x,y){return cells.every(([dx,dy])=>{const cx=x+dx,cy=y+dy;return cx>=0&&cx<COLS&&cy<ROWS&&(cy<0||!grid[cy][cx]);});}
+function evalGrid(g){
+  const heights=new Array(COLS).fill(0);
+  for(let x=0;x<COLS;x++){for(let y=0;y<ROWS;y++){if(g[y][x]){heights[x]=ROWS-y;break;}}}
+  let agg=0;for(const h of heights)agg+=h;
+  let holes=0;for(let x=0;x<COLS;x++){let seen=false;for(let y=0;y<ROWS;y++){if(g[y][x])seen=true;else if(seen)holes++;}}
+  let bump=0;for(let x=0;x<COLS-1;x++)bump+=Math.abs(heights[x]-heights[x+1]);
+  let lines=0;for(let y=0;y<ROWS;y++)if(g[y].every(c=>c))lines++;
+  return -0.510066*agg + 0.760666*lines - 0.35663*holes - 0.184483*bump;
+}
+function aiBestPlan(p){
+  let best=null,bestScore=-1e9;
+  const states=ROT[p.cur.k];
+  for(let r=0;r<states.length;r++){
+    const cells=states[r];
+    for(let x=-3;x<COLS;x++){
+      let y=-2;
+      if(!fitsGrid(p.grid,p.cur.k,cells,x,y))continue;
+      while(fitsGrid(p.grid,p.cur.k,cells,x,y+1))y++;
+      const g=p.grid.map(row=>row.slice());let bad=false;
+      for(const[dx,dy]of cells){const cx=x+dx,cy=y+dy;if(cy<0){bad=true;break;}g[cy][cx]='x';}
+      if(bad)continue;
+      let sc=evalGrid(g);
+      if(cpuLevel===1)sc+=Math.random()*3;
+      else if(cpuLevel===2)sc+=Math.random()*0.6;
+      if(sc>bestScore){bestScore=sc;best={x,rot:r};}
+    }
+  }
+  return best;
+}
+function aiInterval(){return cpuLevel===1?340:cpuLevel===2?180:90;}
+function stepCPU(p){
+  if(p.dead)return;
+  if(!p.plan){p.plan=aiBestPlan(p);if(!p.plan){hard(p);return;}}
+  const pl=p.plan;
+  if((p.cur.rot||0)!==pl.rot){const before=p.cur.rot||0;rot(p);if((p.cur.rot||0)===before){p.plan=null;hard(p);}return;}
+  if(p.cur.x!==pl.x){const dir=p.cur.x<pl.x?1:-1;const bx=p.cur.x;move(p,dir);if(p.cur.x===bx){p.plan=null;hard(p);}return;}
+  p.plan=null;hard(p);
+}
+
+/* ===== AI Evaluation Bar ===== */
+function boardHeight(p){for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(p.grid[y][x])return ROWS-y;return 0;}
+function evalAdvantage(){
+  if(ONLINE)return;
+  const a=P[0],b=P[1];
+  const hA=boardHeight(a),hB=boardHeight(b);
+  const sA=(a.attack*3)+(a.lines*1)+((20-hA)*0.5);
+  const sB=(b.attack*3)+(b.lines*1)+((20-hB)*0.5);
+  const total=sA+sB||1;
+  const pct=Math.round(sA/total*100);
+  const clamped=Math.max(5,Math.min(95,pct));
+  document.getElementById('evalPct').textContent=clamped+'%';
+  document.getElementById('evalPct').style.color=clamped>=50?'var(--p1)':'var(--p2)';
+  document.getElementById('evalInd').style.top=(100-clamped)+'%';
+  const diff=sA-sB;
+  const lbl=diff>3?'P1 Ahead':diff<-3?'CPU Ahead':'Even';
+  document.getElementById('evalDetail').textContent=lbl;
+}
+
+function draw(p){
+  const cx=p.cv.getContext('2d');cx.clearRect(0,0,p.cv.width,p.cv.height);
+  cx.strokeStyle='#1c1812';
+  for(let x=0;x<=COLS;x++){cx.beginPath();cx.moveTo(x*CELL,0);cx.lineTo(x*CELL,ROWS*CELL);cx.stroke();}
+  for(let y=0;y<=ROWS;y++){cx.beginPath();cx.moveTo(0,y*CELL);cx.lineTo(COLS*CELL,y*CELL);cx.stroke();}
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(p.grid[y][x])cell(cx,x,y,p.grid[y][x],CELL);
+  if(p.cur){
+    let g={...p.cur};while(fits(p,{...g,y:g.y+1}))g.y++;
+    for(const[x,y]of cellsOf(g))if(y>=0){cx.fillStyle='rgba(255,255,255,.08)';cx.fillRect(x*CELL+1,y*CELL+1,CELL-2,CELL-2);}
+    for(const[x,y]of cellsOf(p.cur))if(y>=0)cell(cx,x,y,COLORS[p.cur.k],CELL);
+  }
+  const hx=p.hv.getContext('2d');hx.clearRect(0,0,p.hv.width,p.hv.height);
+  if(p.hold)drawMini(hx,p.hold,p.canHold?1:.4);
+  const nx=p.nv.getContext('2d');nx.clearRect(0,0,p.nv.width,p.nv.height);
+  if(p.next)drawMini(nx,p.next.k,1);
+}
+function drawMini(ctx,k,alpha){ctx.globalAlpha=alpha;const s=11;
+  const cells=SHAPES[k];const ox=k==='O'?0.5:k==='I'?0:0.5,oy=k==='I'?0.2:0.2;
+  for(const[dx,dy]of cells)cell(ctx,dx+ox,dy+oy,COLORS[k],s);ctx.globalAlpha=1;}
+function cell(ctx,x,y,col,s){ctx.fillStyle=col;ctx.fillRect(x*s+1,y*s+1,s-2,s-2);
+  ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(x*s+1,y*s+1,s-2,2);}
+
+function startMatch(){
+  P=[makePlayer(0),makePlayer(1)];
+  if(ONLINE){
+    document.getElementById('evalBar').classList.remove('show');
+    const me=P[MYSEAT];me.next=bagNext(me);spawn(me);updateStats(me);updateGauge(me);draw(me);
+    draw(P[1-MYSEAT]);
+  }else{
+    document.getElementById('t0').textContent='You';
+    document.getElementById('t1').textContent='CPU('+(['','Easy','Normal','Hard'][cpuLevel])+')';
+    document.getElementById('pads1').style.display='none';
+    document.getElementById('evalBar').classList.add('show');
+    for(const p of P){p.next=bagNext(p);spawn(p);updateStats(p);updateGauge(p);draw(p);}
+    evalAdvantage();
+  }
+  running=true;paused=false;gameOver=false;lastT=performance.now();
+  document.getElementById('over').classList.remove('show');
+  document.getElementById('msg').textContent='Battle in progress!';
+  if(ONLINE)sendBoard(true);
+  if(!raf)raf=requestAnimationFrame(loop);
+}
+
+/* ===== Online board snapshots ===== */
+function encodeGrid(p){let s='';for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const c=p.grid[y][x];s+=c?(COL2KEY[c]||'G'):'.';}return s;}
+function decodeGrid(s){const g=Array.from({length:ROWS},()=>new Array(COLS).fill(null));
+  for(let i=0;i<s.length;i++){const ch=s[i];if(ch==='.')continue;const y=Math.floor(i/COLS),x=i%COLS;g[y][x]=KEY2COL[ch]||GARB;}return g;}
+function sendBoard(force){
+  if(!ONLINE||!roomSend)return;
+  const now=performance.now();if(!force&&now-lastSnap<70)return;lastSnap=now;
+  const me=P[MYSEAT];
+  roomSend({k:'board',grid:encodeGrid(me),cur:me.cur?{k:me.cur.k,x:me.cur.x,y:me.cur.y,cells:me.cur.cells}:null,
+    hold:me.hold,nextK:me.next?me.next.k:null,pending:me.pending,lines:me.lines,attack:me.attack,dead:me.dead});
+}
+function applyBoard(msg){
+  const rp=P[1-MYSEAT];
+  rp.grid=decodeGrid(msg.grid);
+  rp.cur=msg.cur;rp.hold=msg.hold;rp.next=msg.nextK?{k:msg.nextK}:null;
+  rp.pending=msg.pending||0;rp.lines=msg.lines||0;rp.attack=msg.attack||0;rp.canHold=true;
+  updateGauge(rp);updateStats(rp);draw(rp);
+}
+function endOnline(iWon){
+  if(gameOver)return;gameOver=true;running=false;
+  document.getElementById('ovt').textContent=iWon?'You Win! 🎉':'Opponent Wins';
+  document.getElementById('ovt').style.color=MYSEAT===0?'var(--p1)':'var(--p2)';
+  document.getElementById('msg').textContent=iWon?'WIN':'LOSE';
+  document.getElementById('over').classList.add('show');
+}
+function onNet(from,msg){
+  if(!ONLINE||from===MYSEAT||!msg)return;
+  if(msg.k==='board')applyBoard(msg);
+  else if(msg.k==='attack'){P[MYSEAT].pending+=msg.n;updateGauge(P[MYSEAT]);}
+  else if(msg.k==='dead')endOnline(true);
+  else if(msg.k==='start'&&!running)startMatch();
+}
+function startOnline(seat,n){
+  ONLINE=true;MYSEAT=seat;
+  document.getElementById('t'+MYSEAT).textContent='You';
+  document.getElementById('t'+(1-MYSEAT)).textContent='Opponent';
+  document.getElementById('pads'+(1-MYSEAT)).style.display='none';
+  document.getElementById('start').style.display='none';
+  if(seat===0){setTimeout(()=>{roomSend&&roomSend({k:'start'});startMatch();},300);}
+  else document.getElementById('msg').textContent='Waiting for host to start...';
+}
+function loop(t){raf=requestAnimationFrame(loop);if(!running||paused||gameOver)return;
+  const dt=t-lastT;lastT=t;
+  for(const p of P){if(p.dead)continue;
+    if(ONLINE&&p.idx!==MYSEAT)continue;
+    if(isCPU(p)){p.aiAcc+=dt;if(p.aiAcc>=aiInterval()){p.aiAcc=0;stepCPU(p);evalAdvantage();}}
+    const speed=Math.max(120,700-(p.level-1)*55);
+    p.dropT+=dt;if(p.dropT>speed){p.dropT=0;soft(p);if(ONLINE)sendBoard(false);}
+  }
+}
+function endGame(loser){
+  if(gameOver)return;gameOver=true;running=false;
+  const youWin=loser.idx===1;
+  document.getElementById('ovt').textContent=youWin?'You Win! 🎉':'CPU Wins';
+  document.getElementById('ovt').style.color=youWin?'var(--p1)':'var(--p2)';
+  document.getElementById('msg').textContent=youWin?'WIN':'LOSE';
+  document.getElementById('over').classList.add('show');
+}
+
+// ===== Input =====
+function act(a){
+  const p=P[humanSeat()];
+  if(!running||paused||gameOver||p.dead)return;
+  if(a==='left')move(p,-1);else if(a==='right')move(p,1);else if(a==='rot')rot(p);
+  else if(a==='soft'){soft(p);p.dropT=0;}else if(a==='drop')hard(p);else if(a==='hold')holdSwap(p);
+  if(ONLINE&&a!=='drop')sendBoard(false);
+}
+const KEYMAP={
+  ArrowLeft:'left',KeyA:'left', ArrowRight:'right',KeyD:'right',
+  ArrowDown:'soft',KeyS:'soft', ArrowUp:'drop',KeyW:'drop',
+  Space:'rot',KeyZ:'rot',KeyX:'rot',KeyQ:'rot',
+  ShiftLeft:'hold',ShiftRight:'hold',KeyC:'hold',KeyE:'hold'
+};
+window.addEventListener('keydown',e=>{const a=KEYMAP[e.code];if(a){e.preventDefault();act(a);}});
+for(let i=0;i<2;i++){
+  document.getElementById('pads'+i).addEventListener('click',e=>{
+    const b=e.target.closest('button');if(!b||!b.dataset.a||b.dataset.a==='up')return;
+    act(b.dataset.a);
+  });
+}
+document.getElementById('lvrow').addEventListener('click',e=>{const b=e.target.closest('.lvbtn');if(!b)return;
+  cpuLevel=+b.dataset.lv;document.querySelectorAll('.lvbtn').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
+document.getElementById('start').addEventListener('click',startMatch);
+document.getElementById('pause').addEventListener('click',()=>{if(!running||gameOver)return;paused=!paused;lastT=performance.now();document.getElementById('msg').textContent=paused?'Paused':'Battle in progress!';});
+document.getElementById('again').addEventListener('click',()=>{if(ONLINE){if(MYSEAT===0){roomSend&&roomSend({k:'start'});startMatch();}}else startMatch();});
+// Initial draw
+for(const p of P)draw(p);
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-room.js?v=8"></script>
+<script>
+OnlineRoom.init({
+  gameId:'tetrisvs', minPlayers:2, maxPlayers:2,
+  note:'Real-time 2-player battle. Clear lines to send garbage to your opponent.',
+  onStart:(seat,n,send)=>{ roomSend=send; startOnline(seat,n); },
+  onMessage:(from,msg)=>onNet(from,msg)
+});
+</script>
+<script src="../../shared/firebase-counter.js"></script></body>
+</html>

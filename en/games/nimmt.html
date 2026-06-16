@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>6 nimmt! | Free Browser Game</title>
+<meta name="description" content="Play 6 nimmt! for free in your browser. A strategic card game where you avoid collecting bull heads. CPU opponents, no installation required.">
+<meta name="keywords" content="6 nimmt,Take 6,free,browser game,card game,board game">
+<meta property="og:title" content="6 nimmt! | Free Browser Game">
+<meta property="og:description" content="Play 6 nimmt! for free in your browser. Avoid collecting bull heads in this strategic card game.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/nimmt.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/nimmt.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/nimmt.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/nimmt.html">
+<style>
+:root{--bg:#0e0e18;--surf:#1a1a28;--gold:#c9a030;--gold2:#f0d060;--txt:#e8e8f0;--dim:#555;--red:#d94040;--grn:#3dba6a;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:56px 10px 32px}
+.back{position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.25)}
+
+/* SETUP */
+#setup{width:100%;max-width:360px;margin-top:12px;background:var(--surf);border-radius:16px;padding:22px 18px}
+#setup h1{font-size:22px;text-align:center;color:var(--gold);margin-bottom:2px}
+.subtitle{font-size:11px;color:var(--dim);text-align:center;margin-bottom:18px}
+.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.form-row label{font-size:11px;color:var(--gold2)}
+.form-row select{background:#141420;border:1px solid #333;color:var(--txt);padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit}
+.start-btn{width:100%;padding:11px;background:var(--gold);color:#111;border:none;border-radius:10px;font:700 15px 'Segoe UI',sans-serif;cursor:pointer}
+.start-btn:hover{background:var(--gold2)}
+.rules-box{margin-top:14px;padding:11px;background:rgba(255,255,255,.04);border-radius:8px;font-size:11px;color:var(--dim);line-height:1.7}
+.rules-box b{color:var(--txt)}
+
+/* GAME */
+#game{display:none;width:100%;max-width:600px;flex-direction:column;align-items:center;gap:10px}
+.round-info{font-size:12px;color:var(--dim)}
+#status{font-size:13px;min-height:20px;text-align:center;color:var(--dim)}
+
+/* Opponent hand (online) */
+.opp-hand-area{display:none;width:100%;background:var(--surf);border-radius:10px;padding:8px 12px}
+.opp-hand-label{font-size:11px;margin-bottom:6px}
+.opp-hand-cards{display:flex;gap:4px;flex-wrap:wrap}
+.opp-card{width:34px;height:46px;border-radius:5px;background:#24243a;border:1px solid #333;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.opp-card.used{opacity:.2}
+
+/* Board */
+.board{width:100%;display:flex;flex-direction:column;gap:6px}
+.board-row{display:flex;align-items:center;gap:5px;background:var(--surf);border-radius:10px;padding:6px 8px;min-height:52px}
+.row-label{font-size:10px;color:var(--dim);width:14px;flex-shrink:0;text-align:center}
+.row-cards{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;flex:1}
+.row-empty{font-size:11px;color:#333;padding:0 4px}
+.card-el{width:38px;height:52px;border-radius:5px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:#24243a;border:1px solid #333;user-select:none}
+.card-el .cn{line-height:1}
+.card-el .cb{font-size:8px;color:var(--red);margin-top:1px}
+.card-el.row6{border-color:var(--red);background:#2a1818;animation:pulse6 .5s ease}
+@keyframes pulse6{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+
+/* Hand */
+.hand-label{font-size:11px;color:var(--dim);text-align:center;margin-bottom:6px}
+.hand-grid{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+.hcard{width:42px;height:58px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;font-size:14px;cursor:pointer;background:#1e1e30;border:2px solid #2e2e44;color:var(--txt);transition:all .12s;flex-shrink:0}
+.hcard:hover:not(.used){border-color:var(--gold);background:#252535;transform:translateY(-3px)}
+.hcard.selected{border-color:var(--gold2);background:#302808;color:var(--gold2);transform:translateY(-4px);box-shadow:0 4px 12px rgba(201,160,48,.4)}
+.hcard.used{opacity:.2;cursor:default;border-color:#1c1c28}
+.hcard .hcb{font-size:7px;color:var(--red);margin-top:1px}
+
+/* Confirm */
+.confirm-area{display:flex;flex-direction:column;align-items:center;gap:5px}
+#confirm-btn{padding:9px 32px;background:var(--gold);color:#111;border:none;border-radius:10px;font:700 14px 'Segoe UI',sans-serif;cursor:pointer;opacity:.35;pointer-events:none;transition:opacity .2s}
+#confirm-btn.active{opacity:1;pointer-events:auto}
+#confirm-btn.active:hover{background:var(--gold2)}
+.confirm-hint{font-size:10px;color:var(--dim);min-height:14px}
+
+/* Row pick overlay */
+#row-pick{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.78);align-items:center;justify-content:center;padding:16px}
+.rp-card{background:var(--surf);border-radius:14px;padding:20px;max-width:360px;width:100%;text-align:center}
+.rp-card h3{color:var(--gold);margin-bottom:6px;font-size:15px}
+.rp-card p{font-size:11px;color:var(--dim);margin-bottom:12px}
+.rp-rows{display:flex;flex-direction:column;gap:8px}
+.rp-row-btn{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;background:#24243a;border:1px solid #333;cursor:pointer;text-align:left;transition:background .15s}
+.rp-row-btn:hover{background:#2e2e48;border-color:var(--gold)}
+.rp-row-cards{display:flex;gap:3px;flex:1;overflow:hidden}
+.rp-penalty{font-size:11px;color:var(--red);flex-shrink:0}
+
+/* Reveal + scores */
+.reveal-area{display:none;width:100%;background:var(--surf);border-radius:10px;padding:10px 12px}
+.reveal-title{font-size:11px;color:var(--dim);margin-bottom:7px}
+.reveal-players{display:flex;gap:8px;flex-wrap:wrap}
+.rev-p{display:flex;align-items:center;gap:5px;font-size:12px}
+.scores{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.score-chip{padding:5px 11px;border-radius:8px;background:var(--surf);font-size:12px;display:flex;gap:6px;align-items:center}
+.sc-val{font-size:14px;font-weight:800}
+
+/* AI Eval */
+#ai-eval{display:none;width:100%;max-width:600px;background:var(--surf);border-radius:10px;padding:10px 14px;margin-top:2px}
+#ai-eval .ae-title{font-size:10px;color:var(--dim);margin-bottom:6px}
+.ae-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.ae-name{font-size:11px;width:52px;text-align:right;flex-shrink:0;font-weight:700}
+.ae-bar-bg{flex:1;height:14px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;position:relative}
+.ae-bar{height:100%;border-radius:4px;transition:width .4s ease}
+.ae-val{font-size:10px;color:var(--dim);width:32px;flex-shrink:0}
+.ae-grade{font-size:11px;font-weight:800;width:18px;flex-shrink:0;text-align:center}
+
+/* Gameover */
+#gameover{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.83);align-items:center;justify-content:center;padding:16px}
+.go-card{background:var(--surf);border-radius:16px;padding:22px 18px;max-width:360px;width:100%;text-align:center}
+.go-card h2{font-size:20px;color:var(--gold);margin-bottom:14px}
+.go-rows{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+.go-row{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-radius:8px;background:rgba(255,255,255,.04)}
+.go-row.top{background:rgba(201,160,48,.12);border:1px solid var(--gold)}
+.go-btns{display:flex;gap:8px;justify-content:center}
+.go-btns button{padding:9px 20px;border-radius:8px;font:700 13px 'Segoe UI',sans-serif;cursor:pointer;border:none}
+.go-btns .again{background:var(--gold);color:#111}
+.go-btns .home{background:#2a2a38;color:var(--txt)}
+
+@media(max-width:480px){
+  .card-el{width:32px;height:44px;font-size:11px}
+  .hcard{width:36px;height:50px;font-size:12px}
+}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"6 nimmt!","description":"6 nimmt! - a strategic card game where you avoid collecting bull heads.","url":"https://naganuma2003.github.io/game/en/games/nimmt.html","genre":["Card Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":"MultiPlayer","numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":4},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+</head>
+<body>
+<a href="../index.html" class="back">&larr; Back to List</a>
+
+<section id="setup">
+  <h1>\u{1F402} 6 nimmt!</h1>
+  <p class="subtitle">6 nimmt! &mdash; Simultaneous card game for 2-10 players</p>
+  <div class="form-row">
+    <label>Players (including CPU)</label>
+    <select id="sel-players">
+      <option value="2">2 (1 CPU)</option>
+      <option value="3" selected>3 (2 CPUs)</option>
+      <option value="4">4 (3 CPUs)</option>
+      <option value="5">5 (4 CPUs)</option>
+      <option value="6">6 (5 CPUs)</option>
+      <option value="7">7 (6 CPUs)</option>
+      <option value="8">8 (7 CPUs)</option>
+      <option value="9">9 (8 CPUs)</option>
+      <option value="10">10 (9 CPUs)</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label>CPU Difficulty</label>
+    <select id="sel-diff">
+      <option value="easy">Easy</option>
+      <option value="normal" selected>Normal</option>
+      <option value="hard">Hard</option>
+    </select>
+  </div>
+  <button class="start-btn" id="start-btn">Start Game</button>
+  <div class="rules-box">
+    <b>Rules:</b> 104 cards are dealt. Each round, everyone simultaneously plays 1 card. Cards are placed in ascending order across 4 rows (closest row whose last card is smaller). <b>The person who places the 6th card</b> takes that row as penalty (bull heads). If your card is <b>smaller than all row ends</b>, you choose a row to take. After 10 rounds, fewest penalties wins.<br>
+    <b>Bull heads:</b> 55=7 / multiples of 10=3 / multiples of 5=2 / others=1
+  </div>
+</section>
+
+<div id="game">
+  <div class="round-info" id="round-info">Round 1 / 10</div>
+  <div id="status">Select a card to play</div>
+
+  <!-- Online opponent hand -->
+  <div class="opp-hand-area" id="opp-hand-area">
+    <div class="opp-hand-label" id="opp-hand-label">Opponent's hand</div>
+    <div class="opp-hand-cards" id="opp-hand-cards"></div>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <div class="reveal-area" id="reveal-area">
+    <div class="reveal-title">All played cards</div>
+    <div class="reveal-players" id="reveal-players"></div>
+  </div>
+
+  <div>
+    <div class="hand-label">Your hand (<span id="hand-count">10</span> remaining)</div>
+    <div class="hand-grid" id="hand-grid"></div>
+  </div>
+
+  <div class="confirm-area">
+    <button id="confirm-btn">Confirm</button>
+    <span class="confirm-hint" id="confirm-hint"></span>
+  </div>
+
+  <div class="scores" id="scores"></div>
+  <div id="ai-eval">
+    <div class="ae-title">AI Evaluation (fewer penalties = better)</div>
+    <div id="ae-bars"></div>
+  </div>
+</div>
+
+<div id="row-pick">
+  <div class="rp-card">
+    <h3>Which row do you take?</h3>
+    <p>Your card is smaller than all row ends. Choose a row to take as penalty.</p>
+    <div class="rp-rows" id="rp-rows"></div>
+  </div>
+</div>
+
+<div id="gameover">
+  <div class="go-card">
+    <h2>Game Over</h2>
+    <div class="go-rows" id="go-rows"></div>
+    <div class="go-btns">
+      <button class="again" id="again-btn">Play Again</button>
+      <button class="home" onclick="location.href='../index.html'">Game List</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOTAL_ROUNDS=10;
+const PCOLS=['#c9a030','#e0473a','#3e87d6','#4ec05e','#e67e22','#9b59b6','#00b3b3','#cc44cc','#aaa','#bb8833'];
+function bullHeads(n){return n===55?7:n%10===0?3:n%5===0?2:1;}
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+let G={};
+let opPlay=null;
+let pendingRowCb=null;
+
+function initGame(numP,diff,online,mySeat){
+  const deck=shuffle(Array.from({length:104},(_,i)=>i+1));
+  const hands=Array.from({length:numP},(_,i)=>deck.slice(i*10,i*10+10).sort((a,b)=>a-b));
+  const tableCards=deck.slice(numP*10,numP*10+4).sort((a,b)=>a-b);
+  const myIdx=online?mySeat:0;
+  G={
+    numP,diff,online,myIdx,
+    names:online?(mySeat===0?['You','Opponent']:['Opponent','You']):['You',...Array.from({length:numP-1},(_,i)=>`CPU ${i+1}`)],
+    hands,rows:tableCards.map(c=>[c]),
+    penalties:Array(numP).fill(0),
+    round:1,phase:'picking',myChoice:null,cpuChoices:[],
+  };
+  opPlay=null;pendingRowCb=null;
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').style.display='flex';
+  if(online){
+    const area=document.getElementById('opp-hand-area');area.style.display='block';
+    const opIdx=1-mySeat;
+    document.getElementById('opp-hand-label').textContent=`${G.names[opIdx]}'s hand`;
+  }
+  renderAll();
+}
+
+function targetRow(card){
+  let best=-1,bestVal=-1;
+  for(let r=0;r<4;r++){const last=G.rows[r][G.rows[r].length-1];if(last<card&&last>bestVal){bestVal=last;best=r;}}
+  return best;
+}
+function takeRow(r,player){
+  G.penalties[player]+=G.rows[r].reduce((s,c)=>s+bullHeads(c),0);
+  G.rows[r]=[];renderScores();
+}
+function cpuChoose(hand,rows,diff){
+  if(diff==='easy')return hand[0|Math.random()*hand.length];
+  const safe=hand.filter(c=>{const r=targetRow2(c,rows);return r!==-1&&rows[r].length<5;});
+  if(diff==='normal'){if(safe.length)return safe[0|Math.random()*safe.length];return hand[0|Math.random()*hand.length];}
+  let best=null,bestS=Infinity;
+  for(const c of hand){const r=targetRow2(c,rows);let s;if(r===-1)s=Math.min(...rows.map(row=>row.reduce((x,c2)=>x+bullHeads(c2),0)));else if(rows[r].length===5)s=rows[r].reduce((x,c2)=>x+bullHeads(c2),0);else s=0;if(s<bestS){bestS=s;best=c;}}
+  return best||hand[0];
+}
+function targetRow2(card,rows){let b=-1,bv=-1;for(let r=0;r<4;r++){const l=rows[r][rows[r].length-1];if(l<card&&l>bv){bv=l;b=r;}}return b;}
+function cpuPickRow(rows){let b=0,bp=Infinity;for(let r=0;r<4;r++){const p=rows[r].reduce((s,c)=>s+bullHeads(c),0);if(p<bp){bp=p;b=r;}}return b;}
+
+function selectCard(c){
+  if(G.phase!=='picking')return;
+  if(!G.hands[G.myIdx].includes(c))return;
+  G.myChoice=G.myChoice===c?null:c;
+  renderHand();updateBtn();
+}
+
+function confirmChoice(){
+  if(!G.myChoice||G.phase!=='picking')return;
+  G.phase='waiting';updateBtn();
+  document.getElementById('status').textContent=G.online?'Waiting for opponent...':'Resolving...';
+
+  if(G.online){
+    OnlineCore.send({t:'play',card:G.myChoice});
+    if(opPlay!==null)startOnlineReveal();
+  } else {
+    G.cpuChoices=[];
+    for(let i=1;i<G.numP;i++)G.cpuChoices.push(cpuChoose([...G.hands[i]],G.rows,G.diff));
+    showRevealOffline();
+    const bids=[{player:0,card:G.myChoice},...G.cpuChoices.map((c,i)=>({player:i+1,card:c}))];
+    for(const b of bids)G.hands[b.player]=G.hands[b.player].filter(c=>c!==b.card);
+    bids.sort((a,b)=>a.card-b.card);
+    setTimeout(()=>processBidsSeq(bids,0,roundDone),500);
+  }
+}
+
+function handleOnlineMsg(msg){
+  if(msg.t==='play'){
+    opPlay=msg.card;
+    if(G.phase==='waiting')startOnlineReveal();
+  } else if(msg.t==='pick-row'){
+    if(pendingRowCb){const cb=pendingRowCb;pendingRowCb=null;cb(msg.row);}
+  }
+}
+
+function startOnlineReveal(){
+  const myCard=G.myChoice,opCard=opPlay;opPlay=null;
+  const bids=G.myIdx===0
+    ?[{player:0,card:myCard},{player:1,card:opCard}]
+    :[{player:0,card:opCard},{player:1,card:myCard}];
+  G.hands[0]=G.hands[0].filter(c=>c!==bids[0].card);
+  G.hands[1]=G.hands[1].filter(c=>c!==bids[1].card);
+  showReveal(bids);
+  bids.sort((a,b)=>a.card-b.card);
+  setTimeout(()=>processBidsSeq(bids,0,roundDone),500);
+}
+
+function processBidsSeq(bids,idx,done){
+  if(idx>=bids.length){setTimeout(done,300);return;}
+  const b=bids[idx];
+  const row=targetRow(b.card);
+  const next=()=>setTimeout(()=>processBidsSeq(bids,idx+1,done),450);
+  const isHuman=G.online?(b.player===G.myIdx):(b.player===0);
+
+  if(row===-1){
+    if(isHuman){
+      showRowPick(b.card,r=>{
+        if(G.online)OnlineCore.send({t:'pick-row',row:r});
+        takeRow(r,b.player);G.rows[r].push(b.card);renderBoard();next();
+      });
+    } else if(G.online){
+      pendingRowCb=r=>{takeRow(r,b.player);G.rows[r].push(b.card);renderBoard();next();};
+      document.getElementById('status').textContent='Opponent is choosing a row...';
+    } else {
+      const r=cpuPickRow(G.rows);
+      setTimeout(()=>{takeRow(r,b.player);G.rows[r].push(b.card);renderBoard();next();},300);
+    }
+  } else {
+    const is6=G.rows[row].length===5;
+    if(is6)takeRow(row,b.player);
+    G.rows[row].push(b.card);
+    renderBoard(is6?row:undefined);
+    next();
+  }
+}
+
+function roundDone(){
+  G.round++;G.myChoice=null;G.cpuChoices=[];G.phase='picking';
+  document.getElementById('reveal-area').style.display='none';
+  if(G.round>TOTAL_ROUNDS||G.hands[G.myIdx].length===0){showGameOver();return;}
+  renderAll();
+}
+
+function showRowPick(card,cb){
+  const ov=document.getElementById('row-pick'),rows=document.getElementById('rp-rows');
+  rows.innerHTML='';ov.style.display='flex';
+  G.rows.forEach((row,r)=>{
+    const pen=row.reduce((s,c)=>s+bullHeads(c),0);
+    const btn=document.createElement('button');btn.className='rp-row-btn';
+    const ch=row.map(c=>`<div class="card-el" style="width:30px;height:42px;font-size:11px"><div class="cn">${c}</div><div class="cb">${bullHeads(c)>1?'\u{1F402}'.repeat(Math.min(bullHeads(c),7)):''}</div></div>`).join('');
+    btn.innerHTML=`<div class="rp-row-cards">${ch}</div><span class="rp-penalty">${pen} heads</span>`;
+    btn.addEventListener('click',()=>{ov.style.display='none';cb(r);});
+    rows.appendChild(btn);
+  });
+}
+
+function showReveal(bids){
+  const area=document.getElementById('reveal-area'),pl=document.getElementById('reveal-players');
+  area.style.display='block';pl.innerHTML='';
+  for(const b of [...bids].sort((a,z)=>a.card-z.card)){
+    const d=document.createElement('div');d.className='rev-p';
+    d.innerHTML=`<span style="color:${PCOLS[b.player]};font-weight:700">${G.names[b.player]}</span><div class="card-el" style="width:34px;height:46px;font-size:12px"><div class="cn">${b.card}</div><div class="cb" style="font-size:7px">${'\u{1F402}'.repeat(Math.min(bullHeads(b.card),7))}</div></div>`;
+    pl.appendChild(d);
+  }
+}
+function showRevealOffline(){
+  const bids=[{player:0,card:G.myChoice},...G.cpuChoices.map((c,i)=>({player:i+1,card:c}))];
+  showReveal(bids);
+}
+
+function renderAll(){
+  document.getElementById('round-info').textContent=`Round ${G.round} / ${TOTAL_ROUNDS}`;
+  document.getElementById('status').textContent='Select a card to play';
+  renderBoard();renderHand();renderScores();renderOppHand();updateBtn();
+}
+function renderBoard(highlightRow){
+  const board=document.getElementById('board');board.innerHTML='';
+  G.rows.forEach((row,r)=>{
+    const div=document.createElement('div');div.className='board-row';
+    div.innerHTML=`<div class="row-label">${r+1}</div>`;
+    const rc=document.createElement('div');rc.className='row-cards';
+    if(!row.length){rc.innerHTML='<span class="row-empty">(empty)</span>';}
+    else row.forEach((c,i)=>{
+      const ce=document.createElement('div');
+      ce.className='card-el'+(r===highlightRow&&i===row.length-1?' row6':'');
+      ce.innerHTML=`<div class="cn">${c}</div><div class="cb">${bullHeads(c)>1?'\u{1F402}'.repeat(Math.min(bullHeads(c),7)):''}</div>`;
+      rc.appendChild(ce);
+    });
+    div.appendChild(rc);board.appendChild(div);
+  });
+}
+function renderHand(){
+  const grid=document.getElementById('hand-grid');
+  const hand=[...G.hands[G.myIdx]].sort((a,b)=>a-b);
+  document.getElementById('hand-count').textContent=hand.length;
+  grid.innerHTML='';
+  hand.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='hcard'+(c===G.myChoice?' selected':G.phase!=='picking'?' used':'');
+    btn.innerHTML=`<div>${c}</div><div class="hcb">${'\u{1F402}'.repeat(Math.min(bullHeads(c),7))}</div>`;
+    btn.addEventListener('click',()=>selectCard(c));
+    grid.appendChild(btn);
+  });
+}
+function renderOppHand(){
+  if(!G.online)return;
+  const opIdx=1-G.myIdx;
+  const hand=[...G.hands[opIdx]].sort((a,b)=>a-b);
+  const area=document.getElementById('opp-hand-cards');area.innerHTML='';
+  hand.forEach(c=>{
+    const d=document.createElement('div');d.className='opp-card';
+    d.innerHTML=`<div>${c}</div><div style="font-size:7px;color:var(--red)">${'\u{1F402}'.repeat(Math.min(bullHeads(c),7))}</div>`;
+    area.appendChild(d);
+  });
+}
+function renderScores(){
+  const el=document.getElementById('scores');el.innerHTML='';
+  for(let i=0;i<G.numP;i++){
+    const c=document.createElement('div');c.className='score-chip';
+    c.innerHTML=`<span style="color:${PCOLS[i]};font-weight:700">${G.names[i]}</span><span class="sc-val" style="color:var(--red)">${G.penalties[i]} heads</span>`;
+    el.appendChild(c);
+  }
+  renderAIEval();
+}
+function renderAIEval(){
+  const el=document.getElementById('ai-eval');
+  if(G.online){el.style.display='none';return;}
+  el.style.display='block';
+  const bars=document.getElementById('ae-bars');bars.innerHTML='';
+  const maxP=Math.max(1,...G.penalties);
+  const sorted=G.penalties.map((p,i)=>({i,p})).sort((a,b)=>a.p-b.p);
+  sorted.forEach(({i,p})=>{
+    const pct=maxP?Math.round(p/maxP*100):0;
+    const grade=p===0?'S':p<=5?'A':p<=15?'B':p<=30?'C':'D';
+    const gc=grade==='S'?'var(--gold2)':grade==='A'?'var(--grn)':grade==='B'?'var(--txt)':grade==='C'?'orange':'var(--red)';
+    const barC=i===G.myIdx?'var(--gold)':PCOLS[i];
+    const d=document.createElement('div');d.className='ae-row';
+    d.innerHTML=`<span class="ae-name" style="color:${PCOLS[i]}">${G.names[i]}</span><div class="ae-bar-bg"><div class="ae-bar" style="width:${pct}%;background:${barC}"></div></div><span class="ae-val">${p} heads</span><span class="ae-grade" style="color:${gc}">${grade}</span>`;
+    bars.appendChild(d);
+  });
+}
+function updateBtn(){
+  const btn=document.getElementById('confirm-btn'),hint=document.getElementById('confirm-hint');
+  const ok=G.myChoice!==null&&G.phase==='picking';
+  btn.classList.toggle('active',ok);
+  hint.textContent=ok?`Play ${G.myChoice} (${bullHeads(G.myChoice)} bull heads)`:(G.phase==='picking'?'Tap a card':'');
+}
+function showGameOver(){
+  const rows=document.getElementById('go-rows');rows.innerHTML='';
+  const ps=G.penalties.map((p,i)=>({i,p,name:G.names[i]})).sort((a,b)=>a.p-b.p);
+  const min=ps[0].p;
+  ps.forEach((p,rank)=>{
+    const d=document.createElement('div');
+    d.className='go-row'+(p.p===min?' top':'');
+    d.innerHTML=`<span><span style="margin-right:6px">${rank===0?'\u{1F3C6}':rank+1+(['st','nd','rd'][rank]||'th')}</span><span style="color:${PCOLS[p.i]};font-weight:700">${p.name}</span></span><span style="color:var(--red);font-size:17px;font-weight:900">${p.p} heads</span>`;
+    rows.appendChild(d);
+  });
+  document.getElementById('gameover').style.display='flex';
+}
+
+document.getElementById('start-btn').addEventListener('click',()=>{
+  initGame(+document.getElementById('sel-players').value,document.getElementById('sel-diff').value,false,-1);
+});
+document.getElementById('confirm-btn').addEventListener('click',confirmChoice);
+document.getElementById('again-btn').addEventListener('click',()=>{
+  document.getElementById('gameover').style.display='none';
+  if(G.online){location.reload();}else{document.getElementById('game').style.display='none';document.getElementById('setup').style.display='';}
+});
+</script>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-core.js?v=8"></script>
+<script>
+OnlineCore.init({
+  gameId:'nimmt',
+  statusSel:'#status',
+  hostMark:'\x00',guestMark:'\x00',
+  blockRelay:()=>true,pvpSel:null,hideSel:null,
+  afterStart:(seat)=>{
+    const b=document.getElementById('oc-badge');if(b)b.style.display='none';
+    document.getElementById('setup').style.display='none';
+    document.getElementById('opp-hand-area').style.display='block';
+    initGame(2,'normal',true,seat);
+  },
+  customMsg:handleOnlineMsg,
+});
+</script>
+<script src="../../shared/firebase-counter.js"></script>
+</body>
+</html>

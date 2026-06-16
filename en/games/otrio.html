@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Otrio | Free Browser Game</title>
+<meta name="description" content="Play Otrio for free in your browser. Supports CPU and online multiplayer. Mobile-friendly so you can play anytime, anywhere.">
+<meta name="keywords" content="Otrio, free, browser game, CPU battle, online multiplayer, mobile-friendly">
+<meta property="og:title" content="Otrio | Free Browser Game">
+<meta property="og:description" content="Play Otrio for free in your browser. Supports CPU and online multiplayer. Mobile-friendly.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/otrio.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/otrio.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/otrio.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/otrio.html">
+<style>
+:root{--bg:#14110E;--panel:#1F1A14;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#352C20;--empty:#3a3326;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 10px 28px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:22px;letter-spacing:.15em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:8px}
+.row{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.row .lab{font-size:11px;color:var(--sub);margin-right:2px}
+.row button{background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit}
+.row button.on{border-color:var(--gold);color:var(--gold)}
+.turn{font-size:13px;color:var(--gold);min-height:20px;margin:4px 0 6px}
+.stock{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:4px 0 8px;font-size:12px}
+.stock .s{background:rgba(0,0,0,.25);padding:5px 10px;border-radius:6px;display:flex;gap:6px;align-items:center}
+.stock .s.active{box-shadow:0 0 0 2px var(--gold)}
+.stock .pn{font-weight:700}
+.stock .pc{font-size:11px;color:var(--sub)}
+.bwrap{padding:10px;border-radius:10px;background:var(--panel);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+svg{display:block;width:min(92vw,400px);height:auto}
+.ring{cursor:pointer;transition:opacity .1s}
+.ring:hover{opacity:.7}
+.ring.empty{stroke:var(--empty);fill:none}
+.ring.disabled{cursor:default}
+.cell-bg{fill:rgba(255,255,255,.02);stroke:var(--line);stroke-width:1}
+.winhi{stroke:var(--gold);stroke-width:3;fill:none;animation:pulse 1s infinite alternate}
+@keyframes pulse{from{opacity:.6}to{opacity:1}}
+.msg{min-height:20px;font-size:12.5px;color:var(--gold);margin:8px 0;text-align:center}
+.rule{width:min(94vw,420px);margin-top:10px;font-size:11px;line-height:1.7;color:var(--sub);border-top:1px solid var(--line);padding-top:8px}
+.rule b{color:var(--txt)}
+.over{position:fixed;inset:0;background:rgba(8,8,5,.86);display:none;align-items:center;justify-content:center;z-index:30}
+.over.show{display:flex}
+.over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:24px 36px;text-align:center}
+.over .t{font-size:22px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:14px}
+.over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.hidden{display:none!important}
+.eval-wrap{width:min(92vw,400px);margin:6px 0 2px;display:none}
+.eval-wrap.show{display:block}
+.eval-label{font-size:10px;color:var(--sub);margin-bottom:2px;display:flex;justify-content:space-between}
+.eval-bar{height:14px;border-radius:7px;overflow:hidden;display:flex;background:var(--panel);border:1px solid var(--line)}
+.eval-seg{height:100%;transition:width .4s ease}
+.eval-txt{font-size:10px;color:var(--sub);text-align:center;margin-top:1px}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Otrio","description":"Play Otrio for free in your browser. Supports CPU and online multiplayer. Mobile-friendly so you can play anytime, anywhere.","url":"https://naganuma2003.github.io/game/en/games/otrio.html","genre":["Board Game","Strategy Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer","MultiPlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":4},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}
+</script>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>Otrio</h1><div class="sub">OTRIO &mdash; Tic-Tac-Toe with 3 Sizes</div>
+<div class="row" id="np"><span class="lab">Players:</span><button data-np="2" class="on">2 Players</button><button data-np="3">3 Players</button><button data-np="4">4 Players</button></div>
+<div class="row" id="mode"><span class="lab">Mode:</span><button data-m="cpu" class="on">vs CPU</button><button data-m="pvp">Local PvP</button></div>
+<div class="row" id="lv"><span class="lab">CPU Level:</span><button data-lv="1">Easy</button><button data-lv="2" class="on">Normal</button><button data-lv="3">Hard</button></div>
+<div class="turn" id="turn"></div>
+<div class="stock" id="stock"></div>
+<div class="bwrap"><svg id="bd"></svg></div>
+<div class="eval-wrap" id="evalWrap"><div class="eval-label"><span>Evaluation</span><span id="evalBest"></span></div><div class="eval-bar" id="evalBar"></div><div class="eval-txt" id="evalTxt"></div></div>
+<div class="msg" id="msg"></div>
+<div class="rule">
+<b>Win conditions:</b> Using your color, achieve any of the following: (1) 3 of the same size in a row/column/diagonal, (2) Small-Medium-Large ascending in a row/column/diagonal, (3) All 3 sizes (concentric rings) in one cell.<br>
+<b>Pieces:</b> 3 of each size (9 total). You can place on any empty size slot.
+</div>
+<div style="display:flex;gap:8px;justify-content:center;margin-top:8px"><button id="undo" style="background:transparent;border:1px solid #352C20;color:#EDE6D6;font-weight:700;padding:7px 16px;border-radius:6px;font-size:12.5px;cursor:pointer;font-family:inherit">Undo</button><button id="reset" style="background:transparent;border:1px solid #352C20;color:#EDE6D6;font-weight:700;padding:7px 16px;border-radius:6px;font-size:12.5px;cursor:pointer;font-family:inherit">Restart</button></div>
+<div class="over" id="over"><div class="c"><div class="t" id="ovt">Victory</div><button id="again">Play Again</button></div></div>
+<script>
+const NS='http://www.w3.org/2000/svg';
+const COLORS=[
+  {nm:'Red',c:'#e0473a'},
+  {nm:'Blue',c:'#3e87d6'},
+  {nm:'Green',c:'#4ec05e'},
+  {nm:'Yellow',c:'#e0c34a'}
+];
+const LINES=(()=>{const L=[];
+  for(let r=0;r<3;r++)L.push([[r,0],[r,1],[r,2]]);
+  for(let c=0;c<3;c++)L.push([[0,c],[1,c],[2,c]]);
+  L.push([[0,0],[1,1],[2,2]]);L.push([[0,2],[1,1],[2,0]]);
+  return L;})();
+let np=2,mode='cpu';
+let board,stock,turn,over,winner,winInfo,hist=[];
+function snapOtrio(){return JSON.stringify({board,stock,turn,over,winner,winInfo});}
+function restoreOtrio(s){const o=JSON.parse(s);board=o.board;stock=o.stock;turn=o.turn;over=o.over;winner=o.winner;winInfo=o.winInfo;}
+let ONLINE=false,MYSEAT=0,roomSend=null;
+function myTurn(){return !ONLINE||turn===MYSEAT;}
+const svg=document.getElementById('bd');
+
+function init(){
+  board=Array.from({length:3},()=>Array.from({length:3},()=>[-1,-1,-1]));
+  stock=Array.from({length:np},()=>[3,3,3]);
+  turn=Math.floor(Math.random()*np);over=false;winner=null;winInfo=null;hist=[];
+  document.getElementById('over').classList.remove('show');
+  document.getElementById('msg').textContent='';
+  render();updateTurn();updateStock();evalPosition();
+  if(shouldRunCpu())setTimeout(cpuMove,600);
+  else if(!ONLINE&&!isHuman())setTimeout(cpuMove,600);
+}
+function isCpuSeat(){return ONLINE&&window.OnlineRoom&&OnlineRoom.isAuto(turn);}
+function isHuman(){if(ONLINE){if(isCpuSeat())return false;return turn===MYSEAT;}return mode==='pvp'||turn===0;}
+function shouldRunCpu(){if(over)return false;if(ONLINE)return isCpuSeat()&&OnlineRoom.isHost();return !isHuman();}
+function updateTurn(){
+  const t=document.getElementById('turn');
+  if(over){t.textContent='Game Over';return;}
+  const nm=COLORS[turn].nm;
+  if(ONLINE)t.textContent=(turn===MYSEAT?'★ You':'Opponent')+'('+nm+')\'s turn';
+  else t.textContent=mode==='pvp'?(nm+'\'s turn'):(turn===0?'Your ('+nm+') turn':'CPU ('+nm+')\'s turn');
+  t.style.color=COLORS[turn].c;t.style.fontWeight='800';
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(turn===MYSEAT&&!over);
+}
+function updateStock(){
+  const s=document.getElementById('stock');s.innerHTML='';
+  for(let p=0;p<np;p++){
+    const e=document.createElement('div');e.className='s'+(p===turn?' active':'');
+    e.innerHTML='<span class="pn" style="color:'+COLORS[p].c+'">'+COLORS[p].nm+'</span>'+
+      '<span class="pc">S:'+stock[p][0]+' M:'+stock[p][1]+' L:'+stock[p][2]+'</span>';
+    s.appendChild(e);
+  }
+}
+function placeable(r,c,size,p){
+  if(stock[p][size]<=0)return false;
+  return board[r][c][size]===-1;
+}
+function place(r,c,size,p){
+  board[r][c][size]=p;stock[p][size]--;
+}
+function unplace(r,c,size,p){
+  board[r][c][size]=-1;stock[p][size]++;
+}
+function checkWinFor(p){
+  for(const L of LINES){
+    for(let s=0;s<3;s++){
+      if(L.every(([r,c])=>board[r][c][s]===p))return{line:L,kind:'size',s};
+    }
+  }
+  for(const L of LINES){
+    for(const order of [[0,1,2],[2,1,0]]){
+      if(L.every(([r,c],i)=>board[r][c][order[i]]===p))return{line:L,kind:'progress',order};
+    }
+  }
+  for(let r=0;r<3;r++)for(let c=0;c<3;c++){
+    if(board[r][c].every(v=>v===p))return{cell:[r,c],kind:'concentric'};
+  }
+  return null;
+}
+function anyEmpty(){
+  for(let r=0;r<3;r++)for(let c=0;c<3;c++)for(let s=0;s<3;s++)if(board[r][c][s]===-1)return true;
+  return false;
+}
+function noStock(p){return stock[p].every(v=>v===0);}
+
+function render(){
+  const CELL=110,GAP=6,PAD=8;
+  const W=3*CELL+2*GAP+2*PAD;
+  svg.setAttribute('viewBox',`0 0 ${W} ${W}`);
+  let html='';
+  const cellXY=(r,c)=>[PAD+c*(CELL+GAP),PAD+r*(CELL+GAP)];
+  for(let r=0;r<3;r++)for(let c=0;c<3;c++){
+    const[x,y]=cellXY(r,c);
+    html+=`<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" rx="6" class="cell-bg"/>`;
+    const cx=x+CELL/2,cy=y+CELL/2;
+    const radii=[10,32,46];
+    for(let s=2;s>=0;s--){
+      const r2=radii[s];
+      const owner=board[r][c][s];
+      const isEmpty=owner<0;
+      const interactive=isHuman()&&!over&&isEmpty&&stock[turn][s]>0;
+      if(s===0){
+        const fill=isEmpty?'#d7cfba':COLORS[owner].c;
+        const stroke=isEmpty?'rgba(0,0,0,.45)':'rgba(0,0,0,.3)';
+        html+=`<circle cx="${cx}" cy="${cy}" r="${r2}" fill="${fill}" stroke="${stroke}" stroke-width="1.5" class="ring${interactive?'':' disabled'}" ${interactive?`data-p="${r},${c},${s}"`:''}/>`;
+        html+=`<circle cx="${cx}" cy="${cy}" r="${(r2*0.34).toFixed(1)}" fill="rgba(0,0,0,.3)" pointer-events="none"/>`;
+        html+=`<circle cx="${(cx-r2*0.3).toFixed(1)}" cy="${(cy-r2*0.3).toFixed(1)}" r="${(r2*0.22).toFixed(1)}" fill="rgba(255,255,255,.45)" pointer-events="none"/>`;
+      }else{
+        const fill=isEmpty?'none':COLORS[owner].c;
+        const stroke=isEmpty?'var(--empty)':COLORS[owner].c;
+        const sw=isEmpty?2:5;
+        html+=`<circle cx="${cx}" cy="${cy}" r="${r2}" fill="${fill}" fill-opacity="0" stroke="${stroke}" stroke-width="${sw}" class="ring${isEmpty?' empty':''}${interactive?'':' disabled'}" ${interactive?`data-p="${r},${c},${s}"`:''}/>`;
+      }
+    }
+  }
+  if(winInfo){
+    if(winInfo.kind==='concentric'){
+      const[r,c]=winInfo.cell;const[x,y]=cellXY(r,c);
+      html+=`<rect x="${x-2}" y="${y-2}" width="${CELL+4}" height="${CELL+4}" rx="8" class="winhi"/>`;
+    }else{
+      const[a,b,d]=winInfo.line;
+      const[ax,ay]=cellXY(a[0],a[1]);const[dx,dy]=cellXY(d[0],d[1]);
+      html+=`<line x1="${ax+CELL/2}" y1="${ay+CELL/2}" x2="${dx+CELL/2}" y2="${dy+CELL/2}" class="winhi"/>`;
+    }
+  }
+  svg.innerHTML=html;
+  svg.querySelectorAll('[data-p]').forEach(el=>{const[r,c,s]=el.dataset.p.split(',').map(Number);el.addEventListener('click',()=>onPlace(r,c,s));});
+}
+function onPlace(r,c,s){
+  if(over||!isHuman())return;
+  if(!placeable(r,c,s,turn))return;
+  emit({k:'place',r,c,s});
+}
+function emit(a){if(ONLINE)roomSend(a);else doAction(a);}
+function doAction(a){
+  if(over)return;
+  if(a.k==='place'){
+    if(!placeable(a.r,a.c,a.s,turn))return;
+    if(!ONLINE)hist.push(snapOtrio());
+    place(a.r,a.c,a.s,turn);
+    const w=checkWinFor(turn);
+    if(w){winner=turn;winInfo=w;over=true;render();finish();return;}
+    if([...Array(np).keys()].every(p=>noStock(p))){over=true;render();finishDraw();return;}
+    turn=(turn+1)%np;
+    render();updateTurn();updateStock();evalPosition();
+    if(shouldRunCpu())setTimeout(cpuMove,600);
+    else if(!ONLINE&&!isHuman()&&!over)setTimeout(cpuMove,600);
+  }
+}
+
+function cpuMove(){
+  if(over)return;
+  if(ONLINE&&(!OnlineRoom.isHost()||!isCpuSeat()))return;
+  const p=turn;
+  if(cpuLv===1){
+    const all=[];for(let r=0;r<3;r++)for(let c=0;c<3;c++)for(let s=0;s<3;s++)if(placeable(r,c,s,p))all.push([r,c,s]);
+    if(all.length){const[r,c,s]=all[Math.floor(Math.random()*all.length)];doCpuPlace(r,c,s);return;}
+  }
+  for(let r=0;r<3;r++)for(let c=0;c<3;c++)for(let s=0;s<3;s++){
+    if(!placeable(r,c,s,p))continue;
+    place(r,c,s,p);const w=checkWinFor(p);unplace(r,c,s,p);
+    if(w){doCpuPlace(r,c,s);return;}
+  }
+  if(cpuLv===3||(cpuLv===2&&Math.random()<0.7)){
+    for(let q=0;q<np;q++){if(q===p)continue;
+      for(let r=0;r<3;r++)for(let c=0;c<3;c++)for(let s=0;s<3;s++){
+        if(!placeable(r,c,s,q))continue;
+        place(r,c,s,q);const w=checkWinFor(q);unplace(r,c,s,q);
+        if(w&&placeable(r,c,s,p)){doCpuPlace(r,c,s);return;}
+      }
+    }
+  }
+  const cands=[];
+  for(let r=0;r<3;r++)for(let c=0;c<3;c++)for(let s=0;s<3;s++){
+    if(!placeable(r,c,s,p))continue;
+    let score=0;
+    if(r===1&&c===1)score+=3;
+    for(const L of LINES){if(L.some(([lr,lc])=>lr===r&&lc===c)){
+      const mine=L.reduce((a,[lr,lc])=>a+board[lr][lc].filter(v=>v===p).length,0);
+      score+=mine*2;
+    }}
+    score+=Math.random();
+    cands.push({r,c,s,score});
+  }
+  cands.sort((a,b)=>b.score-a.score);
+  if(cands.length)doCpuPlace(cands[0].r,cands[0].c,cands[0].s);
+  else{over=true;render();finishDraw();}
+}
+function doCpuPlace(r,c,s){emit({k:'place',r,c,s});}
+
+function finish(){
+  const nm=COLORS[winner].nm;
+  const kindTxt=winInfo.kind==='size'?'Same size x3':winInfo.kind==='progress'?'S-M-L sequence':'Concentric';
+  const t=mode==='pvp'?(nm+' wins! ('+kindTxt+')'):(winner===0?'You ('+nm+') win! 🎉 ('+kindTxt+')':'CPU ('+nm+') wins ('+kindTxt+')');
+  document.getElementById('ovt').textContent=t;
+  document.getElementById('over').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
+}
+function finishDraw(){
+  document.getElementById('ovt').textContent='Draw';
+  document.getElementById('over').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
+}
+
+document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
+document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
+let cpuLv=2;
+document.getElementById('lv').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;cpuLv=+b.dataset.lv;document.querySelectorAll('#lv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
+document.getElementById('again').addEventListener('click',init);
+document.getElementById('reset').addEventListener('click',init);
+document.getElementById('undo').addEventListener('click',()=>{if(!hist.length||ONLINE)return;let s=hist.pop();if(mode==='cpu'){while(hist.length&&JSON.parse(s).turn!==0)s=hist.pop();}restoreOtrio(s);document.getElementById('over').classList.remove('show');render();updateTurn();updateStock();});
+init();
+
+function evalPosition(){
+  const wrap=document.getElementById('evalWrap');
+  if(mode!=='cpu'||ONLINE){wrap.classList.remove('show');return;}
+  wrap.classList.add('show');
+  const scores=new Array(np).fill(0);
+  for(let p=0;p<np;p++){
+    for(const L of LINES){
+      for(let s=0;s<3;s++){
+        const mine=L.filter(([r,c])=>board[r][c][s]===p).length;
+        const blocked=L.some(([r,c])=>board[r][c][s]!==-1&&board[r][c][s]!==p);
+        if(!blocked){if(mine===3)scores[p]+=100;else if(mine===2)scores[p]+=12;else if(mine===1)scores[p]+=2;}
+      }
+      for(const order of [[0,1,2],[2,1,0]]){
+        let mine=0,blocked=false;
+        L.forEach(([r,c],i)=>{const v=board[r][c][order[i]];if(v===p)mine++;else if(v!==-1)blocked=true;});
+        if(!blocked){if(mine===3)scores[p]+=100;else if(mine===2)scores[p]+=12;else if(mine===1)scores[p]+=2;}
+      }
+    }
+    for(let r=0;r<3;r++)for(let c=0;c<3;c++){
+      const mine=board[r][c].filter(v=>v===p).length;
+      const blocked=board[r][c].some(v=>v!==-1&&v!==p);
+      if(!blocked){if(mine===3)scores[p]+=100;else if(mine===2)scores[p]+=12;else if(mine===1)scores[p]+=2;}
+    }
+    let moves=0;for(let r=0;r<3;r++)for(let c=0;c<3;c++)for(let s=0;s<3;s++)if(placeable(r,c,s,p))moves++;
+    scores[p]+=moves*0.5;
+    scores[p]+=board[1][1].filter(v=>v===p).length*2;
+  }
+  const total=scores.reduce((a,b)=>a+b,0)||1;
+  const bar=document.getElementById('evalBar');
+  bar.innerHTML='';
+  const pcts=scores.map(s=>Math.max(s/total*100,2));
+  const pctSum=pcts.reduce((a,b)=>a+b,0);
+  pcts.forEach((v,i)=>pcts[i]=v/pctSum*100);
+  for(let p=0;p<np;p++){
+    const seg=document.createElement('div');
+    seg.className='eval-seg';
+    seg.style.width=pcts[p].toFixed(1)+'%';
+    seg.style.background=COLORS[p].c;
+    seg.style.opacity=0.8;
+    bar.appendChild(seg);
+  }
+  const best=scores.indexOf(Math.max(...scores));
+  const txt=document.getElementById('evalTxt');
+  const names=scores.map((_,i)=>mode==='cpu'?(i===0?'You':'CPU'+(np>2?' ('+COLORS[i].nm+')':'')):COLORS[i].nm);
+  if(scores.every(s=>s===scores[0])){txt.textContent='Even';document.getElementById('evalBest').textContent='';}
+  else{
+    const adv=((scores[best]/total)*100).toFixed(0);
+    txt.textContent=names.map((n,i)=>n+' '+scores[i].toFixed(0)).join(' / ');
+    document.getElementById('evalBest').textContent=names[best]+' leads ('+adv+'%)';
+    document.getElementById('evalBest').style.color=COLORS[best].c;
+  }
+}
+
+function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
+  document.getElementById('np').classList.add('hidden');
+  document.getElementById('mode').classList.add('hidden');
+  init();}
+function getState(){return {board,stock,turn,over,winner,winInfo};}
+function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;
+  document.getElementById('np').classList.add('hidden');
+  document.getElementById('mode').classList.add('hidden');
+  const s=o.state;board=s.board;stock=s.stock;turn=s.turn;over=s.over;winner=s.winner;winInfo=s.winInfo;
+  document.getElementById('over').classList.toggle('show',!!over);
+  render();updateTurn();updateStock();
+  if(shouldRunCpu())setTimeout(cpuMove,600);}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-room.js?v=8"></script>
+<script>
+OnlineRoom.init({gameId:'otrio',minPlayers:2,maxPlayers:4,note:'Tic-tac-toe with 3-sized rings.',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>doAction(msg),
+  onLeft:(seat)=>{updateTurn();if(shouldRunCpu())setTimeout(cpuMove,600);},
+  getState,applyState});
+</script>
+<script src="../../shared/firebase-counter.js"></script></body></html>

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Yacht Dice | Free Browser Game</title>
+<meta name="description" content="Play Yacht Dice for free in your browser. A Yahtzee-style dice game. Roll 5 dice to score combinations and aim for the highest total. No registration required.">
+<meta name="keywords" content="Yacht,Yahtzee,free,browser game,dice game">
+<meta property="og:title" content="Yacht Dice | Free Browser Game">
+<meta property="og:description" content="Play the dice game Yacht for free. Roll 5 dice and aim for the highest score.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/yacht.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/yacht.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/yacht.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/yacht.html">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Yacht Dice","description":"Play Yacht Dice for free in your browser. A Yahtzee-style dice game. Roll 5 dice to score combinations and aim for the highest total. No registration required.","url":"https://naganuma2003.github.io/game/en/games/yacht.html","genre":["Dice Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer","MultiPlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":4},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+<style>
+:root{--bg:#14110E;--panel:#1F1A14;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#352C20;--die:#F4EFE2;--pip:#222;--keep:#2E7D46;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 10px 28px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:8px}
+.dice{display:flex;gap:10px;justify-content:center;margin:8px 0}
+.die{width:52px;height:52px;border-radius:10px;background:var(--die);position:relative;box-shadow:0 3px 7px rgba(0,0,0,.4);cursor:pointer;transition:transform .1s}
+.die.keep{outline:3px solid var(--keep);outline-offset:1px}
+.die.keep::after{content:"Keep";position:absolute;bottom:-15px;left:0;right:0;text-align:center;font-size:9px;color:var(--keep);font-weight:700}
+.die.roll{animation:sh .35s ease}
+@keyframes sh{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+.die .pip{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--pip);transform:translate(-50%,-50%)}
+.rollbar{display:flex;gap:12px;align-items:center;margin:18px 0 8px}
+.rollbar button{background:var(--gold);border:none;color:#14110E;font-weight:700;padding:11px 26px;border-radius:9px;cursor:pointer;font-size:15px;font-family:inherit}
+.rollbar button:disabled{opacity:.4}
+.rollbar .left{font-size:12px;color:var(--sub)}
+.hint{font-size:11px;color:var(--sub);margin-bottom:8px;text-align:center}
+.sheet{width:min(94vw,400px);border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel)}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--line);font-size:14px}
+.srow:last-child{border-bottom:none}
+.srow.head{background:rgba(255,255,255,.04);font-size:11px;color:var(--sub);letter-spacing:.1em;padding:6px 13px}
+.srow .nm{flex:1}
+.srow .pt{width:54px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.srow.open{cursor:pointer}
+.srow.open:hover{background:rgba(201,162,39,.12)}
+.srow.open .pt{color:var(--gold)}
+.srow.used{opacity:.55}.srow.used .pt{color:var(--txt)}
+.srow.total{background:rgba(201,162,39,.1);font-weight:700}
+.srow.total .pt{color:var(--gold);font-size:16px}
+.bonus{font-size:11px;color:var(--sub)}
+.ai-eval{width:min(94vw,400px);margin-top:10px;padding:10px 13px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.ai-eval .ae-title{font-size:10px;color:var(--sub);letter-spacing:.1em;margin-bottom:6px}
+.ai-eval .ae-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px}
+.ai-eval .ae-row:last-child{margin-bottom:0}
+.ai-eval .ae-lbl{width:60px;text-align:right;font-weight:700;flex-shrink:0}
+.ai-eval .ae-bar-bg{flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden}
+.ai-eval .ae-bar{height:100%;border-radius:5px;transition:width .4s}
+.ai-eval .ae-val{width:36px;font-variant-numeric:tabular-nums;color:var(--sub);font-size:11px}
+.over{position:fixed;inset:0;background:rgba(10,8,5,.85);display:none;align-items:center;justify-content:center;z-index:30}
+.over.show{display:flex}
+.over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:26px 38px;text-align:center}
+.over .t{font-size:24px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:8px}
+.over .s{font-size:15px;margin-bottom:16px}
+.over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>Yacht</h1><div class="sub">YACHT DICE</div>
+<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:4px" id="np">
+<span style="font-size:11px;color:var(--sub);align-self:center;margin-right:2px">Players:</span>
+<button data-np="1" class="on" style="background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">1P</button>
+<button data-np="2" style="background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">2P</button>
+<button data-np="3" style="background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">3P</button>
+<button data-np="4" style="background:transparent;border:1px solid #3a3326;color:var(--sub);padding:5px 12px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit">4P</button>
+</div>
+<div id="cpu-cfg" style="display:none;margin-bottom:8px;text-align:center">
+<div id="seat-rows" style="display:flex;flex-direction:column;gap:4px;align-items:center"></div>
+</div>
+<div id="curp" style="font-size:13px;color:var(--gold);min-height:18px;margin-bottom:4px;display:none"></div>
+<div class="dice" id="dice"></div>
+<div class="rollbar"><button id="roll">Roll Dice</button><span class="left" id="left">3 rolls left</span></div>
+<div class="hint">After rolling, tap dice to "Keep" them. Roll up to 3 times, then tap an open slot in the scoresheet below.</div>
+<div class="sheet" id="sheet"></div>
+<div class="ai-eval" id="ai-eval" style="display:none"></div>
+<div class="over" id="over"><div class="c"><div class="t">Game Over!</div><div class="s" id="ov-s"></div><button id="again">Play Again</button></div></div>
+<script>
+const PIPS={1:[[50,50]],2:[[28,28],[72,72]],3:[[26,26],[50,50],[74,74]],4:[[28,28],[72,28],[28,72],[72,72]],5:[[28,28],[72,28],[50,50],[28,72],[72,72]],6:[[28,26],[72,26],[28,50],[72,50],[28,74],[72,74]]};
+const CATS=[
+  {id:'ones',name:'Ones',up:true,fn:d=>sum(d.filter(x=>x===1))},
+  {id:'twos',name:'Twos',up:true,fn:d=>sum(d.filter(x=>x===2))},
+  {id:'threes',name:'Threes',up:true,fn:d=>sum(d.filter(x=>x===3))},
+  {id:'fours',name:'Fours',up:true,fn:d=>sum(d.filter(x=>x===4))},
+  {id:'fives',name:'Fives',up:true,fn:d=>sum(d.filter(x=>x===5))},
+  {id:'sixes',name:'Sixes',up:true,fn:d=>sum(d.filter(x=>x===6))},
+  {id:'three',name:'Three of a Kind',fn:d=>nKind(d,3)?sum(d):0},
+  {id:'four',name:'Four of a Kind',fn:d=>nKind(d,4)?sum(d):0},
+  {id:'full',name:'Full House',fn:d=>isFull(d)?25:0},
+  {id:'sstr',name:'Small Straight',fn:d=>straight(d,4)?30:0},
+  {id:'lstr',name:'Large Straight',fn:d=>straight(d,5)?40:0},
+  {id:'yacht',name:'Yacht (5 of a Kind)',fn:d=>nKind(d,5)?50:0},
+  {id:'chance',name:'Chance',fn:d=>sum(d)}
+];
+const sum=a=>a.reduce((x,y)=>x+y,0);
+function counts(d){const c={};d.forEach(v=>c[v]=(c[v]||0)+1);return c;}
+function nKind(d,n){return Object.values(counts(d)).some(v=>v>=n);}
+function isFull(d){const v=Object.values(counts(d)).sort();return v.length===2&&v[0]===2&&v[1]===3;}
+function straight(d,len){const s=[...new Set(d)].sort((a,b)=>a-b);let run=1,best=1;for(let i=1;i<s.length;i++){if(s[i]===s[i-1]+1){run++;best=Math.max(best,run);}else run=1;}return best>=len;}
+let dice,keep,rolls,allScores,turn,over,np=1,curPlayer;
+let ONLINE=false,MYSEAT=0,roomSend=null;
+let seatCpu=[0,0,0,0];
+let cpuBusy=false;
+const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a'];
+const CPU_NAMES={0:'Human',1:'CPU Easy',2:'CPU Normal',3:'CPU Hard'};
+function isCpuSeat(s){return !ONLINE&&seatCpu[s]>0;}
+function myTurn(){if(ONLINE)return curPlayer===MYSEAT;return !isCpuSeat(curPlayer);}
+function emit(a){if(ONLINE){if(!myTurn()||over)return;roomSend(a);}else doAction(a);}
+function doAction(a){if(a.k==='roll')_roll();else if(a.k==='keep')_toggleKeep(a.i);else if(a.k==='record')_record(a.id);else if(a.k==='autoturn')_autoturn();}
+function _autoturn(){if(rolls===0)_roll();const c=CATS.find(x=>scores()[x.id]===undefined);if(c)_record(c.id);}
+function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&((OnlineRoom.isCpu&&OnlineRoom.isCpu(s))||(OnlineRoom.isGone&&OnlineRoom.isGone(s)));}
+function autoKick(){if(!ONLINE||!OnlineRoom.isHost()||over||np<=1)return;if(!isAutoSeat(curPlayer))return;
+  setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!over&&isAutoSeat(curPlayer))OnlineRoom.send({k:'autoturn'});},700);}
+
+/* ==================== CPU seat config UI ==================== */
+function renderSeatCfg(){
+  const wrap=document.getElementById('cpu-cfg');
+  const rows=document.getElementById('seat-rows');
+  if(np<=1||ONLINE){wrap.style.display='none';return;}
+  wrap.style.display='block';rows.innerHTML='';
+  for(let i=0;i<np;i++){
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;gap:5px;align-items:center;justify-content:center';
+    const lbl=document.createElement('span');
+    lbl.style.cssText='font-size:11px;width:28px;text-align:right;margin-right:2px;font-weight:700;color:'+PCOL[i];
+    lbl.textContent='P'+(i+1);
+    row.appendChild(lbl);
+    const opts=i===0?[['Human',0]]:[['Human',0],['CPU Easy',1],['CPU Normal',2],['CPU Hard',3]];
+    for(const [t,v] of opts){
+      const b=document.createElement('button');
+      b.textContent=t;
+      const sel=seatCpu[i]===v;
+      b.style.cssText='background:transparent;border:1px solid '+(sel?'var(--gold)':'#3a3326')+';color:'+(sel?'var(--gold)':'var(--sub)')+';padding:3px 10px;border-radius:14px;font-size:11px;cursor:pointer;font-family:inherit';
+      b.addEventListener('click',()=>{seatCpu[i]=v;renderSeatCfg();init();});
+      row.appendChild(b);
+    }
+    rows.appendChild(row);
+  }
+}
+
+function init(){dice=[1,1,1,1,1];keep=[false,false,false,false,false];rolls=0;
+  allScores=Array.from({length:np},()=>({}));turn=0;curPlayer=ONLINE?0:Math.floor(Math.random()*np);over=false;cpuBusy=false;
+  document.getElementById('over').classList.remove('show');
+  document.getElementById('curp').style.display=np>1?'block':'none';
+  updateCurP();renderDice();renderSheet();updateRollBtn();renderAiEval();scheduleCpuTurn();}
+function scores(){return allScores[curPlayer];}
+function updateCurP(){
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(curPlayer===MYSEAT&&!over);
+  if(np<=1)return;
+  const me=ONLINE&&curPlayer===MYSEAT;
+  const cp=document.getElementById('curp');
+  const cpuLvl=isCpuSeat(curPlayer)?CPU_NAMES[seatCpu[curPlayer]]:null;
+  if(cpuLvl){
+    cp.textContent='P'+(curPlayer+1)+' ('+cpuLvl+')\'s turn (Round '+turn+'/13)';
+  } else {
+    cp.textContent=(me?'★ You (P'+(curPlayer+1)+')':'Player '+(curPlayer+1))+' — Turn (Round '+turn+'/13)';
+  }
+  cp.style.color=over?'var(--gold)':PCOL[curPlayer];cp.style.fontWeight='800';}
+function renderDice(){const el=document.getElementById('dice');el.innerHTML='';dice.forEach((v,i)=>{
+  const d=document.createElement('div');d.className='die'+(keep[i]?' keep':'');
+  d.innerHTML=PIPS[v].map(([x,y])=>`<span class="pip" style="left:${x}%;top:${y}%"></span>`).join('');
+  if(rolls>0&&myTurn())d.addEventListener('click',()=>emit({k:'keep',i}));
+  el.appendChild(d);});}
+function updateRollBtn(){document.getElementById('roll').disabled=rolls>=3||over||!myTurn();
+  document.getElementById('left').textContent=over?'—':(3-rolls)+' rolls left';}
+function _toggleKeep(i){if(rolls===0||over)return;keep[i]=!keep[i];renderDice();}
+function _roll(){if(rolls>=3||over)return;rolls++;
+  for(let i=0;i<5;i++)if(!keep[i])dice[i]=1+Math.floor(Math.random()*6);
+  const el=document.getElementById('dice');renderDice();
+  el.querySelectorAll('.die').forEach((d,i)=>{if(!keep[i])d.classList.add('roll');});
+  updateRollBtn();renderSheet();}
+function roll(){emit({k:'roll'});}
+function upperSum(p){const sc=p!==undefined?allScores[p]:scores();return CATS.filter(c=>c.up&&sc[c.id]!==undefined).reduce((s,c)=>s+sc[c.id],0);}
+function bonus(p){return upperSum(p)>=63?35:0;}
+function grandTotal(p){const sc=p!==undefined?allScores[p]:scores();return CATS.reduce((s,c)=>s+(sc[c.id]||0),0)+bonus(p);}
+function renderSheet(){const sh=document.getElementById('sheet');sh.innerHTML='';
+  const head=(t)=>{const r=document.createElement('div');r.className='srow head';r.innerHTML=`<span class="nm">${t}</span><span class="pt"></span>`;sh.appendChild(r);};
+  head('Upper Section (63+ for +35 bonus)');
+  for(const c of CATS.filter(c=>c.up))catRow(sh,c);
+  const br=document.createElement('div');br.className='srow';
+  br.innerHTML=`<span class="nm bonus">Upper Bonus (${upperSum()}/63)</span><span class="pt">${bonus()}</span>`;sh.appendChild(br);
+  head('Lower Section');
+  for(const c of CATS.filter(c=>!c.up))catRow(sh,c);
+  const tr=document.createElement('div');tr.className='srow total';
+  tr.innerHTML=`<span class="nm">Total</span><span class="pt">${grandTotal()}</span>`;sh.appendChild(tr);}
+function catRow(sh,c){const r=document.createElement('div');
+  const used=scores()[c.id]!==undefined;
+  const preview=(!used&&rolls>0)?c.fn(dice):null;
+  const canRec=!used&&rolls>0&&myTurn();
+  r.className='srow'+(used?' used':(canRec?' open':''));
+  r.innerHTML=`<span class="nm">${c.name}</span><span class="pt">${used?scores()[c.id]:(preview!==null?preview:'')}</span>`;
+  if(canRec)r.addEventListener('click',()=>emit({k:'record',id:c.id}));
+  sh.appendChild(r);}
+/* ==================== CPU AI ==================== */
+function scheduleCpuTurn(){
+  if(ONLINE||over||!isCpuSeat(curPlayer))return;
+  cpuBusy=true;
+  setTimeout(()=>runCpuTurn(),600);
+}
+function runCpuTurn(){
+  if(over||!isCpuSeat(curPlayer)){cpuBusy=false;return;}
+  const lvl=seatCpu[curPlayer];
+  _roll();renderDice();renderSheet();updateRollBtn();
+  const doRoll2=()=>{
+    cpuKeep(lvl);renderDice();
+    setTimeout(()=>{
+      _roll();renderDice();renderSheet();updateRollBtn();
+      const doRoll3=()=>{
+        cpuKeep(lvl);renderDice();
+        setTimeout(()=>{
+          _roll();renderDice();renderSheet();updateRollBtn();
+          setTimeout(()=>{cpuRecord(lvl);cpuBusy=false;},500);
+        },500);
+      };
+      if(cpuShouldReroll(lvl)){doRoll3();}
+      else{setTimeout(()=>{cpuRecord(lvl);cpuBusy=false;},500);}
+    },500);
+  };
+  setTimeout(()=>{
+    if(cpuShouldReroll(lvl)){doRoll2();}
+    else{setTimeout(()=>{cpuRecord(lvl);cpuBusy=false;},500);}
+  },500);
+}
+function cpuShouldReroll(lvl){
+  if(rolls>=3)return false;
+  if(lvl===1)return Math.random()<0.7;
+  const open=CATS.filter(c=>scores()[c.id]===undefined);
+  const best=Math.max(...open.map(c=>c.fn(dice)));
+  if(lvl===2)return best<20;
+  if(best>=40)return false;
+  return true;
+}
+function cpuKeep(lvl){
+  keep=[false,false,false,false,false];
+  if(lvl===1){
+    for(let i=0;i<5;i++)keep[i]=Math.random()<0.35;
+    return;
+  }
+  if(lvl===2){
+    const ct=counts(dice);
+    let bestVal=0,bestCnt=0;
+    for(const[v,c]of Object.entries(ct)){if(c>bestCnt||(c===bestCnt&&+v>bestVal)){bestCnt=c;bestVal=+v;}}
+    if(bestCnt>=2){for(let i=0;i<5;i++)keep[i]=dice[i]===bestVal;}
+    else{for(let i=0;i<5;i++)keep[i]=dice[i]>=5;}
+    return;
+  }
+  cpuKeepStrong();
+}
+function cpuKeepStrong(){
+  const sc=scores();
+  const open=CATS.filter(c=>sc[c.id]===undefined);
+  let bestKeep=[false,false,false,false,false],bestEV=-1;
+  for(let mask=0;mask<32;mask++){
+    const k=[!!(mask&1),!!(mask&2),!!(mask&4),!!(mask&8),!!(mask&16)];
+    const ev=estimateEV(k,open);
+    if(ev>bestEV){bestEV=ev;bestKeep=k;}
+  }
+  for(let i=0;i<5;i++)keep[i]=bestKeep[i];
+}
+function estimateEV(keepMask,openCats){
+  const fixed=[];
+  for(let i=0;i<5;i++)if(keepMask[i])fixed.push({idx:i,val:dice[i]});
+  const freeCount=5-fixed.length;
+  if(freeCount===0){return Math.max(...openCats.map(c=>c.fn(dice)));}
+  const N=200;
+  let total=0;
+  for(let s=0;s<N;s++){
+    const d=[...dice];
+    for(let i=0;i<5;i++)if(!keepMask[i])d[i]=1+Math.floor(Math.random()*6);
+    const best=Math.max(...openCats.map(c=>c.fn(d)));
+    total+=best;
+  }
+  return total/N;
+}
+function cpuRecord(lvl){
+  const sc=scores();
+  const open=CATS.filter(c=>sc[c.id]===undefined);
+  if(open.length===0)return;
+  if(lvl===1){
+    const pick=open[Math.floor(Math.random()*open.length)];
+    _record(pick.id);return;
+  }
+  if(lvl===2){
+    let best=null,bestScore=-1;
+    for(const c of open){
+      let s=c.fn(dice);
+      if(c.up){const need=63-upperSum();if(need>0)s+=Math.min(s*0.3,5);}
+      if(s>bestScore){bestScore=s;best=c;}
+    }
+    if(bestScore===0){
+      const sacrifice=open.find(c=>c.id==='ones')||open.find(c=>c.id==='twos')||open[0];
+      _record(sacrifice.id);return;
+    }
+    _record(best.id);return;
+  }
+  cpuRecordStrong(open);
+}
+function cpuRecordStrong(open){
+  let best=null,bestVal=-999;
+  const uSum=upperSum();
+  for(const c of open){
+    let v=c.fn(dice);
+    if(c.up){
+      const afterU=uSum+v;
+      const remaining=open.filter(x=>x.up&&x.id!==c.id);
+      const remPotential=remaining.reduce((s,x)=>{const n=parseInt({ones:1,twos:2,threes:3,fours:4,fives:5,sixes:6}[x.id]||0);return s+n*3/6*5;},0);
+      if(afterU+remPotential>=63&&uSum+remPotential<63)v+=35*0.5;
+      if(afterU>=63&&uSum<63)v+=35;
+    }
+    if(v===0&&c.fn){
+      v=-5;
+      if(c.id==='yacht')v=-8;
+      if(c.id==='lstr')v=-6;
+    }
+    if(v>bestVal){bestVal=v;best=c;}
+  }
+  _record(best.id);
+}
+
+function hasCpu(){return !ONLINE&&np>=2&&seatCpu.slice(0,np).some(v=>v>0);}
+function renderAiEval(){
+  const el=document.getElementById('ai-eval');
+  if(!hasCpu()){el.style.display='none';return;}
+  el.style.display='block';
+  const totals=allScores.map((_,p)=>grandTotal(p));
+  const mx=Math.max(300,...totals);
+  let h='<div class="ae-title">AI Assessment</div>';
+  for(let i=0;i<np;i++){
+    const t=totals[i];const pct=Math.round(t/mx*100);
+    const col=PCOL[i];
+    const lbl=isCpuSeat(i)?CPU_NAMES[seatCpu[i]]:'You';
+    h+=`<div class="ae-row"><span class="ae-lbl" style="color:${col}">P${i+1}</span><div class="ae-bar-bg"><div class="ae-bar" style="width:${pct}%;background:${col}"></div></div><span class="ae-val">${t}</span></div>`;
+  }
+  el.innerHTML=h;
+}
+function _record(id){const c=CATS.find(x=>x.id===id);if(!c||scores()[c.id]!==undefined||rolls===0||over)return;
+  scores()[c.id]=c.fn(dice);
+  keep=[false,false,false,false,false];rolls=0;
+  if(np>1){
+    curPlayer=(curPlayer+1)%np;
+    if(curPlayer===0)turn++;
+    if(turn>=13){finish();return;}
+  } else {
+    turn++;
+    if(turn>=13){finish();return;}
+  }
+  updateCurP();renderDice();renderSheet();updateRollBtn();renderAiEval();
+  if(ONLINE)autoKick();
+  else scheduleCpuTurn();}
+function finish(){over=true;updateRollBtn();
+  if(np===1){document.getElementById('ov-s').textContent='Total: '+grandTotal()+' pts'+(grandTotal()>=200?' (High score!)':'');}
+  else{const totals=allScores.map((_,p)=>grandTotal(p));const max=Math.max(...totals);const winners=totals.map((v,i)=>v===max?i+1:null).filter(x=>x);
+    const pName=i=>'P'+i+(isCpuSeat(i-1)?'('+CPU_NAMES[seatCpu[i-1]]+')':'');
+    const r=winners.length>1?'Tie ('+winners.map(pName).join(', ')+')':pName(winners[0])+' wins!';
+    const det=totals.map((v,i)=>pName(i+1)+': '+v+' pts').join(' / ');document.getElementById('ov-s').innerHTML=r+'<br><span style="font-size:13px">'+det+'</span>';}
+  document.getElementById('over').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
+document.getElementById('roll').addEventListener('click',roll);
+document.getElementById('again').addEventListener('click',()=>{if(ONLINE)return;init();});
+document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>{x.classList.remove('on');x.style.borderColor='#3a3326';x.style.color='var(--sub)';});b.classList.add('on');b.style.borderColor='var(--gold)';b.style.color='var(--gold)';
+  if(np>=2)for(let i=1;i<4;i++)if(seatCpu[i]===0)seatCpu[i]=2;
+  renderSeatCfg();init();});
+init();
+function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
+  document.getElementById('np').style.display='none';
+  document.getElementById('cpu-cfg').style.display='none';
+  document.getElementById('again').style.display='none';
+  init();}
+function getState(){return {dice,keep,rolls,allScores,turn,curPlayer,over};}
+function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;
+  document.getElementById('np').style.display='none';
+  document.getElementById('cpu-cfg').style.display='none';
+  document.getElementById('again').style.display='none';
+  const s=o.state;dice=s.dice;keep=s.keep;rolls=s.rolls;allScores=s.allScores;turn=s.turn;curPlayer=s.curPlayer;over=s.over;
+  document.getElementById('curp').style.display=np>1?'block':'none';
+  updateCurP();renderDice();renderSheet();updateRollBtn();
+  if(over)finish();}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-room.js?v=8"></script>
+<script>
+OnlineRoom.init({gameId:'yacht',minPlayers:2,maxPlayers:4,note:'All players compete for the highest score.',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>doAction(msg),
+  onLeft:(seat)=>autoKick(),
+  getState,applyState});
+</script>
+<script src="../../shared/firebase-counter.js"></script></body>
+</html>

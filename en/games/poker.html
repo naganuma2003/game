@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Texas Hold'em | Free Browser Game</title>
+<meta name="description" content="Play Texas Hold'em poker for free in your browser. Betting, bluffing, and hand evaluation included. Play against CPU opponents.">
+<meta name="keywords" content="Texas Hold'em,poker,free,browser game,card game">
+<meta property="og:title" content="Texas Hold'em | Free Browser Game">
+<meta property="og:description" content="Play Texas Hold'em poker for free in your browser. Betting, bluffing, and hand evaluation included.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/poker.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/poker.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/poker.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/poker.html">
+<style>
+:root{--bg:#0a1a0a;--surf:#111e11;--gold:#c9a030;--gold2:#f0d060;--txt:#e8f0e8;--dim:#557755;
+  --red:#e05050;--grn:#4ec05e;--blue:#3e87d6;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Helvetica Neue',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:48px 10px 40px}
+.back{position:fixed;top:12px;left:12px;z-index:999;background:rgba(0,0,0,.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.25)}
+
+#setup{width:100%;max-width:360px;background:var(--surf);border-radius:16px;padding:24px 20px;margin-top:12px}
+#setup h1{font-size:22px;text-align:center;color:var(--gold);margin-bottom:4px}
+.subtitle{font-size:11px;color:var(--dim);text-align:center;margin-bottom:18px}
+.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.form-row label{font-size:11px;color:var(--gold2)}
+.form-row select{background:#0d170d;border:1px solid #2a3a2a;color:var(--txt);padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit}
+.start-btn{width:100%;padding:11px;background:var(--gold);color:#111;border:none;border-radius:10px;font:700 15px 'Segoe UI',sans-serif;cursor:pointer;margin-top:6px}
+.start-btn:hover{background:var(--gold2)}
+.rules-box{margin-top:14px;padding:11px;background:rgba(255,255,255,.04);border-radius:8px;font-size:11px;color:var(--dim);line-height:1.7}
+.rules-box b{color:var(--txt)}
+
+#table{display:none;width:100%;max-width:660px;flex-direction:column;gap:10px}
+
+.opp-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.opp{background:var(--surf);border:1px solid #1e2e1e;border-radius:12px;padding:10px 12px;min-width:130px;text-align:center}
+.opp.dealer::after{content:'D';display:inline-block;background:#c9a030;color:#111;font:700 9px/1 sans-serif;padding:2px 5px;border-radius:4px;margin-left:5px;vertical-align:middle}
+.opp.active{border-color:var(--grn)}
+.opp.folded{opacity:.4}
+.opp-name{font-size:12px;color:var(--dim);margin-bottom:4px}
+.opp-chips{font-size:13px;font-weight:700;color:var(--gold)}
+.opp-bet{font-size:11px;color:var(--blue);min-height:14px}
+.opp-cards{display:flex;gap:3px;justify-content:center;margin-top:6px;min-height:56px;align-items:center}
+.chip-segs{display:flex;gap:2px;justify-content:center;margin:3px 0 1px}
+.chip-seg{width:12px;height:6px;border-radius:2px}
+
+.community-area{background:var(--surf);border-radius:14px;padding:14px;text-align:center}
+.pot-label{font-size:12px;color:var(--dim);margin-bottom:6px}
+.pot-amount{font-size:20px;font-weight:700;color:var(--gold);margin-bottom:10px}
+.community-cards{display:flex;gap:6px;justify-content:center;min-height:76px;align-items:center}
+#phase-label{font-size:12px;color:var(--dim);margin-top:8px}
+
+.player-area{background:var(--surf);border-radius:14px;padding:14px}
+.player-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px}
+.player-info{display:flex;flex-direction:column;gap:2px}
+.player-name{font-size:13px;font-weight:700;color:var(--grn)}
+.player-chips{font-size:13px;color:var(--gold)}
+.player-bet-info{font-size:12px;color:var(--blue)}
+.player-cards{display:flex;gap:8px;margin-bottom:12px}
+#hand-rank{font-size:12px;color:var(--gold2);min-height:16px;text-align:center;margin-bottom:8px}
+#status{font-size:13px;text-align:center;color:var(--dim);margin-bottom:8px;min-height:18px}
+
+.action-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.act-btn{padding:9px 18px;border:none;border-radius:10px;font:700 13px 'Segoe UI',sans-serif;cursor:pointer;transition:opacity .15s}
+.act-btn:hover{opacity:.85}
+.act-btn:disabled{opacity:.3;cursor:default}
+#btn-fold{background:#4a1a1a;color:#e88;}
+#btn-check{background:#1a2a1a;color:#8e8;}
+#btn-call{background:#1a2a3a;color:#8ae;}
+#btn-raise{background:var(--gold);color:#111;}
+#btn-allin{background:#6a1a6a;color:#e8e;}
+.raise-row{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:6px}
+.raise-row input{width:90px;padding:6px 8px;background:#0d170d;border:1px solid #2a3a2a;color:var(--txt);border-radius:8px;font-size:13px;text-align:center}
+.raise-row label{font-size:12px;color:var(--dim)}
+
+.card{width:46px;height:68px;border-radius:7px;background:#f5f0e8;border:1px solid #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.4);flex-shrink:0}
+.card.back{background:linear-gradient(135deg,#1d4ed8,#1e3a8a);border:2px solid #60a5fa}
+.card.sm{width:36px;height:52px;font-size:12px}
+.card.placeholder{background:rgba(255,255,255,.04);border:1px dashed #2a3a2a;box-shadow:none}
+.suit-r{color:#cc2222}
+.suit-b{color:#1a1a1a}
+
+#win-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;align-items:center;justify-content:center}
+#win-overlay.show{display:flex}
+#win-box{background:var(--surf);border-radius:16px;padding:28px 32px;text-align:center;max-width:360px;width:90%}
+#win-box h2{font-size:22px;color:var(--gold);margin-bottom:8px}
+#win-box .win-desc{font-size:14px;color:var(--dim);margin-bottom:16px;line-height:1.6}
+#win-box .win-btns{display:flex;gap:10px;justify-content:center}
+#win-box .win-btns button{padding:9px 20px;border:none;border-radius:10px;font:700 13px 'Segoe UI',sans-serif;cursor:pointer}
+.btn-next{background:var(--gold);color:#111}
+.btn-quit{background:#333;color:var(--txt)}
+
+.eval-bar-wrap{background:var(--surf);border-radius:10px;padding:10px 14px;display:none}
+.eval-bar-wrap.visible{display:block}
+.eval-bar-header{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:5px}
+.eval-bar-track{width:100%;height:14px;background:#1a2a1a;border-radius:7px;overflow:hidden;position:relative}
+.eval-bar-fill{height:100%;border-radius:7px;transition:width .5s ease;background:linear-gradient(90deg,var(--grn),var(--gold))}
+.eval-bar-marker{position:absolute;top:0;height:100%;width:2px;background:var(--txt);left:50%;opacity:.3}
+.eval-bar-val{text-align:center;font-size:11px;color:var(--dim);margin-top:4px}
+
+@media (max-width:480px){
+  .opp{min-width:90px;padding:7px 8px}
+  .card{width:38px;height:54px;font-size:13px}
+  .card.sm{width:28px;height:40px;font-size:10px}
+}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Texas Hold'em","description":"Play Texas Hold'em poker for free in your browser.","url":"https://naganuma2003.github.io/game/en/games/poker.html","genre":["Card Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":"MultiPlayer","numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":4},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+</head>
+<body>
+<a href="../index.html" class="back">&larr; Back to List</a>
+
+<div id="setup">
+  <h1>Texas Hold'em</h1>
+  <p class="subtitle">The World's Most Popular Poker</p>
+  <div class="form-row">
+    <label>Number of Players (You + CPU)</label>
+    <select id="sel-p">
+      <option value="2">2 (CPU x1)</option>
+      <option value="3">3 (CPU x2)</option>
+      <option value="4" selected>4 (CPU x3)</option>
+      <option value="5">5 (CPU x4)</option>
+      <option value="6">6 (CPU x5)</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label>CPU Difficulty</label>
+    <select id="sel-d">
+      <option value="easy">Easy</option>
+      <option value="normal" selected>Normal</option>
+      <option value="hard">Hard</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label>Starting Chips</label>
+    <select id="sel-c">
+      <option value="500">500</option>
+      <option value="1000" selected>1000</option>
+      <option value="2000">2000</option>
+    </select>
+  </div>
+  <button class="start-btn" onclick="startGame()">Start Game</button>
+  <div class="rules-box">
+    <b>Rules:</b> Each player receives 2 hole cards. Combine with 5 community cards (Flop 3, Turn 1, River 1) to make the best 5-card hand.<br>
+    Blinds &rarr; Pre-flop &rarr; Flop &rarr; Turn &rarr; River &rarr; Showdown
+  </div>
+</div>
+
+<div id="table">
+  <div class="opp-row" id="opp-row"></div>
+  <div class="community-area">
+    <div class="pot-label">Pot</div>
+    <div class="pot-amount" id="pot">0</div>
+    <div class="community-cards" id="community"></div>
+    <div id="phase-label">-</div>
+  </div>
+  <div class="eval-bar-wrap" id="eval-bar">
+    <div class="eval-bar-header"><span id="eval-lbl-l">You</span><span id="eval-lbl-r">CPU</span></div>
+    <div class="eval-bar-track"><div class="eval-bar-marker"></div><div class="eval-bar-fill" id="eval-fill" style="width:50%"></div></div>
+    <div class="eval-bar-val" id="eval-val">Even</div>
+  </div>
+  <div class="player-area">
+    <div class="player-top">
+      <div class="player-info">
+        <div class="player-name" id="p-name">You</div>
+        <div class="player-chips" id="p-chips"></div>
+        <div class="player-bet-info" id="p-bet-info"></div>
+      </div>
+    </div>
+    <div class="player-cards" id="p-cards"></div>
+    <div id="hand-rank"></div>
+    <div id="status"></div>
+    <div class="action-row">
+      <button class="act-btn" id="btn-fold" onclick="act('fold')">Fold</button>
+      <button class="act-btn" id="btn-check" onclick="act('check')">Check</button>
+      <button class="act-btn" id="btn-call" onclick="act('call')">Call</button>
+      <button class="act-btn" id="btn-raise" onclick="act('raise')">Raise</button>
+      <button class="act-btn" id="btn-allin" onclick="act('allin')">All In</button>
+    </div>
+    <div class="raise-row">
+      <label>Raise amount:</label>
+      <input type="number" id="raise-amt" value="20" min="1">
+    </div>
+  </div>
+</div>
+
+<div id="win-overlay">
+  <div id="win-box">
+    <h2 id="win-title"></h2>
+    <div class="win-desc" id="win-desc"></div>
+    <div class="win-btns">
+      <button class="btn-next" onclick="nextHand()">Next Hand</button>
+      <button class="btn-quit" onclick="location.reload()">Quit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUITS=['♠','♥','♦','♣'];
+const RANKS=['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const SUIT_CLASS=['suit-b','suit-r','suit-r','suit-b'];
+
+function makeDeck(){
+  const d=[];
+  for(let s=0;s<4;s++) for(let r=0;r<13;r++) d.push({s,r,val:r+2});
+  return d;
+}
+function shuffle(d){for(let i=d.length-1;i>0;i--){const j=Math.random()*i|0;[d[i],d[j]]=[d[j],d[i]];}}
+
+function cardHTML(card,small=false){
+  if(!card) return `<div class="card${small?' sm':''} placeholder"></div>`;
+  if(card==='back') return `<div class="card${small?' sm':''}" style="background:#1e40af;border:2px solid #60a5fa;display:flex;align-items:center;justify-content:center;color:#93c5fd;font-size:${small?'18':'26'}px;font-weight:900;border-radius:7px;flex-shrink:0">★</div>`;
+  const sc=SUIT_CLASS[card.s];
+  return `<div class="card${small?' sm':''}"><span class="${sc}">${RANKS[card.r]}${SUITS[card.s]}</span></div>`;
+}
+
+function rankHand(cards){
+  const c=[...cards].sort((a,b)=>b.val-a.val);
+  const vals=c.map(x=>x.val);
+  const suits=c.map(x=>x.s);
+  const vCnt={};vals.forEach(v=>vCnt[v]=(vCnt[v]||0)+1);
+  const cnts=Object.values(vCnt).sort((a,b)=>b-a);
+  const flush=suits.every(s=>s===suits[0]);
+  const straight=checkStraight(vals);
+  if(flush&&straight) return{rank:8,name:'Straight Flush',key:[8,...vals]};
+  if(cnts[0]===4) return{rank:7,name:'Four of a Kind',key:[7,...sortByCnt(vCnt,vals)]};
+  if(cnts[0]===3&&cnts[1]===2) return{rank:6,name:'Full House',key:[6,...sortByCnt(vCnt,vals)]};
+  if(flush) return{rank:5,name:'Flush',key:[5,...vals]};
+  if(straight) return{rank:4,name:'Straight',key:[4,...vals]};
+  if(cnts[0]===3) return{rank:3,name:'Three of a Kind',key:[3,...sortByCnt(vCnt,vals)]};
+  if(cnts[0]===2&&cnts[1]===2) return{rank:2,name:'Two Pair',key:[2,...sortByCnt(vCnt,vals)]};
+  if(cnts[0]===2) return{rank:1,name:'One Pair',key:[1,...sortByCnt(vCnt,vals)]};
+  return{rank:0,name:'High Card',key:[0,...vals]};
+}
+
+function checkStraight(vals){
+  const u=[...new Set(vals)].sort((a,b)=>b-a);
+  if(u.length<5)return false;
+  for(let i=0;i<u.length-4;i++) if(u[i]-u[i+4]===4) return true;
+  if(u[0]===14&&u.slice(-4).join()===([5,4,3,2].join())) return true;
+  return false;
+}
+
+function sortByCnt(vCnt,vals){
+  return vals.slice().sort((a,b)=>{
+    const dc=vCnt[b]-vCnt[a];
+    return dc!==0?dc:b-a;
+  });
+}
+
+function bestHand(hole,community){
+  const all=[...hole,...community];
+  if(all.length<5) return rankHand(all);
+  let best=null;
+  for(let i=0;i<all.length-4;i++) for(let j=i+1;j<all.length-3;j++) for(let k=j+1;k<all.length-2;k++) for(let l=k+1;l<all.length-1;l++) for(let m=l+1;m<all.length;m++){
+    const h=rankHand([all[i],all[j],all[k],all[l],all[m]]);
+    if(!best||compareKey(h.key,best.key)>0) best=h;
+  }
+  return best||rankHand(all);
+}
+
+function compareKey(a,b){
+  for(let i=0;i<Math.max(a.length,b.length);i++){
+    const d=(a[i]||0)-(b[i]||0);
+    if(d) return d;
+  }
+  return 0;
+}
+
+const PHASES=['preflop','flop','turn','river','showdown'];
+const PHASE_NAMES={preflop:'Pre-flop',flop:'Flop',turn:'Turn',river:'River',showdown:'Showdown'};
+let G={};
+let ONLINE=false,MYSEAT=0,roomSend=null;
+
+function startGame(){
+  const numP=+document.getElementById('sel-p').value;
+  const diff=document.getElementById('sel-d').value;
+  const startChips=+document.getElementById('sel-c').value;
+  const bb=Math.max(10,startChips/50|0)*2;
+  G={
+    numP,diff,startChips,
+    chips:Array(numP).fill(startChips),
+    names:['You',...Array.from({length:numP-1},(_,i)=>`CPU${i+1}`)],
+    dealer:0,
+    bb,sb:bb/2,
+    hand:0,
+  };
+  document.getElementById('setup').style.display='none';
+  document.getElementById('table').style.display='flex';
+  dealHand();
+}
+
+function dealHand(){
+  G.hand++;
+  const n=G.numP;
+  const alive=G.chips.map((c,i)=>c>0?i:-1).filter(i=>i>=0);
+  if(alive.length<2){
+    const winner=alive[0]??0;
+    showWinScreen(winner,`Game Over! ${G.names[winner]} wins!`,`Chips: ${G.chips[winner]}`);
+    return;
+  }
+  do{ G.dealer=(G.dealer+1)%n; }while(G.chips[G.dealer]<=0);
+
+  const deck=makeDeck();shuffle(deck);
+  G.deck=deck;
+  G.community=[];
+  G.hole=Array.from({length:n},()=>[]);
+  G.folded=Array(n).fill(false);
+  G.bets=Array(n).fill(0);
+  G.pot=0;
+  G.phase='preflop';
+  G.actionDone=Array(n).fill(false);
+  G.lastRaise=G.bb;
+
+  for(let i=0;i<2;i++) for(let p=0;p<n;p++){
+    if(G.chips[p]>0) G.hole[p].push(deck.pop());
+  }
+
+  const alv=alive;
+  const sbIdx=alv[(alv.indexOf(G.dealer)+1)%alv.length];
+  const bbIdx=alv[(alv.indexOf(G.dealer)+2)%alv.length];
+  postBlind(sbIdx,G.sb);
+  postBlind(bbIdx,G.bb);
+  G.currentBet=G.bb;
+  G.lastRaise=G.bb;
+  G.actionDone[bbIdx]=false;
+
+  G.cur=alv[(alv.indexOf(bbIdx)+1)%alv.length];
+  G.sbIdx=sbIdx;G.bbIdx=bbIdx;
+
+  renderAll();
+  setTimeout(()=>nextAction(),300);
+}
+
+function dealFromDeck(deck){
+  G.hand++;
+  const n=G.numP;
+  const alive=G.chips.map((c,i)=>c>0?i:-1).filter(i=>i>=0);
+  if(alive.length<2){
+    const winner=alive[0]??0;
+    showWinScreen(winner,`Game Over! ${G.names[winner]} wins!`,`Chips: ${G.chips[winner]}`);
+    return;
+  }
+  do{ G.dealer=(G.dealer+1)%n; }while(G.chips[G.dealer]<=0);
+  G.deck=[...deck];
+  G.community=[];
+  G.hole=Array.from({length:n},()=>[]);
+  G.folded=Array(n).fill(false);
+  G.bets=Array(n).fill(0);
+  G.pot=0;
+  G.phase='preflop';
+  G.actionDone=Array(n).fill(false);
+  G.lastRaise=G.bb;
+  for(let i=0;i<2;i++) for(let p=0;p<n;p++){
+    if(G.chips[p]>0) G.hole[p].push(G.deck.pop());
+  }
+  const alv=alive;
+  const sbIdx=alv[(alv.indexOf(G.dealer)+1)%alv.length];
+  const bbIdx=alv[(alv.indexOf(G.dealer)+2)%alv.length];
+  postBlind(sbIdx,G.sb);
+  postBlind(bbIdx,G.bb);
+  G.currentBet=G.bb;G.lastRaise=G.bb;
+  G.actionDone[bbIdx]=false;
+  G.cur=alv[(alv.indexOf(bbIdx)+1)%alv.length];
+  G.sbIdx=sbIdx;G.bbIdx=bbIdx;
+  document.getElementById('win-overlay').classList.remove('show');
+  renderAll();
+  setTimeout(()=>nextAction(),300);
+}
+
+function sendDeck(){
+  const deck=makeDeck();shuffle(deck);
+  roomSend({t:'deck',deck});
+}
+
+function postBlind(pi,amount){
+  const actual=Math.min(amount,G.chips[pi]);
+  G.chips[pi]-=actual;
+  G.bets[pi]+=actual;
+  G.pot+=actual;
+}
+
+function activePlayers(){return G.chips.map((c,i)=>i).filter(i=>!G.folded[i]&&G.chips[i]>=0);}
+
+function nextAction(){
+  const alive=activePlayers();
+  if(alive.length===1){
+    const winner=alive[0];
+    awardPot([winner]);
+    return;
+  }
+  const maxBet=Math.max(...G.bets);
+  const pending=alive.filter(i=>!G.actionDone[i]||(G.bets[i]<maxBet&&G.chips[i]>0));
+  if(pending.length===0){
+    advancePhase();
+    return;
+  }
+  let cur=G.cur;
+  let tries=0;
+  while((G.folded[cur]||G.actionDone[cur]&&G.bets[cur]>=maxBet||G.chips[cur]===0&&G.bets[cur]>=maxBet)&&tries<G.numP){
+    cur=(cur+1)%G.numP;tries++;
+  }
+  G.cur=cur;
+
+  const myTurn=ONLINE?(G.cur===MYSEAT):(G.cur===0);
+  if(myTurn){
+    renderAll();renderActions();
+  } else if(!ONLINE){
+    renderAll();setTimeout(()=>cpuAct(G.cur),700);
+  } else if(OnlineRoom.isHost()&&OnlineRoom.isAuto(G.cur)){
+    renderAll();
+    document.getElementById('status').textContent=G.names[G.cur]+' is thinking...';
+    setTimeout(()=>cpuActOnline(G.cur),700);
+  } else {
+    renderAll();
+    document.getElementById('status').textContent=G.names[G.cur]+"'s turn...";
+    hideActions();
+  }
+}
+
+function act(type){
+  if(ONLINE){
+    const amt=type==='raise'?parseInt(document.getElementById('raise-amt').value)||G.bb:0;
+    roomSend({t:'act',pi:MYSEAT,action:type,amount:amt});
+    hideActions();return;
+  }
+  const pi=0;
+  const maxBet=Math.max(...G.bets);
+  const toCall=maxBet-G.bets[pi];
+
+  if(type==='fold'){G.folded[pi]=true;G.actionDone[pi]=true;}
+  else if(type==='check'){if(toCall>0)return;G.actionDone[pi]=true;}
+  else if(type==='call'){
+    const c=Math.min(toCall,G.chips[pi]);
+    G.chips[pi]-=c;G.bets[pi]+=c;G.pot+=c;
+    G.actionDone[pi]=true;
+  }
+  else if(type==='raise'){
+    const amt=parseInt(document.getElementById('raise-amt').value)||G.bb;
+    const total=maxBet+Math.max(amt,G.lastRaise);
+    const pay=Math.min(total-G.bets[pi],G.chips[pi]);
+    if(pay<=0)return;
+    G.chips[pi]-=pay;G.bets[pi]+=pay;G.pot+=pay;
+    G.lastRaise=Math.max(amt,G.lastRaise);
+    G.currentBet=G.bets[pi];
+    G.actionDone=G.actionDone.map((_,i)=>i===pi);
+    G.actionDone[pi]=true;
+  }
+  else if(type==='allin'){
+    const pay=G.chips[pi];
+    G.chips[pi]=0;G.bets[pi]+=pay;G.pot+=pay;
+    if(G.bets[pi]>maxBet){G.lastRaise=G.bets[pi]-maxBet;G.actionDone=G.actionDone.map((_,i)=>i===pi);}
+    G.actionDone[pi]=true;
+  }
+
+  G.cur=(G.cur+1)%G.numP;
+  hideActions();
+  renderAll();
+  setTimeout(nextAction,400);
+}
+
+function cpuAct(pi){
+  const maxBet=Math.max(...G.bets);
+  const toCall=maxBet-G.bets[pi];
+  const myChips=G.chips[pi];
+  const hand=bestHand(G.hole[pi],G.community);
+  const strength=hand.rank;
+
+  let action;
+  const r=Math.random();
+  if(G.diff==='easy'){
+    if(toCall===0) action=r<0.7?'check':'fold';
+    else if(r<0.5) action='call';
+    else if(r<0.7) action='fold';
+    else action='raise';
+  } else if(G.diff==='normal'){
+    const str=strength/8;
+    if(toCall===0){
+      action=r<str*0.6?'raise':r<0.9?'check':'fold';
+    } else {
+      const odds=toCall/(G.pot+toCall);
+      if(str>odds+0.1&&r<0.8) action=r<str*0.4?'raise':'call';
+      else action='fold';
+    }
+  } else {
+    const str=strength/8;
+    const bluff=r<0.15;
+    const effective=bluff?1:str;
+    if(toCall===0){
+      action=effective>0.4?'raise':'check';
+    } else {
+      const odds=toCall/(G.pot+toCall);
+      if(effective>odds+0.05) action=r<effective*0.5?'raise':'call';
+      else action='fold';
+    }
+  }
+
+  if(action==='fold'){G.folded[pi]=true;G.actionDone[pi]=true;}
+  else if(action==='check'){G.actionDone[pi]=true;}
+  else if(action==='call'){
+    const c=Math.min(toCall,myChips);
+    G.chips[pi]-=c;G.bets[pi]+=c;G.pot+=c;
+    G.actionDone[pi]=true;
+  }
+  else if(action==='raise'){
+    const raiseAmt=Math.max(G.lastRaise,G.bb)*((strength>=6?2:1)+Math.random()|0);
+    const total=maxBet+raiseAmt;
+    const pay=Math.min(total-G.bets[pi],myChips);
+    if(pay>0){
+      G.chips[pi]-=pay;G.bets[pi]+=pay;G.pot+=pay;
+      G.lastRaise=raiseAmt;G.currentBet=G.bets[pi];
+      G.actionDone=G.actionDone.map((_,i)=>i===pi);
+    }
+    G.actionDone[pi]=true;
+  }
+
+  G.cur=(G.cur+1)%G.numP;
+  renderAll();
+  setTimeout(nextAction,400);
+}
+
+function cpuActOnline(pi){
+  const maxBet=Math.max(...G.bets);
+  const toCall=maxBet-G.bets[pi];
+  const myChips=G.chips[pi];
+  const hand=bestHand(G.hole[pi],G.community);
+  const strength=hand.rank;
+  let action;
+  const r=Math.random();
+  const str=strength/8;
+  const bluff=r<0.15;
+  const effective=bluff?1:str;
+  if(toCall===0){action=effective>0.4?'raise':'check';}
+  else{const odds=toCall/(G.pot+toCall);action=(effective>odds+0.05)?(r<effective*0.5?'raise':'call'):'fold';}
+  const raiseAmt=action==='raise'?Math.max(G.lastRaise,G.bb)*2:0;
+  roomSend({t:'act',pi,action,amount:raiseAmt});
+}
+
+function applyActOnline(pi,action,amount){
+  const maxBet=Math.max(...G.bets);
+  const toCall=maxBet-G.bets[pi];
+  const myChips=G.chips[pi];
+  if(action==='fold'){G.folded[pi]=true;G.actionDone[pi]=true;}
+  else if(action==='check'){G.actionDone[pi]=true;}
+  else if(action==='call'){
+    const c=Math.min(toCall,myChips);
+    G.chips[pi]-=c;G.bets[pi]+=c;G.pot+=c;G.actionDone[pi]=true;
+  }
+  else if(action==='raise'){
+    const total=maxBet+Math.max(amount,G.lastRaise);
+    const pay=Math.min(total-G.bets[pi],myChips);
+    if(pay>0){G.chips[pi]-=pay;G.bets[pi]+=pay;G.pot+=pay;
+      G.lastRaise=Math.max(amount,G.lastRaise);G.currentBet=G.bets[pi];
+      G.actionDone=G.actionDone.map((_,i)=>i===pi);}
+    G.actionDone[pi]=true;
+  }
+  else if(action==='allin'){
+    const pay=myChips;
+    G.chips[pi]=0;G.bets[pi]+=pay;G.pot+=pay;
+    if(G.bets[pi]>maxBet){G.lastRaise=G.bets[pi]-maxBet;
+      G.actionDone=G.actionDone.map((_,i)=>i===pi);}
+    G.actionDone[pi]=true;
+  }
+  G.cur=(G.cur+1)%G.numP;
+  renderAll();
+  setTimeout(nextAction,400);
+}
+
+function advancePhase(){
+  const phases=['preflop','flop','turn','river','showdown'];
+  const idx=phases.indexOf(G.phase);
+  if(idx>=4){showdown();return;}
+  G.phase=phases[idx+1];
+  G.bets=Array(G.numP).fill(0);
+  G.currentBet=0;G.lastRaise=G.bb;
+  const alive=activePlayers();
+  G.actionDone=Array(G.numP).fill(false);
+  alive.forEach(i=>{if(G.chips[i]===0)G.actionDone[i]=true;});
+
+  if(G.phase==='flop'){G.community.push(G.deck.pop(),G.deck.pop(),G.deck.pop());}
+  else if(G.phase==='turn'||G.phase==='river'){G.community.push(G.deck.pop());}
+  else if(G.phase==='showdown'){showdown();return;}
+
+  const di=alive.findIndex(i=>i>=G.dealer)||0;
+  G.cur=alive[(di+1)%alive.length]??alive[0];
+
+  renderAll();
+  setTimeout(nextAction,500);
+}
+
+function showdown(){
+  G.phase='showdown';
+  const alive=activePlayers();
+  const hands=alive.map(i=>({pi:i,hand:bestHand(G.hole[i],G.community)}));
+  hands.sort((a,b)=>compareKey(b.hand.key,a.hand.key));
+  const best=hands[0].hand.key;
+  const winners=hands.filter(h=>compareKey(h.hand.key,best)===0).map(h=>h.pi);
+  awardPot(winners,hands);
+}
+
+function awardPot(winners,hands){
+  const share=Math.floor(G.pot/winners.length);
+  winners.forEach(w=>G.chips[w]+=share);
+  const rem=G.pot-share*winners.length;
+  if(rem>0)G.chips[winners[0]]+=rem;
+
+  renderAll(true);
+  const names=winners.map(w=>G.names[w]).join(', ');
+  const handName=hands?hands.find(h=>h.pi===winners[0])?.hand.name:'';
+  const desc=hands
+    ?[...activePlayers().map(i=>`${G.names[i]}: ${bestHand(G.hole[i],G.community).name}`)].join('\n')
+    :'All opponents folded';
+  showWinScreen(
+    winners[0],
+    winners.length===1?`${names} wins!`:`Split pot: ${names}`,
+    (handName?`Hand: ${handName}\n`:'')+desc
+  );
+  if(ONLINE&&OnlineRoom.isHost()){
+    setTimeout(()=>{
+      const alive=G.chips.map((c,i)=>c>0?i:-1).filter(i=>i>=0);
+      if(alive.length>=2) sendDeck();
+    },5000);
+  }
+}
+
+function showWinScreen(winner,title,desc){
+  document.getElementById('win-title').textContent=title;
+  document.getElementById('win-desc').textContent=desc;
+  document.getElementById('win-overlay').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
+}
+
+function nextHand(){
+  if(ONLINE)return;
+  document.getElementById('win-overlay').classList.remove('show');
+  const alive=G.chips.map((c,i)=>c>0?i:-1).filter(i=>i>=0);
+  if(alive.length<2){location.reload();return;}
+  dealHand();
+}
+
+function renderAll(showHoles=false){
+  renderOpp(showHoles);
+  renderCommunity();
+  renderPlayer();
+  document.getElementById('pot').textContent=G.pot;
+  document.getElementById('phase-label').textContent=PHASE_NAMES[G.phase]||'';
+  renderEvalBar();
+}
+
+function renderOpp(showAll=false){
+  const mySeat=ONLINE?MYSEAT:0;
+  const row=document.getElementById('opp-row');
+  row.innerHTML='';
+  for(let pi=0;pi<G.numP;pi++){
+    if(pi===mySeat)continue;
+    const el=document.createElement('div');
+    el.className='opp'+(pi===G.dealer?' dealer':'')+(pi===G.cur&&pi!==mySeat?' active':'')+(G.folded[pi]?' folded':'');
+    const cards=showAll||G.phase==='showdown'
+      ?G.hole[pi].map(c=>cardHTML(c,true)).join('')
+      :G.hole[pi].map(()=>cardHTML('back',true)).join('');
+    const handName=(showAll||G.phase==='showdown')&&!G.folded[pi]&&G.hole[pi].length?`<div style="font-size:10px;color:var(--gold2);margin-top:2px">${bestHand(G.hole[pi],G.community).name}</div>`:'';
+    const ref=G.startChips||1000;
+    const ratio=Math.min(G.chips[pi]/ref,1);
+    const segs=Math.round(ratio*5);
+    const segCol=ratio>0.5?'#4ec05e':ratio>0.2?'#f0e020':'#e05050';
+    const segsHTML='<div class="chip-segs">'+Array.from({length:5},(_,s)=>`<div class="chip-seg" style="background:${s<segs?segCol:'rgba(255,255,255,.1)'}"></div>`).join('')+'</div>';
+    el.innerHTML=`<div class="opp-name">${G.names[pi]}${G.chips[pi]===0?' (All In)':''}</div>
+      <div class="opp-chips">💰${G.chips[pi]}</div>
+      ${segsHTML}
+      <div class="opp-bet">${G.bets[pi]>0?'BET:'+G.bets[pi]:''}</div>
+      <div class="opp-cards">${cards}</div>${handName}`;
+    row.appendChild(el);
+  }
+}
+
+function renderCommunity(){
+  const el=document.getElementById('community');
+  el.innerHTML='';
+  for(let i=0;i<5;i++){
+    el.innerHTML+=cardHTML(G.community[i]||null);
+  }
+}
+
+function renderPlayer(){
+  const pi=ONLINE?MYSEAT:0;
+  document.getElementById('p-name').textContent=G.names[pi];
+  document.getElementById('p-chips').textContent=`💰 ${G.chips[pi]}`;
+  document.getElementById('p-bet-info').textContent=G.bets[pi]>0?`Bet: ${G.bets[pi]}`:'';
+  const cards=document.getElementById('p-cards');
+  cards.innerHTML=G.hole[pi].map(c=>cardHTML(c)).join('');
+  const hr=document.getElementById('hand-rank');
+  if(G.hole[pi].length===2&&G.community.length>0){
+    hr.textContent=bestHand(G.hole[pi],G.community).name;
+  } else hr.textContent='';
+}
+
+function renderEvalBar(){
+  const el=document.getElementById('eval-bar');
+  if(ONLINE||!G.chips){el.classList.remove('visible');return;}
+  el.classList.add('visible');
+  const myChips=G.chips[0];
+  const totalChips=G.chips.reduce((a,b)=>a+b,0);
+  const cpuChips=totalChips-myChips;
+  const pct=totalChips>0?Math.round(myChips/totalChips*100):50;
+  document.getElementById('eval-fill').style.width=pct+'%';
+  const diff=myChips-cpuChips;
+  const sign=diff>0?'+':'';
+  document.getElementById('eval-val').textContent=diff===0?'Even':`${sign}${diff} (${pct}%)`;
+  document.getElementById('eval-lbl-l').textContent=`You: ${myChips}`;
+  document.getElementById('eval-lbl-r').textContent=`CPU total: ${cpuChips}`;
+}
+
+function renderActions(){
+  const pi=ONLINE?MYSEAT:0;
+  const maxBet=Math.max(...G.bets);
+  const toCall=maxBet-G.bets[pi];
+  const myChips=G.chips[pi];
+  document.getElementById('status').textContent=`Your turn — To call: ${toCall}`;
+  document.getElementById('btn-fold').disabled=false;
+  document.getElementById('btn-check').disabled=toCall>0;
+  document.getElementById('btn-call').disabled=toCall===0||myChips===0;
+  document.getElementById('btn-call').textContent=`Call ${toCall}`;
+  document.getElementById('btn-raise').disabled=myChips<=toCall;
+  document.getElementById('btn-allin').disabled=myChips===0;
+  document.getElementById('raise-amt').min=G.lastRaise;
+  document.getElementById('raise-amt').value=Math.max(G.lastRaise,G.bb);
+}
+
+function hideActions(){
+  document.getElementById('status').textContent='';
+  ['btn-fold','btn-check','btn-call','btn-raise','btn-allin'].forEach(id=>{
+    document.getElementById(id).disabled=true;
+  });
+}
+
+hideActions();
+
+OnlineRoom.init({
+  gameId:'poker',minPlayers:2,maxPlayers:6,
+  note:'Texas Hold\'em (2-6 players)',
+  onStart:(seat,n,send)=>{
+    ONLINE=true;MYSEAT=seat;roomSend=send;
+    const startChips=1000,bb=Math.max(10,startChips/50|0)*2;
+    G={
+      numP:n,diff:'normal',
+      chips:Array(n).fill(startChips),
+      names:Array.from({length:n},(_,i)=>i===seat?'You':`Player${i+1}`),
+      dealer:0,bb,sb:bb/2,hand:0,
+    };
+    document.getElementById('setup').style.display='none';
+    document.getElementById('table').style.display='flex';
+    document.querySelector('.btn-next').style.display='none';
+    hideActions();
+    if(seat===0) setTimeout(sendDeck,500);
+    else document.getElementById('status').textContent='Waiting for host to deal...';
+  },
+  onMessage:(from,msg)=>{
+    if(msg.t==='deck') dealFromDeck(msg.deck);
+    else if(msg.t==='act') applyActOnline(msg.pi,msg.action,msg.amount);
+  },
+  onLeft:()=>{},
+  getState:()=>({chips:[...G.chips],dealer:G.dealer,hand:G.hand,numP:G.numP}),
+  applyState:(o)=>{
+    ONLINE=true;MYSEAT=o.seat;roomSend=o.send;
+    const s=o.state,startChips=1000,bb=Math.max(10,startChips/50|0)*2;
+    G={numP:s.numP,diff:'normal',chips:[...s.chips],
+      names:Array.from({length:s.numP},(_,i)=>i===o.seat?'You':`Player${i+1}`),
+      dealer:s.dealer,bb,sb:bb/2,hand:s.hand};
+    document.getElementById('setup').style.display='none';
+    document.getElementById('table').style.display='flex';
+    document.querySelector('.btn-next').style.display='none';
+    hideActions();
+    document.getElementById('status').textContent='Waiting for next hand...';
+  }
+});
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-room.js?v=7"></script>
+</body>
+</html>

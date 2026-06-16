@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="google-site-verification" content="r6Ok921pXi2Y9kvCvwn9Bnh5H7r-gSpzTp0KVDoEL74" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Board Game Forest | 50+ Free Classic Board Games Online</title>
+  <meta name="description" content="Board Game Forest — Play 50+ free classic board games online: Shogi, Othello, Go, Chess, Gomoku, Mahjong, UNO, Tetris, Minesweeper and more. CPU opponents (3 difficulty levels) and online multiplayer. Works on mobile and PC, no install required.">
+  <meta name="keywords" content="free games,browser games,online multiplayer,board games,card games,shogi,othello,go,chess,gomoku,daifugo,UNO,tetris,minesweeper,CPU opponent,free board games,play chess online,play go online,classic games">
+  <meta property="og:title" content="Board Game Forest | 50+ Free Classic Board Games Online">
+  <meta property="og:description" content="Play 50+ free board games online — Shogi, Othello, Go, Chess and more. CPU and online multiplayer. Mobile friendly.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://naganuma2003.github.io/game/en/">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Board Game Forest | 50+ Free Classic Board Games Online">
+  <meta name="twitter:description" content="Play 50+ free board games online. CPU and online multiplayer. Mobile friendly.">
+  <link rel="canonical" href="https://naganuma2003.github.io/game/en/">
+  <link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/">
+  <link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/">
+  <link rel="alternate" hreflang="x-default" href="https://naganuma2003.github.io/game/">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      background: linear-gradient(160deg, #1a2233, #0f1622);
+      color: #eef3fb;
+      font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+      padding: 40px 16px 64px;
+    }
+    h1 { text-align: center; letter-spacing: 0.15em; margin: 8px 0 6px; }
+    .sub { text-align: center; opacity: 0.7; margin: 0 0 36px; font-size: 14px; }
+    .lang-switch { text-align: center; margin-bottom: 10px; }
+    .lang-switch a { color: #9cc4ff; text-decoration: none; font-size: 14px; }
+    .lang-switch a:hover { text-decoration: underline; }
+
+    /* Two columns: game list | online panel */
+    .layout {
+      display: flex; flex-direction: column; gap: 22px; max-width: 1100px; margin: 0 auto;
+    }
+    .col-games { width: 100%; }
+    .col-online { width: 100%; }
+    .ob-grid { display: flex; gap: 16px; flex-wrap: wrap; }
+    .ob-grid .join-block { flex: 1 1 250px; margin-bottom: 0; }
+
+    .grid {
+      display: grid; gap: 18px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+    .card {
+      display: flex; flex-direction: column; position: relative;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 22px 20px;
+      text-decoration: none; color: inherit;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      background: rgba(255,255,255,0.09);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    }
+    .fav-btn {
+      position: absolute; top: 10px; right: 12px;
+      background: none; border: none; font-size: 16px; line-height: 1;
+      cursor: pointer; padding: 4px; opacity: 0.5;
+      color: var(--gold, #c9a227);
+      filter: grayscale(1) sepia(1) saturate(3) hue-rotate(5deg) brightness(0.8);
+      transition: opacity 0.15s, transform 0.15s, filter 0.15s;
+    }
+    .fav-btn:hover { opacity: 0.9; transform: scale(1.2); filter: grayscale(0); }
+    .card.faved .fav-btn { opacity: 1; filter: grayscale(0); }
+    .card.faved { border-color: rgba(255,210,0,0.35); }
+    .icon { font-size: 44px; line-height: 1; margin-bottom: 14px; }
+    .name { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .desc { font-size: 13px; opacity: 0.75; line-height: 1.5; }
+    .tag {
+      align-self: flex-start; margin-top: 14px; font-size: 12px; font-weight: 700;
+      padding: 4px 10px; border-radius: 999px;
+      background: rgba(108,208,138,0.18); color: #8fe3a2;
+    }
+
+    /* Online panel */
+    .online-panel {
+      background: linear-gradient(135deg, rgba(10,18,50,0.96), rgba(16,28,72,0.92));
+      border: 1px solid rgba(80,150,255,0.32);
+      border-radius: 20px; padding: 26px 28px 20px;
+      position: relative; overflow: hidden;
+      box-shadow: 0 4px 40px rgba(30,80,220,0.18), inset 0 0 70px rgba(80,150,255,0.04);
+    }
+    .online-panel::before {
+      content: ''; position: absolute; top: -60px; right: -60px;
+      width: 260px; height: 260px;
+      background: radial-gradient(circle, rgba(80,150,255,0.13), transparent 65%);
+      pointer-events: none;
+    }
+    .op-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .op-icon { font-size: 26px; line-height: 1; }
+    .op-title { font-size: 17px; font-weight: 800; letter-spacing: 0.06em; }
+    .op-sub { font-size: 11px; opacity: 0.55; margin-top: 3px; line-height: 1.5; }
+    .op-body { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; }
+    .op-section { flex: 1 1 180px; min-width: 0; max-width: 100%; }
+    .op-section:first-child { padding-right: 20px; }
+    .op-section:last-child { padding-left: 20px; }
+    .op-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+      opacity: 0.45; margin-bottom: 10px; text-transform: uppercase;
+    }
+    .op-create-btn {
+      width: 100%; padding: 13px 16px; border: none; border-radius: 12px;
+      background: linear-gradient(135deg, #2563c9 0%, #1a46a8 100%);
+      color: #fff; font: 700 15px/1 'Segoe UI',sans-serif; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(37,99,201,0.45);
+      transition: transform 0.15s, box-shadow 0.15s;
+      letter-spacing: 0.02em;
+    }
+    .op-create-btn:hover { transform: translateY(-2px); box-shadow: 0 7px 22px rgba(37,99,201,0.55); }
+    .op-divider {
+      width: 1px; background: rgba(255,255,255,0.1);
+      flex-shrink: 0; margin: 0 4px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .op-divider::after {
+      content: 'or'; position: absolute;
+      background: #111c40; color: rgba(255,255,255,0.25);
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      padding: 4px 2px;
+    }
+    .op-join-row { display: flex; gap: 8px; max-width: 100%; }
+    .op-input {
+      flex: 1; min-width: 0; font-size: 22px; font-weight: 800;
+      letter-spacing: 0.28em; text-align: center; padding: 11px 8px;
+      border-radius: 12px; border: 1.5px solid rgba(80,150,255,0.28);
+      background: rgba(255,255,255,0.06); color: #eef3fb;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .op-input:focus { outline: none; border-color: rgba(80,150,255,0.65); box-shadow: 0 0 0 3px rgba(80,150,255,0.14); }
+    .op-input::placeholder { opacity: 0.25; letter-spacing: 0.2em; }
+    .op-join-btn {
+      border: 1px solid rgba(80,150,255,0.35); border-radius: 12px;
+      padding: 11px 16px; cursor: pointer;
+      background: rgba(80,150,255,0.18); color: #9cc4ff;
+      font: 700 14px/1 'Segoe UI',sans-serif;
+      transition: background 0.15s, transform 0.15s;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .op-join-btn:hover { background: rgba(80,150,255,0.32); transform: translateY(-1px); }
+    .op-join-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+    .jb-msg { min-height: 16px; font-size: 11px; color: #9cc4ff; margin: 8px 2px 0; }
+    .op-hint { font-size: 11px; opacity: 0.4; margin: 8px 0 0; }
+    .op-note { font-size: 11px; opacity: 0.38; margin: 18px 0 0; line-height: 1.65; }
+    .op-reconnect {
+      width: 100%; margin-top: 10px; background: rgba(58,143,90,0.18);
+      color: #7dd4a0; border: 1px solid rgba(58,143,90,0.32);
+      border-radius: 10px; padding: 10px; cursor: pointer;
+      font: 700 13px/1 'Segoe UI',sans-serif;
+      transition: background 0.15s;
+    }
+    .op-reconnect:hover { background: rgba(58,143,90,0.32); }
+    @media (max-width: 560px) {
+      .op-section:first-child { padding-right: 0; padding-bottom: 18px; }
+      .op-section:last-child { padding-left: 0; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 18px; }
+      .op-divider { display: none; }
+      .online-panel { padding: 22px 20px 18px; }
+    }
+    .tagrow { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .tagrow .tag { margin-top: 0; }
+    a.tag { text-decoration: none; }
+    a.tag:hover { filter: brightness(1.25); }
+    .tag-online { background: rgba(80,150,255,0.18); color: #9cc4ff; }
+    .tag-rule { background: rgba(201,162,39,0.15); color: #e8c84a; border: none; cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+    .tag-rule:hover { filter: brightness(1.25); }
+    .rule-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.82);display:none;align-items:center;justify-content:center;z-index:60;padding:16px; }
+    .rule-overlay.show { display:flex; }
+    .rule-card { background:#1a1510;border:1px solid rgba(201,162,39,0.35);border-radius:14px;padding:28px 28px 24px;max-width:480px;width:100%;max-height:82vh;overflow-y:auto;position:relative; }
+    .rule-card h2 { color:#e8c84a;font-size:18px;font-family:"Hiragino Mincho ProN",serif;margin-bottom:16px;padding-right:28px; }
+    .rule-card h3 { color:#e8c84a;font-size:13px;font-weight:700;margin:14px 0 4px; }
+    .rule-card p,.rule-card li { font-size:13px;line-height:1.75;color:#ede6d6;opacity:.9; }
+    .rule-card ul { padding-left:18px; }
+    .rule-card li { margin-bottom:4px; }
+    .rule-close { position:absolute;top:14px;right:16px;background:none;border:none;color:#9a8f7b;font-size:22px;cursor:pointer;line-height:1; }
+
+    .search-wrap { position: relative; margin: 0 0 12px; }
+    .search-wrap input {
+      width: 100%; box-sizing: border-box;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+      color: #cfd8e6; padding: 9px 36px 9px 38px; border-radius: 8px; font-size: 14px;
+      font-family: inherit; outline: none; transition: border-color 0.15s;
+    }
+    .search-wrap input:focus { border-color: rgba(80,150,255,0.65); }
+    .search-wrap input::placeholder { color: rgba(255,255,255,0.3); }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; opacity: 0.45; pointer-events: none; }
+    .search-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; font-size: 18px;
+      display: none; padding: 2px 6px; line-height: 1; }
+    .search-clear:hover { color: rgba(255,255,255,0.8); }
+
+    #recent-section { margin-bottom: 18px; }
+    .recent-toggle { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; color: inherit; cursor: pointer; padding: 4px 0 8px; font: inherit; text-align: left; }
+    .recent-toggle:hover .recent-label { color: rgba(255,255,255,.65); }
+    .recent-label { font-size: 11px; color: rgba(255,255,255,.4); letter-spacing: .12em; text-transform: uppercase; }
+    .recent-arrow { font-size: 9px; color: rgba(255,255,255,.3); transition: transform 0.2s; display: inline-block; }
+    .recent-toggle.open .recent-arrow { transform: rotate(90deg); }
+    .recent-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+    .recent-row::-webkit-scrollbar { display: none; }
+    .recent-row[hidden] { display: none !important; }
+    .recent-chip { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); border-radius: 999px; padding: 5px 13px 5px 8px; text-decoration: none; color: inherit; white-space: nowrap; font-size: 13px; flex-shrink: 0; transition: background .15s, border-color .15s; }
+    .recent-chip:hover { background: rgba(255,255,255,.13); border-color: rgba(255,255,255,.25); }
+    .recent-chip .r-icon { font-size: 16px; line-height: 1; }
+
+    .filterbar { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; align-items: center; }
+    .filterbar .fb-label { font-size: 12px; opacity: 0.65; margin-right: 2px; }
+    .filterbar .fb-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.18); margin: 0 2px; flex-shrink: 0; }
+    .filterbar button {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+      color: #cfd8e6; padding: 7px 16px; border-radius: 999px; font-size: 13px;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .filterbar button:hover { border-color: rgba(80,150,255,0.6); }
+    .filterbar button.on {
+      background: rgba(80,150,255,0.22); border-color: rgba(80,150,255,0.65);
+      color: #fff; font-weight: 700;
+    }
+    .filter-empty { display: none; padding: 30px 10px; text-align: center; opacity: 0.6; font-size: 14px; }
+
+    .cm-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.65);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .cm-overlay[hidden] { display: none; }
+    .cm-card {
+      position: relative; background: #1b2334;
+      border: 1px solid rgba(80,150,255,0.4); border-radius: 16px;
+      padding: 26px 24px; width: 100%; max-width: 580px;
+      max-height: 82vh; overflow: auto;
+    }
+    .cm-card h2 { margin: 0 0 6px; font-size: 19px; }
+    .cm-sub { font-size: 12px; opacity: 0.75; margin: 0 0 16px; }
+    .cm-close {
+      position: absolute; top: 10px; right: 14px; background: none; border: none;
+      color: #eef3fb; font-size: 24px; cursor: pointer; opacity: 0.7;
+    }
+    .cm-close:hover { opacity: 1; }
+    .cm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .cm-grid a {
+      display: flex; align-items: center; gap: 9px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(80,150,255,0.25);
+      border-radius: 10px; padding: 13px 12px;
+      text-decoration: none; color: inherit; font-weight: 600; font-size: 14px;
+      transition: background 0.15s;
+    }
+    .cm-grid a:hover { background: rgba(80,150,255,0.2); }
+
+    .join-block { margin-bottom: 14px; }
+    .jb-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+    .jb-row { display: flex; gap: 8px; }
+    .jb-input {
+      flex: 1; min-width: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.18em;
+      text-align: center; padding: 8px; border-radius: 8px; border: none;
+      background: #eef3fb; color: #14201a;
+    }
+    .jb-btn {
+      border: none; border-radius: 8px; padding: 8px 16px; cursor: pointer;
+      font-weight: 700; font-size: 14px; background: #2563c9; color: #fff;
+    }
+    .jb-btn:hover { background: #2f74e0; }
+    .jb-btn:disabled { opacity: 0.5; cursor: default; }
+    .jb-msg { min-height: 16px; font-size: 12px; color: #9cc4ff; margin: 8px 2px 0; }
+    .jb-or {
+      font-size: 12px; opacity: 0.7; margin: 14px 0 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .jb-or::before, .jb-or::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.18); }
+
+    footer { text-align: center; margin-top: 40px; font-size: 12px; opacity: 0.5; }
+    .play-count { display: block; font-size: 11px; color: rgba(140,210,170,0.75); margin-top: 5px; }
+
+    @media (max-width: 760px) {
+      .layout { flex-direction: column; }
+      .col-online { flex: 1 1 auto; width: 100%; }
+      .online-panel { position: static; }
+    }
+    @media (max-width: 480px) {
+      body { padding-top: 20px; padding-bottom: 40px; }
+      h1 { font-size: 22px; }
+      .sub { margin-bottom: 20px; }
+      .card { padding: 16px 14px; }
+      .icon { font-size: 36px; margin-bottom: 10px; }
+      .name { font-size: 17px; }
+      .filterbar button { padding: 6px 12px; font-size: 12px; }
+      .online-panel { padding: 18px 16px 14px; }
+    }
+  </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Board Game Forest",
+    "alternateName": "Board Game Forest",
+    "url": "https://naganuma2003.github.io/game/en/",
+    "description": "Play 50+ free classic board games online — Shogi, Othello, Go, Chess, Gomoku and more. CPU and online multiplayer.",
+    "inLanguage": "en",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://naganuma2003.github.io/game/en/?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div class="lang-switch"><a href="../index.html">&#x1F1EF;&#x1F1F5; &#x65E5;&#x672C;&#x8A9E;</a></div>
+  <h1>&#x1F3AE; Board Game Forest &#x1F579;&#xFE0F;</h1>
+  <p class="sub">50+ Free Classic Board Games Online</p>
+
+  <div class="layout">
+    <!-- Online Play -->
+    <div class="col-online">
+      <div class="online-panel">
+        <div class="op-header">
+          <span class="op-icon">&#x1F310;</span>
+          <div>
+            <div class="op-title">Online Play</div>
+            <div class="op-sub">Share a 4-digit room code to play against someone remotely</div>
+          </div>
+        </div>
+        <div class="op-body">
+          <div class="op-section">
+            <div class="op-label">Create a Room</div>
+            <button id="hub-create-btn" class="op-create-btn">+ Create Room</button>
+            <p class="op-hint">Pick a game and get a room code</p>
+          </div>
+          <div class="op-divider"></div>
+          <div class="op-section">
+            <div class="op-label">Join by Code</div>
+            <div class="op-join-row">
+              <input id="hub-join-code" class="op-input" maxlength="4" placeholder="0000" inputmode="numeric" pattern="\d*" autocomplete="off">
+              <button id="hub-join-btn" class="op-join-btn">Join &#x2192;</button>
+            </div>
+            <p id="hub-join-msg" class="jb-msg"></p>
+          </div>
+        </div>
+        <p class="op-note">* First/second player is randomly decided. Just the code is needed (you'll auto-join the host's game).</p>
+        <button id="hub-reconnect" hidden class="op-reconnect">&#x1F504; Reconnect to interrupted game</button>
+      </div>
+    </div>
+
+    <!-- Game List -->
+    <div class="col-games">
+      <div id="recent-section" style="display:none">
+        <button class="recent-toggle" id="recent-toggle">
+          <span class="recent-label">Recently Played</span>
+          <span class="recent-arrow">&#x25B6;</span>
+        </button>
+        <div id="recent-row" class="recent-row" hidden></div>
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">&#x1F50D;</span>
+        <input type="text" id="game-search" placeholder="Search games..." autocomplete="off" spellcheck="false">
+        <button class="search-clear" id="search-clear" aria-label="Clear">&times;</button>
+      </div>
+      <div class="filterbar" id="filterbar">
+        <span class="fb-label">Players:</span>
+        <button data-f="all" class="on">All</button>
+        <button data-f="solo">Solo</button>
+        <button data-f="duo">1v1</button>
+        <button data-f="multi">Multiplayer</button>
+        <span class="fb-sep"></span>
+        <button data-f="card">&#x1F0CF; Card Games</button>
+        <button data-f="board">&#x265F; Board Games</button>
+        <button data-f="fav">&#x2B50; Favorites</button>
+        <span class="fb-sep"></span>
+        <span class="fb-label">Sort:</span>
+        <button data-s="asc">&#x2191; A-Z</button>
+        <button data-s="desc">&#x2193; Z-A</button>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <div class="icon"><svg width="38" height="38" viewBox="0 0 40 40" fill="none" stroke-linejoin="round"><polygon points="20,3 27.3,7.5 27.3,15.8 20,20 12.7,15.8 12.7,7.5" fill="#2d7a3a" fill-opacity="0.42" stroke="#4aaa5e" stroke-width="2"/><polygon points="31.2,12.5 38.4,16.7 38.4,25 31.2,29.2 23.9,25 23.9,16.7" fill="#d4a827" fill-opacity="0.42" stroke="#d4a827" stroke-width="2"/><polygon points="8.8,12.5 16.1,16.7 16.1,25 8.8,29.2 1.6,25 1.6,16.7" fill="#7a4020" fill-opacity="0.42" stroke="#c0522a" stroke-width="2"/></svg></div>
+          <div class="name">Catan</div>
+          <div class="desc">Gather resources and settle the island in this popular board game.</div>
+          <div class="tagrow"><a class="tag" href="../%E3%82%AB%E3%82%BF%E3%83%B3/index.html">Play &#x2192;</a><a class="tag tag-online" href="../%E3%82%AB%E3%82%BF%E3%83%B3/index.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-catan').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">&#x1F004;</div>
+          <div class="name">Mahjong</div>
+          <div class="desc">4-player Mahjong with hand scoring and point calculation. Online 4-player supported (CPU fill-in available).</div>
+          <div class="tagrow"><a class="tag" href="../%E9%BA%BB%E9%9B%80%E3%82%B2%E3%83%BC%E3%83%A0/index.html">Play &#x2192;</a><a class="tag tag-online" href="../%E9%BA%BB%E9%9B%80%E3%82%B2%E3%83%BC%E3%83%A0/index.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-mahjong').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="font-size:34px;letter-spacing:-3px">&#x26AB;&#x26AA;</div>
+          <div class="name">Othello</div>
+          <div class="desc">5-level CPU with AI assistant. Freely assign human/CPU players.</div>
+          <div class="tagrow"><a class="tag" href="../games/othello.html">Play &#x2192;</a><a class="tag tag-online" href="../games/othello.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-othello').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon"><svg width="40" height="40" viewBox="0 0 40 40" style="display:block"><rect x="15" y="3" width="10" height="10" rx="2" fill="#9b59b6"/><rect x="3" y="15" width="10" height="10" rx="2" fill="#9b59b6"/><rect x="15" y="15" width="10" height="10" rx="2" fill="#9b59b6"/><rect x="27" y="15" width="10" height="10" rx="2" fill="#9b59b6"/></svg></div>
+          <div class="name">Tetris</div>
+          <div class="desc">Arrange falling blocks and clear lines. VS mode: split-screen with line attack &amp; HOLD.</div>
+          <div class="tagrow"><a class="tag" href="../games/tetris.html">Solo &#x2192;</a><a class="tag" href="../games/tetris-vs.html">&#x1F19A; VS</a><a class="tag tag-online" href="../games/tetris-vs.html?online=1">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-tetris').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">&#x1F47E;</div>
+          <div class="name">Space Invaders</div>
+          <div class="desc">Shoot down invading alien formations. Hide behind shields and strike back, hit the UFO for bonus.</div>
+          <div class="tagrow"><a class="tag" href="../games/invader.html">Play &#x2192;</a><button class="tag tag-rule" onclick="document.getElementById('rule-invader').classList.add('show')">&#x1F4D6; Rules</button></div>
+        </div>
+
+        <div class="card">
+          <div class="icon" style="width:42px;height:42px;background:#edc22e;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#776e65;font-weight:900;font-size:14px;box-shadow:0 2px 5px rgba(0,0,0,.4)">2048</div>
+          <div class="name">2048</div>
+          <div class="desc">Merge matching numbers to reach 2048. VS mode: score battle (5-min time attack / 10-min showdown).</div>
+          <div class="tagrow"><a class="tag" href="../games/g2048.html">Solo &#x2192;</a><a class="tag" href="../games/g2048-vs.html">&#x1F19A; VS</a><a class="tag tag-online" href="../games/g2048-vs.html?online=1">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-2048').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="display:inline-grid;grid-template-columns:1fr 1fr;gap:3px;width:38px;height:38px">
+            <span style="background:#e0473a;border-radius:50%"></span><span style="background:#3e87d6;border-radius:50%"></span>
+            <span style="background:#e8c244;border-radius:50%"></span><span style="background:#5cb568;border-radius:50%"></span>
+          </div>
+          <div class="name">Mastermind</div>
+          <div class="desc">Guess the secret number by deduction. Solo or multiplayer speed-solve.</div>
+          <div class="tagrow"><a class="tag" href="../games/hitblow.html">Play &#x2192;</a><a class="tag tag-online" href="../games/hitblow.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-hitblow').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">&#x1F4A3;</div>
+          <div class="name">Minesweeper</div>
+          <div class="desc">Use numbers to avoid mines and clear the field. 3 difficulty levels.</div>
+          <div class="tagrow"><a class="tag" href="../games/mines.html">Play &#x2192;</a><button class="tag tag-rule" onclick="document.getElementById('rule-mines').classList.add('show')">&#x1F4D6; Rules</button></div>
+        </div>
+
+        <div class="card">
+          <div class="icon">&#x1F985;</div>
+          <div class="name">Hol's der Geier</div>
+          <div class="desc">Simultaneous bidding! Compete for point cards with high bids, dodge penalties with low ones. 2-6 players.</div>
+          <div class="tagrow"><a class="tag" href="../games/hagetaka.html">Play &#x2192;</a><a class="tag tag-online" href="../games/hagetaka.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-hagetaka').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon"><svg width="40" height="36" viewBox="0 0 40 36" fill="none"><rect x="1" y="4" width="17" height="28" rx="3" fill="#222" stroke="#444" stroke-width="1"/><text x="9.5" y="23" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">0</text><rect x="22" y="4" width="17" height="28" rx="3" fill="#fff" stroke="#ccc" stroke-width="1"/><text x="30.5" y="23" text-anchor="middle" font-size="13" font-weight="700" fill="#333">1</text></svg></div>
+          <div class="name">Algo</div>
+          <div class="desc">Deduce your opponent's hidden cards. Black &amp; white cards 0-11 in ascending order. 2-4 players.</div>
+          <div class="tagrow"><a class="tag" href="../games/algo.html">Play &#x2192;</a><a class="tag tag-online" href="../games/algo.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-algo').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon"><svg width="44" height="44" viewBox="0 0 44 44" style="display:block"><rect x="2" y="2" width="7" height="7" rx="1" fill="#e0473a"/><rect x="10" y="2" width="7" height="7" rx="1" fill="#e0473a"/><rect x="18" y="2" width="7" height="7" rx="1" fill="#e0473a"/><rect x="2" y="10" width="7" height="7" rx="1" fill="#e0473a"/><rect x="10" y="10" width="7" height="7" rx="1" fill="#e0473a"/><rect x="26" y="2" width="7" height="7" rx="1" fill="#3e87d6"/><rect x="34" y="2" width="7" height="7" rx="1" fill="#3e87d6"/><rect x="34" y="10" width="7" height="7" rx="1" fill="#3e87d6"/><rect x="26" y="10" width="7" height="7" rx="1" fill="#3e87d6"/><rect x="34" y="18" width="7" height="7" rx="1" fill="#3e87d6"/><rect x="34" y="26" width="7" height="7" rx="1" fill="#4ec05e"/><rect x="34" y="34" width="7" height="7" rx="1" fill="#4ec05e"/><rect x="26" y="34" width="7" height="7" rx="1" fill="#4ec05e"/><rect x="18" y="34" width="7" height="7" rx="1" fill="#4ec05e"/><rect x="26" y="26" width="7" height="7" rx="1" fill="#4ec05e"/><rect x="2" y="18" width="7" height="7" rx="1" fill="#e0c34a"/><rect x="10" y="18" width="7" height="7" rx="1" fill="#e0c34a"/><rect x="2" y="26" width="7" height="7" rx="1" fill="#e0c34a"/><rect x="2" y="34" width="7" height="7" rx="1" fill="#e0c34a"/><rect x="10" y="34" width="7" height="7" rx="1" fill="#e0c34a"/></svg></div>
+          <div class="name">Blokus</div>
+          <div class="desc">Place colored tiles on a 20x20 board. Connect by corners only. Fewest remaining squares wins. 2-4 players.</div>
+          <div class="tagrow"><a class="tag" href="../games/blokus.html">Play &#x2192;</a><a class="tag tag-online" href="../games/blokus.html?online=1&_v=2&create=1">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-blokus').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="font-size:18px;letter-spacing:0">&#x26AB;&#x26AA;&#x26AB;&#x26AA;&#x26AB;</div>
+          <div class="name">Gomoku</div>
+          <div class="desc">15x15 board — first to get five in a row wins. 4-level CPU with AI assistant.</div>
+          <div class="tagrow"><a class="tag" href="../games/gomoku.html">Play &#x2192;</a><a class="tag tag-online" href="../games/gomoku.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-gomoku').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="display:flex;gap:3px;align-items:center;justify-content:center;height:40px">
+            <span style="width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#7fd0ff,#2a6ea0)"></span>
+            <span style="width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd56a,#c98a1a)"></span>
+            <span style="width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f08a76,#a8362a)"></span>
+          </div>
+          <div class="name">Mancala</div>
+          <div class="desc">Kalah-style seed sowing. Enjoy the art of chained turns.</div>
+          <div class="tagrow"><a class="tag" href="../games/mancala.html">Play &#x2192;</a><a class="tag tag-online" href="../games/mancala.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-mancala').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="font-size:30px;letter-spacing:-2px"><span style="color:#e0473a">&#x2B22;</span><span style="color:#3e87d6">&#x2B22;</span></div>
+          <div class="name">Hex</div>
+          <div class="desc">Hexagonal connection game. No draws possible.</div>
+          <div class="tagrow"><a class="tag" href="../games/hex.html">Play &#x2192;</a><a class="tag tag-online" href="../games/hex.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-hex').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="display:flex;gap:2px;height:40px;align-items:flex-start">
+            <span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:38px solid #d9b48a"></span>
+            <span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:38px solid #8a5a3a"></span>
+            <span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:38px solid #d9b48a"></span>
+            <span style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:38px solid #8a5a3a"></span>
+          </div>
+          <div class="name">Backgammon</div>
+          <div class="desc">Hit, bear off, and gammon scoring included.</div>
+          <div class="tagrow"><a class="tag" href="../games/backgammon.html">Play &#x2192;</a><a class="tag tag-online" href="../games/backgammon.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-backgammon').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">&#x1F47B;</div>
+          <div class="name">Geister</div>
+          <div class="desc">Hidden blue and red ghosts. No-cheat CPU.</div>
+          <div class="tagrow"><a class="tag" href="../games/geister.html">Play &#x2192;</a><a class="tag tag-online" href="../games/geister.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-geister').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="font-size:17px;letter-spacing:1px">&#x1F534;&#x1F7E1;&#x1F534;&#x1F7E1;</div>
+          <div class="name">Connect Four</div>
+          <div class="desc">Gravity-drop to connect 4. Depth-9 alpha-beta CPU.</div>
+          <div class="tagrow"><a class="tag" href="../games/connect4.html">Play &#x2192;</a><a class="tag tag-online" href="../games/connect4.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-connect4').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="display:inline-grid;grid-template-columns:repeat(3,1fr);width:39px;height:39px;border-radius:4px;overflow:hidden">
+            <span style="background:#e8d8b8"></span><span style="background:#4a2f14"></span><span style="background:#e8d8b8"></span>
+            <span style="background:#4a2f14"></span><span style="background:#e0473a;border-radius:50%"></span><span style="background:#4a2f14"></span>
+            <span style="background:#e8d8b8"></span><span style="background:#4a2f14"></span><span style="background:#e8d8b8"></span>
+          </div>
+          <div class="name">Checkers</div>
+          <div class="desc">Forced jumps, multi-captures, and king promotion.</div>
+          <div class="tagrow"><a class="tag" href="../games/checkers.html">Play &#x2192;</a><a class="tag tag-online" href="../games/checkers.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-checkers').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="display:inline-grid;grid-template-columns:repeat(4,9px);gap:2px;width:42px;height:42px;align-content:center;justify-content:center"><div style="background:#c9a030;width:9px;height:9px;border-radius:2px;display:flex;align-items:center;justify-content:center;font:700 5px sans-serif;color:#111">1</div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:#c9a030;width:9px;height:9px;border-radius:2px"></div><div style="background:rgba(255,255,255,.05);width:9px;height:9px;border-radius:2px"></div></div>
+          <div class="name">Slide Puzzle</div>
+          <div class="desc">Slide numbered tiles into order. 3x3, 4x4, and 5x5 sizes. Competitive race mode available.</div>
+          <div class="tagrow"><a class="tag" href="../games/15puzzle.html">Play &#x2192;</a><a class="tag tag-online" href="../games/15puzzle.html?online=1&_v=2&create=1">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-15puzzle').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">&#x1F4A3;</div>
+          <div class="name">Bomberman</div>
+          <div class="desc">Place bombs to defeat enemies! Power up with fire, bombs, and speed. 3 difficulty levels.</div>
+          <div class="tagrow"><a class="tag" href="../games/bomberman.html">Play &#x2192;</a><a class="tag tag-online" href="../games/bomberman.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-bomberman').classList.add('show')">&#x1F4D6; Rules</button></div>
+        </div>
+
+        <div class="card">
+          <div class="icon">
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+              <polygon points="22,2 27.8,12 39.3,12 33.6,22 39.3,32 27.8,32 22,42 16.2,32 4.7,32 10.4,22 4.7,12 16.2,12" fill="#1a2a1a" stroke="#3a6a3a" stroke-width="1.2"/>
+              <circle cx="22" cy="5" r="2.5" fill="#e05050"/>
+              <circle cx="19.5" cy="9.5" r="2" fill="#e05050"/>
+              <circle cx="24.5" cy="9.5" r="2" fill="#e05050"/>
+              <circle cx="36.5" cy="30.5" r="2.5" fill="#5080e0"/>
+              <circle cx="31.5" cy="30.5" r="2" fill="#5080e0"/>
+              <circle cx="34" cy="26" r="2" fill="#5080e0"/>
+              <circle cx="7.5" cy="30.5" r="2.5" fill="#50c050"/>
+              <circle cx="12.5" cy="30.5" r="2" fill="#50c050"/>
+              <circle cx="10" cy="26" r="2" fill="#50c050"/>
+              <circle cx="22" cy="22" r="2.2" fill="#555" stroke="#888" stroke-width="0.5"/>
+            </svg>
+          </div>
+          <div class="name">Chinese Checkers</div>
+          <div class="desc">Star-shaped board — move pieces to the opposite side. Chain jumps. CPU and 2-player.</div>
+          <div class="tagrow"><a class="tag" href="../games/chinese.html">Play &#x2192;</a><a class="tag tag-online" href="../games/chinese.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-chinese').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="width:40px;height:40px;border-radius:50%;border:3.5px solid #e23b2e;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.4)">
+            <div style="width:24px;height:24px;border-radius:50%;border:3.5px solid #e23b2e;display:flex;align-items:center;justify-content:center">
+              <div style="width:9px;height:9px;border-radius:50%;background:#e23b2e"></div>
+            </div>
+          </div>
+          <div class="name">Otrio</div>
+          <div class="desc">Tic-tac-toe with 3 ring sizes. Win by same-size row, ascending row, or concentric stack. 2-4 players.</div>
+          <div class="tagrow"><a class="tag" href="../games/otrio.html">Play &#x2192;</a><a class="tag tag-online" href="../games/otrio.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-otrio').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+              <rect x="2" y="2" width="40" height="40" rx="4" fill="#1b2334"/>
+              <line x1="10" y1="2" x2="10" y2="42" stroke="#2a3550" stroke-width="0.8"/>
+              <line x1="18" y1="2" x2="18" y2="42" stroke="#2a3550" stroke-width="0.8"/>
+              <line x1="26" y1="2" x2="26" y2="42" stroke="#2a3550" stroke-width="0.8"/>
+              <line x1="34" y1="2" x2="34" y2="42" stroke="#2a3550" stroke-width="0.8"/>
+              <line x1="2" y1="10" x2="42" y2="10" stroke="#2a3550" stroke-width="0.8"/>
+              <line x1="2" y1="18" x2="42" y2="18" stroke="#2a3550" stroke-width="0.8"/>
+              <line x1="2" y1="26" x2="42" y2="26" stroke="#2a3550" stroke-width="0.8"/>
+              <line x1="2" y1="34" x2="42" y2="34" stroke="#2a3550" stroke-width="0.8"/>
+              <line x1="18" y1="18" x2="18" y2="34" stroke="#e0a030" stroke-width="3" stroke-linecap="round"/>
+              <line x1="26" y1="10" x2="26" y2="26" stroke="#e0a030" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="6" cy="38" r="3.5" fill="#5b9bd5"/>
+              <circle cx="38" cy="6" r="3.5" fill="#e05050"/>
+            </svg>
+          </div>
+          <div class="name">Quoridor</div>
+          <div class="desc">9x9 board: advance your pawn or block with walls. Strategic mind game. CPU, 2/4 players.</div>
+          <div class="tagrow"><a class="tag" href="../games/quoridor.html">Play &#x2192;</a><a class="tag tag-online" href="../games/quoridor.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-quoridor').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon"><svg width="38" height="38" viewBox="0 0 40 40" fill="none" stroke-linecap="round">
+  <rect x="6" y="6" width="14" height="14" fill="rgba(244,143,177,0.38)"/>
+  <rect x="20" y="6" width="14" height="14" fill="rgba(127,209,242,0.38)"/>
+  <rect x="6" y="20" width="14" height="14" fill="rgba(127,209,242,0.38)"/>
+  <rect x="20" y="20" width="14" height="14" fill="rgba(244,143,177,0.38)"/>
+  <line x1="6" y1="6" x2="34" y2="6" stroke="#f48fb1" stroke-width="2.8"/>
+  <line x1="6" y1="20" x2="34" y2="20" stroke="#7fd1f2" stroke-width="2.8"/>
+  <line x1="6" y1="34" x2="34" y2="34" stroke="#f48fb1" stroke-width="2.8"/>
+  <line x1="6" y1="6" x2="6" y2="34" stroke="#7fd1f2" stroke-width="2.8"/>
+  <line x1="20" y1="6" x2="20" y2="34" stroke="#f48fb1" stroke-width="2.8"/>
+  <line x1="34" y1="6" x2="34" y2="34" stroke="#7fd1f2" stroke-width="2.8"/>
+  <circle cx="6" cy="6" r="2.2" fill="#e9e2d2"/><circle cx="20" cy="6" r="2.2" fill="#e9e2d2"/><circle cx="34" cy="6" r="2.2" fill="#e9e2d2"/>
+  <circle cx="6" cy="20" r="2.2" fill="#e9e2d2"/><circle cx="20" cy="20" r="2.2" fill="#e9e2d2"/><circle cx="34" cy="20" r="2.2" fill="#e9e2d2"/>
+  <circle cx="6" cy="34" r="2.2" fill="#e9e2d2"/><circle cx="20" cy="34" r="2.2" fill="#e9e2d2"/><circle cx="34" cy="34" r="2.2" fill="#e9e2d2"/>
+</svg></div>
+          <div class="name">Dots and Boxes</div>
+          <div class="desc">Draw lines to capture boxes. CPU, 2-player, 3 sizes.</div>
+          <div class="tagrow"><a class="tag" href="../games/dots.html">Play &#x2192;</a><a class="tag tag-online" href="../games/dots.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-dots').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon"><svg width="40" height="46" viewBox="0 0 40 46"><defs><linearGradient id="hasami-fill" x1="0.3" y1="0" x2="0.7" y2="1"><stop offset="0%" stop-color="#f5e090"/><stop offset="100%" stop-color="#c8940c"/></linearGradient></defs><polygon points="20,2 31.2,8.7 38,44 2,44 8.8,8.7" fill="url(#hasami-fill)" stroke="#6b4210" stroke-width="1.2" stroke-linejoin="round"/><text x="20" y="32" text-anchor="middle" font-size="19" font-weight="900" fill="#1a0800" font-family="'Hiragino Mincho ProN',serif">&#x6B69;</text></svg></div>
+          <div class="name">Hasami Shogi</div>
+          <div class="desc">Move and flank to capture. First to capture 5 pieces wins. CPU and 2-player.</div>
+          <div class="tagrow"><a class="tag" href="../games/hasami.html">Play &#x2192;</a><a class="tag tag-online" href="../games/hasami.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-hasami').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="position:relative;width:42px;height:50px">
+            <div style="position:absolute;left:0;top:0;width:26px;height:34px;background:#f4efe3;border:1px solid #c9bfa8;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#1c1c1c;font-weight:800;font-size:12px;box-shadow:0 1px 3px rgba(0,0,0,.45)">K&#x2660;</div>
+            <div style="position:absolute;left:8px;top:8px;width:26px;height:34px;background:#f4efe3;border:1px solid #c9bfa8;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#c23b26;font-weight:800;font-size:12px;box-shadow:0 1px 3px rgba(0,0,0,.45)">Q&#x2665;</div>
+            <div style="position:absolute;left:16px;top:16px;width:26px;height:34px;background:#f4efe3;border:1px solid #c9bfa8;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#1c1c1c;font-weight:800;font-size:12px;box-shadow:0 1px 3px rgba(0,0,0,.45)">J&#x2663;</div>
+          </div>
+          <div class="name">Solitaire</div>
+          <div class="desc">Klondike. Sort the deck and build four foundation piles.</div>
+          <div class="tagrow"><a class="tag" href="../games/solitaire.html">Play &#x2192;</a><button class="tag tag-rule" onclick="document.getElementById('rule-solitaire').classList.add('show')">&#x1F4D6; Rules</button></div>
+        </div>
+
+        <div class="card">
+          <div class="icon" style="position:relative;width:46px;height:42px">
+            <div style="position:absolute;left:1px;top:3px;transform:rotate(-9deg);width:28px;height:38px;background:linear-gradient(145deg,#2c5a3c,#234a30);border-radius:5px;border:1px solid #0d3320;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.55);font-weight:800;font-size:16px;box-shadow:0 2px 5px rgba(0,0,0,.45)">?</div>
+            <div style="position:absolute;right:1px;top:1px;transform:rotate(9deg);width:28px;height:38px;background:#f4efe3;border-radius:5px;border:1px solid #c9bfa8;display:flex;align-items:center;justify-content:center;color:#c23b26;font-weight:800;font-size:18px;box-shadow:0 2px 5px rgba(0,0,0,.45)">&#x2665;</div>
+          </div>
+          <div class="name">Memory Match</div>
+          <div class="desc">Flip cards and find matching pairs. 1-2 players, emoji (3 sizes) + 52-card deck.</div>
+          <div class="tagrow"><a class="tag" href="../games/memory.html">Play &#x2192;</a><a class="tag tag-online" href="../games/memory.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-memory').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="position:relative;width:48px;height:42px">
+            <div style="position:absolute;left:0;top:3px;transform:rotate(-10deg);width:28px;height:38px;background:#f4efe3;border-radius:5px;border:1px solid #c9bfa8;display:flex;align-items:center;justify-content:center;color:#1c1c1c;font-weight:800;font-size:13px;box-shadow:0 2px 5px rgba(0,0,0,.45)">A&#x2660;</div>
+            <div style="position:absolute;right:0;top:1px;transform:rotate(10deg);width:28px;height:38px;background:#f4efe3;border-radius:5px;border:1px solid #c9bfa8;display:flex;align-items:center;justify-content:center;color:#c23b26;font-weight:800;font-size:13px;box-shadow:0 2px 5px rgba(0,0,0,.45)">J&#x2665;</div>
+          </div>
+          <div class="name">Blackjack</div>
+          <div class="desc">Aim for 21. Solo or multiplayer vs dealer. Chip system.</div>
+          <div class="tagrow"><a class="tag" href="../games/blackjack.html">Play &#x2192;</a><a class="tag tag-online" href="../games/blackjack.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-blackjack').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">&#x1F0CF;</div>
+          <div class="name">Daifugo</div>
+          <div class="desc">Japanese card game with 8-cut and revolution rules. CPU / local / online.</div>
+          <div class="tagrow"><a class="tag" href="../games/daifugo.html">Play &#x2192;</a><a class="tag tag-online" href="../games/daifugo.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-daifugo').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="display:flex;align-items:center;height:44px">
+            <div style="width:22px;height:32px;background:#f4efe3;border:1px solid #c9bfa8;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#1c1c1c;font-weight:800;font-size:13px;margin-right:-7px;box-shadow:0 1px 3px rgba(0,0,0,.4)">6</div>
+            <div style="width:26px;height:39px;background:#fff;border:1.5px solid #c9a227;border-radius:5px;display:flex;align-items:center;justify-content:center;color:#c23b26;font-weight:800;font-size:17px;position:relative;z-index:2;box-shadow:0 3px 6px rgba(0,0,0,.55)">7</div>
+            <div style="width:22px;height:32px;background:#f4efe3;border:1px solid #c9bfa8;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#1c1c1c;font-weight:800;font-size:13px;margin-left:-7px;box-shadow:0 1px 3px rgba(0,0,0,.4)">8</div>
+          </div>
+          <div class="name">Sevens</div>
+          <div class="desc">Build sequences from 7 and be first to play all cards. CPU / local / online.</div>
+          <div class="tagrow"><a class="tag" href="../games/sevens.html">Play &#x2192;</a><a class="tag tag-online" href="../games/sevens.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-sevens').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="position:relative;width:80px;height:44px">
+            <div style="position:absolute;left:0;top:2px;transform:rotate(-8deg);width:26px;height:36px;background:#f4efe3;border-radius:4px;border:1px solid #c9bfa8;display:flex;align-items:center;justify-content:center;color:#c23b26;font-weight:800;font-size:11px;box-shadow:0 2px 4px rgba(0,0,0,.4)">A&#x2665;</div>
+            <div style="position:absolute;left:14px;top:0;width:26px;height:36px;background:#f4efe3;border-radius:4px;border:1px solid #c9bfa8;display:flex;align-items:center;justify-content:center;color:#1c1c1c;font-weight:800;font-size:11px;box-shadow:0 2px 4px rgba(0,0,0,.4)">K&#x2660;</div>
+            <div style="position:absolute;right:0;top:4px;transform:rotate(8deg);width:26px;height:36px;background:#f4efe3;border-radius:4px;border:1px solid #c9bfa8;display:flex;align-items:center;justify-content:center;color:#c23b26;font-weight:800;font-size:11px;box-shadow:0 2px 4px rgba(0,0,0,.4)">Q&#x2666;</div>
+          </div>
+          <div class="name">Speed</div>
+          <div class="desc">Simultaneous play! Be the first to empty your hand and deck. Play cards one number apart. Online supported.</div>
+          <div class="tagrow"><a class="tag" href="../games/speed.html">Play &#x2192;</a><a class="tag tag-online" href="../games/speed.html?online=1&_v=2&create=1">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-speed').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="position:relative;width:80px;height:44px">
+            <div style="position:absolute;left:0;top:3px;transform:rotate(-10deg);width:28px;height:38px;background:#f4efe3;border-radius:5px;border:1px solid #c9bfa8;display:flex;align-items:center;justify-content:center;color:#1c1c1c;font-weight:800;font-size:13px;box-shadow:0 2px 5px rgba(0,0,0,.45)">A&#x2660;</div>
+            <div style="position:absolute;left:20px;top:1px;transform:rotate(10deg);width:28px;height:38px;background:#f4efe3;border-radius:5px;border:1px solid #c9bfa8;display:flex;align-items:center;justify-content:center;color:#c23b26;font-weight:800;font-size:13px;box-shadow:0 2px 5px rgba(0,0,0,.45)">A&#x2665;</div>
+            <svg width="26" height="42" viewBox="0 0 26 42" fill="none" style="position:absolute;right:0;bottom:2px">
+              <ellipse cx="11" cy="38" rx="9.5" ry="3.5" fill="#7f0f0f" stroke="#a01818" stroke-width="1"/>
+              <ellipse cx="11" cy="32" rx="9.5" ry="3.5" fill="#8b1111" stroke="#b02020" stroke-width="1"/>
+              <ellipse cx="11" cy="26" rx="9.5" ry="3.5" fill="#7f0f0f" stroke="#c02828" stroke-width="1"/>
+              <ellipse cx="11" cy="20" rx="9.5" ry="3.5" fill="#8b1111" stroke="#c83030" stroke-width="1"/>
+              <ellipse cx="11" cy="14" rx="9.5" ry="3.5" fill="#7f0f0f" stroke="#d04040" stroke-width="1"/>
+              <g transform="rotate(-10,16,8)">
+                <ellipse cx="16" cy="8" rx="9.5" ry="3.5" fill="#b01c1c" stroke="#e05050" stroke-width="1.5"/>
+                <ellipse cx="16" cy="8" rx="6" ry="2.2" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="0.8"/>
+                <line x1="6.5" y1="8" x2="9" y2="8" stroke="rgba(255,255,255,0.55)" stroke-width="1.2"/>
+                <line x1="23" y1="8" x2="25.5" y2="8" stroke="rgba(255,255,255,0.55)" stroke-width="1.2"/>
+              </g>
+            </svg>
+          </div>
+          <div class="name">Texas Hold'em</div>
+          <div class="desc">2 hole cards + 5 community cards — make the best poker hand. Bet, call, raise. 2-6 players.</div>
+          <div class="tagrow"><a class="tag" href="../games/poker.html">Play &#x2192;</a><a class="tag tag-online" href="../games/poker.html?online=1&_v=2&create=1">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-texas').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="position:relative;width:64px;height:44px">
+            <div style="position:absolute;left:0;top:4px;transform:rotate(-10deg);width:22px;height:34px;background:#e0473a;border-radius:4px;display:flex;align-items:center;justify-content:center;font:800 9px sans-serif;color:#fff;box-shadow:0 2px 4px rgba(0,0,0,.5)">UNO</div>
+            <div style="position:absolute;left:14px;top:0;width:22px;height:34px;background:#3e87d6;border-radius:4px;display:flex;align-items:center;justify-content:center;font:800 9px sans-serif;color:#fff;box-shadow:0 2px 4px rgba(0,0,0,.5)">UNO</div>
+            <div style="position:absolute;right:0;top:4px;transform:rotate(10deg);width:22px;height:34px;background:#4ec05e;border-radius:4px;display:flex;align-items:center;justify-content:center;font:800 9px sans-serif;color:#fff;box-shadow:0 2px 4px rgba(0,0,0,.5)">UNO</div>
+          </div>
+          <div class="name">UNO</div>
+          <div class="desc">Match colors and numbers to empty your hand! Skip, Reverse, Draw 2, Wild for comebacks. 2-6 players.</div>
+          <div class="tagrow"><a class="tag" href="../games/uno.html">Play &#x2192;</a><a class="tag tag-online" href="../games/uno.html?online=1&_v=2&create=1">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-uno').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="width:42px;height:42px"><svg width="42" height="42" viewBox="0 0 42 42" style="display:block">
+            <rect width="42" height="42" rx="4" fill="#e3b765"/>
+            <g stroke="#5a3a1a" stroke-width="1.2">
+              <line x1="9" y1="9" x2="33" y2="9"/><line x1="9" y1="21" x2="33" y2="21"/><line x1="9" y1="33" x2="33" y2="33"/>
+              <line x1="9" y1="9" x2="9" y2="33"/><line x1="21" y1="9" x2="21" y2="33"/><line x1="33" y1="9" x2="33" y2="33"/>
+            </g>
+            <circle cx="21" cy="9" r="5.6" fill="#1a1a1a"/>
+            <circle cx="33" cy="21" r="5.6" fill="#f4f1e8" stroke="#b8b29c" stroke-width="0.6"/>
+            <circle cx="9" cy="33" r="5.6" fill="#1a1a1a"/>
+          </svg></div>
+          <div class="name">Go</div>
+          <div class="desc">9/13/19 board sizes. Ko rule, territory scoring, and dead stone marking.</div>
+          <div class="tagrow"><a class="tag" href="../games/go.html">Play &#x2192;</a><a class="tag tag-online" href="../games/go.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-go').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon"><svg width="40" height="46" viewBox="0 0 40 46"><defs><linearGradient id="shogi-fill" x1="0.3" y1="0" x2="0.7" y2="1"><stop offset="0%" stop-color="#f5e090"/><stop offset="100%" stop-color="#c8940c"/></linearGradient></defs><polygon points="20,2 31.2,8.7 38,44 2,44 8.8,8.7" fill="url(#shogi-fill)" stroke="#6b4210" stroke-width="1.2" stroke-linejoin="round"/><text x="20" y="26" text-anchor="middle" font-size="13" font-weight="900" fill="#1a0800" font-family="'Hiragino Mincho ProN',serif">&#x738B;</text><text x="20" y="39" text-anchor="middle" font-size="13" font-weight="900" fill="#1a0800" font-family="'Hiragino Mincho ProN',serif">&#x5C06;</text></svg></div>
+          <div class="name">Shogi</div>
+          <div class="desc">Japanese chess. Promotion, captured pieces, checkmate detection. AI assistant &amp; undo.</div>
+          <div class="tagrow"><a class="tag" href="../games/shogi.html">Play &#x2192;</a><a class="tag tag-online" href="../games/shogi.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-shogi').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">&#x265E;</div>
+          <div class="name">Chess</div>
+          <div class="desc">Castling and en passant supported. PST-evaluation CPU.</div>
+          <div class="tagrow"><a class="tag" href="../games/chess.html">Play &#x2192;</a><a class="tag tag-online" href="../games/chess.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-chess').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">&#x1F3B4;</div>
+          <div class="name">Hanafuda Koi-Koi</div>
+          <div class="desc">Classic Japanese flower card game. Match cards to form hands, push your luck with koi-koi. CPU, 2P, online.</div>
+          <div class="tagrow"><a class="tag" href="../games/hanafuda.html">Play &#x2192;</a><a class="tag tag-online" href="../games/hanafuda.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-hanafuda').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="display:inline-grid;grid-template-columns:repeat(3,1fr);gap:1px;width:40px;height:40px;background:#5a5040;padding:2px;border-radius:4px">
+            <span style="background:#1b2334;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#cfe3ff">5</span><span style="background:#1b2334"></span><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#cfe3ff">3</span>
+            <span style="background:#1b2334"></span><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#cfe3ff">7</span><span style="background:#1b2334"></span>
+            <span style="background:#1b2334;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#cfe3ff">1</span><span style="background:#1b2334"></span><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#cfe3ff">9</span>
+          </div>
+          <div class="name">Sudoku</div>
+          <div class="desc">Fill 9x9 grid with 1-9. 3 difficulty levels, auto-generated puzzles.</div>
+          <div class="tagrow"><a class="tag" href="../games/sudoku.html">Play &#x2192;</a><button class="tag tag-rule" onclick="document.getElementById('rule-sudoku').classList.add('show')">&#x1F4D6; Rules</button></div>
+        </div>
+
+        <div class="card">
+          <div class="icon">&#x229E;</div>
+          <div class="name">Nine Men's Morris</div>
+          <div class="desc">Place 9 pieces, form mills (3 in a row) to capture opponent's pieces. 3-level CPU, 2P, online.</div>
+          <div class="tagrow"><a class="tag" href="../games/morris.html">Play &#x2192;</a><a class="tag tag-online" href="../games/morris.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-morris').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">&#x1F42E;</div>
+          <div class="name">6 Nimmt!</div>
+          <div class="desc">104 cards played simultaneously. 6th card in a row takes the penalty. 2-10 players.</div>
+          <div class="tagrow"><a class="tag" href="../games/nimmt.html">Play &#x2192;</a><a class="tag tag-online" href="../games/nimmt.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-nimmt').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="display:inline-grid;grid-template-columns:repeat(3,1fr);gap:1px;width:42px;height:54px;background:#7a5c25;padding:2px;border-radius:4px;font-size:10px">
+            <span style="background:#f2dfa0;display:flex;align-items:center;justify-content:center">&#x1F992;</span>
+            <span style="background:#f2dfa0;display:flex;align-items:center;justify-content:center">&#x1F981;</span>
+            <span style="background:#f2dfa0;display:flex;align-items:center;justify-content:center">&#x1F418;</span>
+            <span style="background:#f2dfa0;display:flex;align-items:center;justify-content:center"></span>
+            <span style="background:#f2dfa0;display:flex;align-items:center;justify-content:center">&#x1F425;</span>
+            <span style="background:#f2dfa0;display:flex;align-items:center;justify-content:center"></span>
+            <span style="background:#f2dfa0;display:flex;align-items:center;justify-content:center"></span>
+            <span style="background:#f2dfa0;display:flex;align-items:center;justify-content:center">&#x1F425;</span>
+            <span style="background:#f2dfa0;display:flex;align-items:center;justify-content:center"></span>
+            <span style="background:#f2dfa0;display:flex;align-items:center;justify-content:center">&#x1F418;</span>
+            <span style="background:#f2dfa0;display:flex;align-items:center;justify-content:center">&#x1F981;</span>
+            <span style="background:#f2dfa0;display:flex;align-items:center;justify-content:center">&#x1F992;</span>
+          </div>
+          <div class="name">Dobutsu Shogi</div>
+          <div class="desc">3x4 beginner shogi. Try and Catch win conditions. CPU opponent.</div>
+          <div class="tagrow"><a class="tag" href="../games/dobutsu.html">Play &#x2192;</a><a class="tag tag-online" href="../games/dobutsu.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-dobutsu').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">&#x1F3F0;</div>
+          <div class="name">Carcassonne</div>
+          <div class="desc">Place tiles to build roads, cities, and monasteries for points. Use meeples to claim features. 2-4 players online.</div>
+          <div class="tagrow"><a class="tag" href="../games/carcassonne.html">Play &#x2192;</a><a class="tag tag-online" href="../games/carcassonne.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-carcassonne').classList.add('show')">&#x1F4D6; Rules</button></div>
+        </div>
+
+        <div class="card">
+          <div class="icon" style="display:inline-grid;grid-template-columns:repeat(3,1fr);gap:2px;width:42px;height:42px;background:#8a93a8;padding:2px;border-radius:4px;font-weight:900;font-size:12px">
+            <span style="background:#1b2334;display:flex;align-items:center;justify-content:center;color:#5b9bd5">O</span><span style="background:#1b2334"></span><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;color:#e0473a">X</span>
+            <span style="background:#1b2334"></span><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;color:#e0473a">X</span><span style="background:#1b2334"></span>
+            <span style="background:#1b2334;display:flex;align-items:center;justify-content:center;color:#5b9bd5">O</span><span style="background:#1b2334"></span><span style="background:#1b2334;display:flex;align-items:center;justify-content:center;color:#e0473a">X</span>
+          </div>
+          <div class="name">Tic-Tac-Toe</div>
+          <div class="desc">Classic OX game. CPU plays optimally and never loses. 2-player mode too.</div>
+          <div class="tagrow"><a class="tag" href="../games/tictactoe.html">Play &#x2192;</a><a class="tag tag-online" href="../games/tictactoe.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-tictactoe').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">&#x1F3B2;</div>
+          <div class="name">Chinchiro</div>
+          <div class="desc">Japanese dice game with 3 dice. Solo or multiplayer hand comparison.</div>
+          <div class="tagrow"><a class="tag" href="../games/chinchiro.html">Play &#x2192;</a><a class="tag tag-online" href="../games/chinchiro.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-chinchiro').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon" style="font-size:17px;letter-spacing:1px">&#x1F3B2;&#x1F3B2;&#x1F3B2;&#x1F3B2;&#x1F3B2;</div>
+          <div class="name">Yacht</div>
+          <div class="desc">5-dice scoring game. 1-4 players compete for the highest total.</div>
+          <div class="tagrow"><a class="tag" href="../games/yacht.html">Play &#x2192;</a><a class="tag tag-online" href="../games/yacht.html?online=1&_v=2">&#x1F310; Online</a><button class="tag tag-rule" onclick="document.getElementById('rule-yacht').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+        <div class="card">
+          <div class="icon">&#x1F480;</div>
+          <div class="name">Russian Roulette</div>
+          <div class="desc">Gun mode: 6-chamber revolver. Bomb mode: 16-button bomb. Party game with 2 modes.</div>
+          <div class="tagrow"><a class="tag" href="../games/russian-roulette.html">Play &#x2192;</a><button class="tag tag-rule" onclick="document.getElementById('rule-russian').classList.add('show')">&#x1F4D6; Rules</button></div></div>
+
+            </div>
+      <p class="filter-empty" id="filter-empty">No games available for this player count</p>
+    </div>
+
+  </div>
+
+  <footer>Click any game to start playing</footer>
+
+  <!-- Rule modals are kept from the original (Japanese) since they use the same IDs referenced by onclick handlers -->
+  <!-- For brevity, rule modals are included but kept in Japanese as they are secondary content -->
+  <!-- Backgammon Rules -->
+  <div id="rule-backgammon" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="rule-card">
+      <button class="rule-close" onclick="document.getElementById('rule-backgammon').classList.remove('show')">&times;</button>
+      <h2>&#x1F3B2; Backgammon Rules</h2>
+      <h3>Objective</h3>
+      <p>Move all 15 of your pieces from your opponent's side to your home board (bottom-right 6 points), then bear them off the board first to win.</p>
+      <h3>Basic Movement</h3>
+      <ul>
+        <li>Roll 2 dice and advance pieces by the number shown.</li>
+        <li>You can use both dice on separate pieces or combine on one piece.</li>
+        <li>Doubles let you use the same number 4 times.</li>
+        <li>You cannot land on a point occupied by 2+ opponent pieces (a stack).</li>
+      </ul>
+      <h3>Hit</h3>
+      <ul>
+        <li>Landing on a point with a single opponent piece (a blot) sends it to the bar.</li>
+        <li>A piece on the bar must re-enter the opponent's home board before any other move.</li>
+      </ul>
+      <h3>Bearing Off</h3>
+      <ul>
+        <li>Once all 15 pieces are in your home board, you can start bearing off.</li>
+        <li>Remove pieces matching the dice roll. If no piece matches, move the farthest piece.</li>
+      </ul>
+      <h3>Winning Points</h3>
+      <ul>
+        <li><b>Normal win</b>: 1 point if opponent has borne off at least 1 piece.</li>
+        <li><b>Gammon</b>: 2 points if opponent has borne off 0 pieces.</li>
+        <li><b>Backgammon</b>: 3 points if opponent still has pieces on the bar or your home board.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="rule-catan" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-catan').classList.remove('show')">&times;</button><h2>&#x1F3DD;&#xFE0F; Catan Rules</h2><h3>Objective</h3><p>Settle Catan island and be the first to reach <b>10 victory points</b>.</p><h3>Gameplay</h3><ul><li>Roll dice to produce resources from adjacent tiles.</li><li>Trade resources and build roads, settlements, cities, and development cards.</li><li>Rolling 7 activates the robber.</li></ul></div></div>
+
+  <div id="rule-mahjong" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-mahjong').classList.remove('show')">&times;</button><h2>&#x1F004; Mahjong Rules</h2><h3>Objective</h3><p>Form a winning hand of 4 melds + 1 pair (14 tiles total). Must have at least one yaku (scoring pattern).</p><h3>Gameplay</h3><ul><li>4 players draw and discard tiles in turn.</li><li>Call chi/pon/kan to claim discards.</li><li>Declare riichi for bonus points when in tenpai (one tile away).</li></ul></div></div>
+
+  <div id="rule-othello" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-othello').classList.remove('show')">&times;</button><h2>&#x26AB; Othello Rules</h2><h3>Objective</h3><p>Have more discs of your color on the 8x8 board when the game ends.</p><h3>Rules</h3><ul><li>Place a disc to flank opponent's discs in any direction.</li><li>All flanked discs are flipped to your color.</li><li>Pass if no valid move. Game ends when both pass or board is full.</li></ul></div></div>
+
+  <div id="rule-tetris" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-tetris').classList.remove('show')">&times;</button><h2>&#x1F7EA; Tetris Rules</h2><h3>Basics</h3><ul><li>Rotate and move falling tetrominoes to fill complete rows.</li><li>Clearing 4 rows at once = Tetris (highest score).</li><li>Game over when pieces stack to the top.</li></ul><h3>VS Mode</h3><ul><li>Split-screen simultaneous play. Clearing 2+ lines sends garbage to opponent.</li></ul></div></div>
+
+  <div id="rule-invader" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-invader').classList.remove('show')">&times;</button><h2>&#x1F47E; Space Invaders Rules</h2><h3>Objective</h3><p>Destroy all alien formations to defend Earth.</p><h3>Controls</h3><ul><li>Arrow keys to move, Space to shoot.</li><li>Use shields for cover. Shoot UFOs for bonus points.</li></ul></div></div>
+
+  <div id="rule-2048" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-2048').classList.remove('show')">&times;</button><h2>&#x1F522; 2048 Rules</h2><h3>Objective</h3><p>Swipe tiles on a 4x4 board to merge matching numbers and create 2048.</p><h3>Rules</h3><ul><li>Same numbers merge when they collide.</li><li>A new 2 or 4 appears after each move.</li><li>Game over when no moves remain.</li></ul></div></div>
+
+  <div id="rule-hitblow" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-hitblow').classList.remove('show')">&times;</button><h2>&#x1F50E; Mastermind Rules</h2><h3>Objective</h3><p>Guess the secret 4-digit number (all unique digits 0-9).</p><h3>Feedback</h3><ul><li><b>Hit</b>: correct digit in correct position.</li><li><b>Blow</b>: correct digit in wrong position.</li></ul></div></div>
+
+  <div id="rule-mines" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-mines').classList.remove('show')">&times;</button><h2>&#x1F4A3; Minesweeper Rules</h2><h3>Objective</h3><p>Reveal all non-mine squares.</p><h3>Rules</h3><ul><li>Numbers show adjacent mine count.</li><li>Right-click to flag suspected mines.</li><li>Click a mine = game over.</li></ul></div></div>
+
+  <div id="rule-hagetaka" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-hagetaka').classList.remove('show')">&times;</button><h2>&#x1F985; Hol's der Geier Rules</h2><h3>Objective</h3><p>Collect the most points from score cards.</p><h3>Rules</h3><ul><li>Score cards range from -5 to +10. Each player bids simultaneously.</li><li>Highest bid wins positive cards. Ties cancel out.</li><li>Lowest bid gets negative cards.</li></ul></div></div>
+
+  <div id="rule-algo" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-algo').classList.remove('show')">&times;</button><h2>&#x1F0CF; Algo Rules</h2><h3>Objective</h3><p>Guess all of your opponent's hidden card numbers. Last player standing wins.</p><h3>Rules</h3><ul><li>24 cards (black 0-11, white 0-11) arranged in ascending order.</li><li>Draw a card, then guess an opponent's card. Correct = continue. Wrong = your drawn card is revealed.</li></ul></div></div>
+
+  <div id="rule-blokus" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-blokus').classList.remove('show')">&times;</button><h2>&#x1F7E5; Blokus Rules</h2><h3>Objective</h3><p>Place as many tiles as possible. Fewest remaining squares wins.</p><h3>Rules</h3><ul><li>Each piece must touch your own color at a corner but never along an edge.</li><li>First piece must cover your starting corner.</li></ul></div></div>
+
+  <div id="rule-gomoku" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-gomoku').classList.remove('show')">&times;</button><h2>&#x26AB; Gomoku Rules</h2><h3>Objective</h3><p>Be the first to get exactly 5 stones in a row (horizontal, vertical, or diagonal) on a 15x15 board.</p></div></div>
+
+  <div id="rule-mancala" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-mancala').classList.remove('show')">&times;</button><h2>&#x1FAA8; Mancala Rules</h2><h3>Objective</h3><p>Have more seeds in your store when the game ends.</p><h3>Rules</h3><ul><li>Pick up all seeds from one of your pits and sow counterclockwise.</li><li>Landing in your store = extra turn. Landing in an empty pit on your side = capture.</li></ul></div></div>
+
+  <div id="rule-hex" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-hex').classList.remove('show')">&times;</button><h2>&#x2B21; Hex Rules</h2><h3>Objective</h3><p>Connect your two opposite sides with a chain of stones. No draws are possible.</p></div></div>
+
+  <div id="rule-geister" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-geister').classList.remove('show')">&times;</button><h2>&#x1F47B; Geister Rules</h2><h3>Win Conditions</h3><ul><li>Capture all 4 of opponent's blue ghosts.</li><li>Move one of your blue ghosts to opponent's corner exit.</li><li>Opponent captures all 4 of your red ghosts.</li></ul></div></div>
+
+  <div id="rule-connect4" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-connect4').classList.remove('show')">&times;</button><h2>&#x1F534; Connect Four Rules</h2><h3>Objective</h3><p>Connect 4 of your color in a row (vertical, horizontal, or diagonal) on a 7x6 grid.</p><h3>Rules</h3><ul><li>Pieces drop to the lowest empty row in the chosen column.</li></ul></div></div>
+
+  <div id="rule-checkers" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-checkers').classList.remove('show')">&times;</button><h2>&#x1F534; Checkers Rules</h2><h3>Rules</h3><ul><li>Move diagonally forward. Jump over opponent pieces to capture (mandatory).</li><li>Multi-jumps are required. Reaching the back row promotes to King (moves both directions).</li></ul></div></div>
+
+  <div id="rule-15puzzle" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-15puzzle').classList.remove('show')">&times;</button><h2>&#x1F522; Slide Puzzle Rules</h2><h3>Objective</h3><p>Slide tiles into numerical order (1,2,3...) with the blank in the bottom-right.</p><h3>Sizes</h3><p>3x3 (8-puzzle), 4x4 (15-puzzle), 5x5 (24-puzzle).</p></div></div>
+
+  <div id="rule-dots" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-dots').classList.remove('show')">&times;</button><h2>&#x1F4E6; Dots and Boxes Rules</h2><h3>Rules</h3><ul><li>Take turns drawing one line between dots.</li><li>Complete a box = claim it + draw again.</li><li>Most boxes wins.</li></ul></div></div>
+
+  <div id="rule-chinese" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-chinese').classList.remove('show')">&times;</button><h2>&#x2736; Chinese Checkers Rules</h2><h3>Objective</h3><p>Move all your pieces from your triangle to the opposite triangle.</p><h3>Movement</h3><ul><li>Step to an adjacent empty space, or jump over pieces (chain jumps allowed).</li></ul></div></div>
+
+  <div id="rule-otrio" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-otrio').classList.remove('show')">&times;</button><h2>&#x2299; Otrio Rules</h2><h3>Win by any of 3 patterns</h3><ul><li><b>Same size</b>: 3 same-sized rings in a row.</li><li><b>Concentric</b>: S/M/L all in one cell.</li><li><b>Ascending</b>: S&rarr;M&rarr;L diagonally.</li></ul></div></div>
+
+  <div id="rule-quoridor" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-quoridor').classList.remove('show')">&times;</button><h2>&#x1F6A7; Quoridor Rules</h2><h3>Objective</h3><p>Reach the opposite side first.</p><h3>Rules</h3><ul><li>Each turn: move your pawn 1 step, OR place a wall (10 walls each).</li><li>Walls must never completely block a path to the goal.</li></ul></div></div>
+
+  <div id="rule-hasami" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-hasami').classList.remove('show')">&times;</button><h2>&#x2702;&#xFE0F; Hasami Shogi Rules</h2><h3>Objective</h3><p>Capture 5 opponent pieces first by flanking them horizontally or vertically.</p></div></div>
+
+  <div id="rule-solitaire" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-solitaire').classList.remove('show')">&times;</button><h2>&#x1F0CF; Solitaire (Klondike) Rules</h2><h3>Objective</h3><p>Build 4 foundation piles by suit from Ace to King.</p><h3>Rules</h3><ul><li>Tableau cards stack in alternating colors, descending.</li><li>Only Kings can fill empty columns.</li></ul></div></div>
+
+  <div id="rule-memory" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-memory').classList.remove('show')">&times;</button><h2>&#x1F3B4; Memory Match Rules</h2><h3>Rules</h3><ul><li>Flip 2 cards per turn. Match = keep them + go again.</li><li>Most pairs wins.</li></ul></div></div>
+
+  <div id="rule-blackjack" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-blackjack').classList.remove('show')">&times;</button><h2>&#x1F0A1; Blackjack Rules</h2><h3>Objective</h3><p>Get closer to 21 than the dealer without going over.</p><h3>Rules</h3><ul><li>Hit = draw a card. Stand = keep your hand. Double Down = double bet + 1 card.</li><li>A + face/10 = Blackjack (1.5x payout).</li></ul></div></div>
+
+  <div id="rule-daifugo" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-daifugo').classList.remove('show')">&times;</button><h2>&#x1F0CF; Daifugo Rules</h2><h3>Objective</h3><p>Be the first to play all your cards.</p><h3>Rules</h3><ul><li>Card strength: 3&lt;4&lt;...&lt;K&lt;A&lt;2. Play higher cards or pass.</li><li>8-cut: playing 8 clears the pile. Revolution: 4-of-a-kind reverses order.</li></ul></div></div>
+
+  <div id="rule-sevens" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-sevens').classList.remove('show')">&times;</button><h2>&#x1F0C6; Sevens Rules</h2><h3>Objective</h3><p>Be the first to play all your cards.</p><h3>Rules</h3><ul><li>7s start on the table. Play cards adjacent to existing sequences.</li><li>Limited passes allowed.</li></ul></div></div>
+
+  <div id="rule-shogi" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-shogi').classList.remove('show')">&times;</button><h2>&#x265F; Shogi Rules</h2><h3>Objective</h3><p>Checkmate the opponent's King.</p><h3>Key Features</h3><ul><li>Captured pieces can be dropped back onto the board as your own.</li><li>Most pieces can promote when entering the opponent's territory (last 3 rows).</li></ul></div></div>
+
+  <div id="rule-texas" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-texas').classList.remove('show')">&times;</button><h2>&#x1F0CF; Texas Hold'em Rules</h2><h3>Objective</h3><p>Make the best 5-card hand from 2 hole cards + 5 community cards.</p><h3>Rounds</h3><p>Preflop &rarr; Flop (3 cards) &rarr; Turn (4th) &rarr; River (5th) &rarr; Showdown.</p><h3>Hand Rankings (low to high)</h3><p>High Card &rarr; Pair &rarr; Two Pair &rarr; Three of a Kind &rarr; Straight &rarr; Flush &rarr; Full House &rarr; Four of a Kind &rarr; Straight Flush &rarr; Royal Flush</p></div></div>
+
+  <div id="rule-uno" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-uno').classList.remove('show')">&times;</button><h2>&#x1F3B4; UNO Rules</h2><h3>Objective</h3><p>Be the first to empty your hand. Call "UNO!" on your last card.</p><h3>Action Cards</h3><ul><li>Skip, Reverse, Draw 2, Wild, Wild Draw 4.</li></ul></div></div>
+
+  <div id="rule-speed" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-speed').classList.remove('show')">&times;</button><h2>&#x1F0CF; Speed Rules</h2><h3>Objective</h3><p>Empty your hand and draw pile first.</p><h3>Rules</h3><ul><li>Both players play simultaneously (no turns). Play cards 1 above or below the pile card.</li></ul></div></div>
+
+  <div id="rule-go" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-go').classList.remove('show')">&times;</button><h2>&#x26AB; Go Rules</h2><h3>Objective</h3><p>Surround more territory (empty intersections) than your opponent.</p><h3>Rules</h3><ul><li>Black and white alternate placing stones. Stones with no liberties are captured.</li><li>Ko rule prevents infinite loops. Both pass = game ends.</li></ul></div></div>
+
+  <div id="rule-chess" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-chess').classList.remove('show')">&times;</button><h2>&#x265E; Chess Rules</h2><h3>Objective</h3><p>Checkmate the opponent's King.</p><h3>Special Rules</h3><ul><li>Castling, en passant, pawn promotion.</li></ul></div></div>
+
+  <div id="rule-hanafuda" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-hanafuda').classList.remove('show')">&times;</button><h2>&#x1F3B4; Hanafuda Koi-Koi Rules</h2><h3>Objective</h3><p>Match cards by month to form scoring combinations (yaku).</p><h3>Koi-Koi</h3><ul><li>When you complete a yaku, choose to stop (score now) or call koi-koi (continue for higher score, but risk opponent winning).</li></ul></div></div>
+
+  <div id="rule-sudoku" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-sudoku').classList.remove('show')">&times;</button><h2>&#x1F522; Sudoku Rules</h2><h3>Rules (just 3)</h3><ul><li>Each row must contain 1-9 exactly once.</li><li>Each column must contain 1-9 exactly once.</li><li>Each 3x3 box must contain 1-9 exactly once.</li></ul></div></div>
+
+  <div id="rule-morris" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-morris').classList.remove('show')">&times;</button><h2>&#x229E; Nine Men's Morris Rules</h2><h3>Objective</h3><p>Reduce opponent to 2 pieces or block all their moves.</p><h3>Phases</h3><ul><li>Phase 1: Place pieces. Forming 3 in a row (mill) lets you remove an opponent piece.</li><li>Phase 2: Move pieces to adjacent points.</li><li>Phase 3: When down to 3 pieces, you can fly to any empty point.</li></ul></div></div>
+
+  <div id="rule-nimmt" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-nimmt').classList.remove('show')">&times;</button><h2>&#x1F42E; 6 Nimmt! Rules</h2><h3>Rules</h3><ul><li>Everyone plays a card simultaneously. Cards are placed in ascending order on 4 rows.</li><li>Playing the 6th card in a row = take all 5 cards as penalty points.</li></ul></div></div>
+
+  <div id="rule-dobutsu" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-dobutsu').classList.remove('show')">&times;</button><h2>&#x1F981; Dobutsu Shogi Rules</h2><h3>Win Conditions</h3><ul><li>Catch: Capture opponent's Lion.</li><li>Try: Move your Lion to opponent's back row.</li></ul><h3>Pieces</h3><ul><li>Lion (all directions), Elephant (diagonal), Giraffe (orthogonal), Chick (forward only, promotes to Hen).</li></ul></div></div>
+
+  <div id="rule-carcassonne" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-carcassonne').classList.remove('show')">&times;</button><h2>&#x1F3F0; Carcassonne Rules</h2><h3>Rules</h3><ul><li>Draw and place tiles matching edges. Optionally place a meeple on the new tile.</li><li>Completed roads (1pt/tile), cities (2pt/tile + crests), monasteries (9pt when surrounded).</li></ul></div></div>
+
+  <div id="rule-tictactoe" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-tictactoe').classList.remove('show')">&times;</button><h2>&#x2B55; Tic-Tac-Toe Rules</h2><h3>Rules</h3><ul><li>3x3 grid. Get 3 in a row to win. All 9 filled with no winner = draw.</li></ul></div></div>
+
+  <div id="rule-chinchiro" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-chinchiro').classList.remove('show')">&times;</button><h2>&#x1F3B2; Chinchiro Rules</h2><h3>Rules</h3><ul><li>Roll 3 dice. Triples, straights (4-5-6 or 1-2-3), and pairs determine your score.</li><li>No valid hand = re-roll (up to 3 times).</li></ul></div></div>
+
+  <div id="rule-yacht" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-yacht').classList.remove('show')">&times;</button><h2>&#x1F3B2; Yacht Rules</h2><h3>Rules</h3><ul><li>Roll 5 dice up to 3 times per turn, keeping any between rolls.</li><li>Score in one of 12 categories each round. Yacht (5 of a kind) = 50 points.</li></ul></div></div>
+
+  <div id="rule-bomberman" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-bomberman').classList.remove('show')">&times;</button><h2>&#x1F4A3; Bomberman Rules</h2><h3>Rules</h3><ul><li>Place bombs to destroy enemies. Collect power-ups: extra bombs, longer flames, speed.</li><li>3 lives. Don't get caught in your own blast!</li></ul></div></div>
+
+  <div id="rule-russian" class="rule-overlay" onclick="if(event.target===this)this.classList.remove('show')"><div class="rule-card"><button class="rule-close" onclick="document.getElementById('rule-russian').classList.remove('show')">&times;</button><h2>&#x1F480; Russian Roulette Rules</h2><h3>Rules</h3><ul><li>Gun mode: 6-chamber revolver, 1 bullet. Take turns pulling the trigger. Last one standing wins.</li><li>Bomb mode: 16 buttons, one is the bomb. 2-6 players.</li></ul></div></div>
+
+  <!-- Create Room Modal -->
+  <div id="create-modal" class="cm-overlay" hidden>
+    <div class="cm-card">
+      <button id="cm-close" class="cm-close" aria-label="Close">&times;</button>
+      <h2>Which game do you want to play?</h2>
+      <p class="cm-sub">Choose a game to get a room code. Share the code with your opponent.</p>
+      <div class="cm-grid">
+        <a href="../%E3%82%AB%E3%82%BF%E3%83%B3/index.html?online=1&_v=2&create=1"><svg width="22" height="22" viewBox="0 0 40 40" fill="none" stroke-linejoin="round"><polygon points="20,3 27.3,7.5 27.3,15.8 20,20 12.7,15.8 12.7,7.5" fill="#2d7a3a" fill-opacity="0.42" stroke="#4aaa5e" stroke-width="2"/><polygon points="31.2,12.5 38.4,16.7 38.4,25 31.2,29.2 23.9,25 23.9,16.7" fill="#d4a827" fill-opacity="0.42" stroke="#d4a827" stroke-width="2"/><polygon points="8.8,12.5 16.1,16.7 16.1,25 8.8,29.2 1.6,25 1.6,16.7" fill="#7a4020" fill-opacity="0.42" stroke="#c0522a" stroke-width="2"/></svg><span>Catan</span></a>
+        <a href="../%E9%BA%BB%E9%9B%80%E3%82%B2%E3%83%BC%E3%83%A0/index.html?online=1&_v=2&create=1">&#x1F004;<span>Mahjong</span></a>
+        <a href="../games/othello.html?online=1&_v=2&create=1"><span style="font-size:20px;letter-spacing:-4px;line-height:1">&#x26AB;&#x26AA;</span><span>Othello</span></a>
+        <a href="../games/tetris-vs.html?online=1&create=1"><svg width="22" height="22" viewBox="0 0 40 40" style="display:block;flex-shrink:0"><rect x="15" y="3" width="10" height="10" rx="2" fill="#9b59b6"/><rect x="3" y="15" width="10" height="10" rx="2" fill="#9b59b6"/><rect x="15" y="15" width="10" height="10" rx="2" fill="#9b59b6"/><rect x="27" y="15" width="10" height="10" rx="2" fill="#9b59b6"/></svg><span>Tetris VS</span></a>
+        <a href="../games/g2048-vs.html?online=1&create=1"><div style="width:26px;height:26px;background:#edc22e;border-radius:5px;display:flex;align-items:center;justify-content:center;color:#776e65;font-weight:900;font-size:9px;flex-shrink:0">2048</div><span>2048 VS</span></a>
+        <a href="../games/hitblow.html?online=1&_v=2&create=1"><div style="display:inline-grid;grid-template-columns:1fr 1fr;gap:2px;width:22px;height:22px;flex-shrink:0"><span style="background:#e0473a;border-radius:50%"></span><span style="background:#3e87d6;border-radius:50%"></span><span style="background:#e8c244;border-radius:50%"></span><span style="background:#5cb568;border-radius:50%"></span></div><span>Mastermind</span></a>
+        <a href="../games/hagetaka.html?online=1&_v=2&create=1">&#x1F985;<span>Hol's der Geier</span></a>
+        <a href="../games/algo.html?online=1&_v=2&create=1"><svg width="20" height="18" viewBox="0 0 40 36" fill="none" style="flex-shrink:0"><rect x="1" y="4" width="17" height="28" rx="3" fill="#222"/><text x="9.5" y="23" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">0</text><rect x="22" y="4" width="17" height="28" rx="3" fill="#fff" stroke="#ccc" stroke-width="1"/><text x="30.5" y="23" text-anchor="middle" font-size="13" font-weight="700" fill="#333">1</text></svg><span>Algo</span></a>
+        <a href="../games/blokus.html?online=1&_v=2&create=1"><span>&#x1F7E5;</span><span>Blokus</span></a>
+        <a href="../games/gomoku.html?online=1&_v=2&create=1"><span style="font-size:14px;letter-spacing:0;line-height:1">&#x26AB;&#x26AA;&#x26AB;&#x26AA;&#x26AB;</span><span>Gomoku</span></a>
+        <a href="../games/mancala.html?online=1&_v=2&create=1"><span>&#x1FAA8;</span><span>Mancala</span></a>
+        <a href="../games/hex.html?online=1&_v=2&create=1"><span style="font-size:18px;letter-spacing:-3px;line-height:1"><span style="color:#e0473a">&#x2B22;</span><span style="color:#3e87d6">&#x2B22;</span></span><span>Hex</span></a>
+        <a href="../games/backgammon.html?online=1&_v=2&create=1"><span>&#x1F3B2;</span><span>Backgammon</span></a>
+        <a href="../games/geister.html?online=1&_v=2&create=1">&#x1F47B;<span>Geister</span></a>
+        <a href="../games/connect4.html?online=1&_v=2&create=1"><span style="font-size:15px;letter-spacing:0;line-height:1">&#x1F534;&#x1F7E1;&#x1F534;&#x1F7E1;</span><span>Connect Four</span></a>
+        <a href="../games/checkers.html?online=1&_v=2&create=1"><span>&#x26AB;</span><span>Checkers</span></a>
+        <a href="../games/15puzzle.html?online=1&_v=2&create=1"><span>&#x1F522;</span><span>Slide Puzzle</span></a>
+        <a href="../games/dots.html?online=1&_v=2&create=1"><span>&#x1F4E6;</span><span>Dots &amp; Boxes</span></a>
+        <a href="../games/chinese.html?online=1&_v=2&create=1"><span>&#x2736;</span><span>Chinese Checkers</span></a>
+        <a href="../games/otrio.html?online=1&_v=2&create=1"><span>&#x2299;</span><span>Otrio</span></a>
+        <a href="../games/quoridor.html?online=1&_v=2&create=1"><span>&#x1F6A7;</span><span>Quoridor</span></a>
+        <a href="../games/hasami.html?online=1&_v=2&create=1"><span>&#x2702;&#xFE0F;</span><span>Hasami Shogi</span></a>
+        <a href="../games/memory.html?online=1&_v=2&create=1"><span>&#x1F3B4;</span><span>Memory Match</span></a>
+        <a href="../games/blackjack.html?online=1&_v=2&create=1"><span>&#x1F0A1;</span><span>Blackjack</span></a>
+        <a href="../games/daifugo.html?online=1&_v=2&create=1">&#x1F0CF;<span>Daifugo</span></a>
+        <a href="../games/sevens.html?online=1&_v=2&create=1"><span>7&#xFE0F;&#x20E3;</span><span>Sevens</span></a>
+        <a href="../games/speed.html?online=1&_v=2&create=1"><span>&#x26A1;</span><span>Speed</span></a>
+        <a href="../games/poker.html?online=1&_v=2&create=1"><span>&#x1F0CF;</span><span>Texas Hold'em</span></a>
+        <a href="../games/uno.html?online=1&_v=2&create=1"><span style="color:#e0473a;font-weight:800;font-size:12px">UNO</span><span>UNO</span></a>
+        <a href="../games/shogi.html?online=1&_v=2&create=1"><span>&#x265F;</span><span>Shogi</span></a>
+        <a href="../games/go.html?online=1&_v=2&create=1"><span>&#x26AB;</span><span>Go</span></a>
+        <a href="../games/chess.html?online=1&_v=2&create=1">&#x265E;<span>Chess</span></a>
+        <a href="../games/hanafuda.html?online=1&_v=2&create=1">&#x1F3B4;<span>Hanafuda Koi-Koi</span></a>
+        <a href="../games/morris.html?online=1&_v=2&create=1">&#x229E;<span>Nine Men's Morris</span></a>
+        <a href="../games/nimmt.html?online=1&_v=2&create=1">&#x1F42E;<span>6 Nimmt!</span></a>
+        <a href="../games/dobutsu.html?online=1&_v=2&create=1"><span>&#x1F981;</span><span>Dobutsu Shogi</span></a>
+        <a href="../games/tictactoe.html?online=1&_v=2&create=1"><span style="font-weight:900;font-size:14px;color:#e0473a">X</span><span>Tic-Tac-Toe</span></a>
+        <a href="../games/chinchiro.html?online=1&_v=2&create=1">&#x1F3B2;<span>Chinchiro</span></a>
+        <a href="../games/yacht.html?online=1&_v=2&create=1"><span style="font-size:14px;letter-spacing:0;line-height:1">&#x1F3B2;&#x1F3B2;&#x1F3B2;</span><span>Yacht</span></a>
+        <a href="../games/bomberman.html?online=1&_v=2&create=1">&#x1F4A3;<span>Bomberman</span></a>
+        <a href="../games/carcassonne.html?online=1&_v=2&create=1">&#x1F3F0;<span>Carcassonne</span></a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Player count filter: game name -> tags (solo / duo / multi)
+    (function () {
+      var TAGS = {
+        "2048": ["solo","duo"], "Tetris": ["solo","duo"], "Solitaire": ["solo","card"],
+        "Minesweeper": ["solo"], "Sudoku": ["solo"], "Space Invaders": ["solo"],
+        "Mastermind": ["duo", "multi"],
+        "Blackjack": ["duo", "multi", "card"],
+        "Yacht": ["duo", "multi"],
+        "Hol's der Geier": ["duo", "multi", "card"],
+        "6 Nimmt!": ["duo", "multi", "card"],
+        "Algo": ["duo", "multi", "card"],
+        "Chinchiro": ["duo", "multi"],
+        "Memory Match": ["duo", "multi", "card"],
+        "Otrio": ["duo", "multi", "board"],
+        "Quoridor": ["duo", "multi", "board"],
+        "Othello": ["duo","board"], "Gomoku": ["duo","board"], "Checkers": ["duo","board"], "Mancala": ["duo","board"],
+        "Hex": ["duo","board"], "Connect Four": ["duo","board"], "Shogi": ["duo","board"], "Go": ["duo","board"],
+        "Chess": ["duo","board"], "Tic-Tac-Toe": ["duo","board"], "Geister": ["duo","board"],
+        "Dobutsu Shogi": ["duo","board"], "Backgammon": ["duo","board"], "Hasami Shogi": ["duo","board"],
+        "Nine Men's Morris": ["duo","board"], "Hanafuda Koi-Koi": ["duo","card"],
+        "Dots and Boxes": ["duo","board"], "Chinese Checkers": ["duo","board"],
+        "Catan": ["multi", "board"], "Mahjong": ["multi", "board"],
+        "Daifugo": ["duo", "multi", "card"], "Sevens": ["duo", "multi", "card"],
+        "Carcassonne": ["duo", "multi", "board"],
+        "Blokus": ["duo", "multi", "board"],
+        "Texas Hold'em": ["duo", "multi", "card"],
+        "Slide Puzzle": ["solo","duo"],
+        "UNO": ["duo", "multi", "card"],
+        "Speed": ["duo", "card"],
+        "Bomberman": ["solo", "duo"],
+        "Russian Roulette": ["multi"]
+      };
+      var cards = [].slice.call(document.querySelectorAll(".col-games .grid .card"));
+      cards.forEach(function (c) {
+        var nameEl = c.querySelector(".name");
+        var t = TAGS[(nameEl ? nameEl.textContent : "").trim()];
+        c.dataset.tags = t ? t.join(",") : "solo,duo,multi";
+      });
+      var FAVES_KEY = 'ng-game-faves-en';
+      var faves = new Set(JSON.parse(localStorage.getItem(FAVES_KEY) || '[]'));
+      function saveFaves() { localStorage.setItem(FAVES_KEY, JSON.stringify([...faves])); }
+
+      cards.forEach(function(card) {
+        var gameName = (card.querySelector('.name') || {}).textContent || '';
+        gameName = gameName.trim();
+        var btn = document.createElement('button');
+        btn.className = 'fav-btn';
+        btn.setAttribute('aria-label', 'Favorite');
+        btn.textContent = faves.has(gameName) ? '⭐' : '☆';
+        if (faves.has(gameName)) card.classList.add('faved');
+        btn.addEventListener('click', function(e) {
+          e.preventDefault(); e.stopPropagation();
+          if (faves.has(gameName)) {
+            faves.delete(gameName); btn.textContent = '☆'; card.classList.remove('faved');
+          } else {
+            faves.add(gameName); btn.textContent = '⭐'; card.classList.add('faved');
+          }
+          saveFaves();
+          if (currentFilter === 'fav') applyFilters();
+        });
+        card.appendChild(btn);
+      });
+
+      // Recently played games
+      var RECENT_KEY = 'ng-game-recent-en';
+      var MAX_RECENT = 8;
+      function loadRecent() { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch(e) { return []; } }
+      function saveRecent(arr) { localStorage.setItem(RECENT_KEY, JSON.stringify(arr)); }
+      function recordPlay(name, icon, href) {
+        var arr = loadRecent().filter(function(x) { return x.name !== name; });
+        arr.unshift({ name: name, icon: icon, href: href });
+        if (arr.length > MAX_RECENT) arr = arr.slice(0, MAX_RECENT);
+        saveRecent(arr);
+      }
+      function renderRecent() {
+        var arr = loadRecent();
+        var sec = document.getElementById('recent-section');
+        var row = document.getElementById('recent-row');
+        if (!arr.length) { sec.style.display = 'none'; return; }
+        sec.style.display = '';
+        row.innerHTML = arr.map(function(x) {
+          return '<a class="recent-chip" href="' + x.href + '" data-name="' + x.name.replace(/"/g,'&quot;') + '">' +
+                 '<span class="r-icon">' + x.icon + '</span>' +
+                 '<span>' + x.name + '</span></a>';
+        }).join('');
+        row.querySelectorAll('.recent-chip').forEach(function(a) {
+          a.addEventListener('click', function() {
+            var item = arr.find(function(x) { return x.name === a.dataset.name; });
+            if (item) recordPlay(item.name, item.icon, item.href);
+          });
+        });
+      }
+      document.getElementById('recent-toggle').addEventListener('click', function() {
+        this.classList.toggle('open');
+        document.getElementById('recent-row').hidden = !document.getElementById('recent-row').hidden;
+      });
+      cards.forEach(function(card) {
+        var playLink = card.querySelector('.tagrow .tag:not(.tag-online):not(.tag-rule)');
+        if (!playLink) return;
+        var nameEl = card.querySelector('.name');
+        var iconEl = card.querySelector('.icon');
+        if (!nameEl || !iconEl) return;
+        var iconText = iconEl.childElementCount === 0 ? (iconEl.textContent.trim() || '🎮') : '🎮';
+        playLink.addEventListener('click', function() {
+          recordPlay(nameEl.textContent.trim(), iconText, playLink.getAttribute('href'));
+        });
+      });
+      renderRecent();
+
+      var bar = document.getElementById("filterbar");
+      var searchInput = document.getElementById("game-search");
+      var searchClear = document.getElementById("search-clear");
+      var currentFilter = "all";
+      var currentSort = null;
+      var originalOrder = cards.slice();
+      var gameGrid = document.querySelector(".col-games .grid");
+
+      function applySort() {
+        var sorted;
+        if (currentSort === "asc") {
+          sorted = cards.slice().sort(function (a, b) {
+            return a.querySelector(".name").textContent.localeCompare(b.querySelector(".name").textContent, "en");
+          });
+        } else if (currentSort === "desc") {
+          sorted = cards.slice().sort(function (a, b) {
+            return b.querySelector(".name").textContent.localeCompare(a.querySelector(".name").textContent, "en");
+          });
+        } else {
+          sorted = originalOrder.slice();
+        }
+        sorted.forEach(function (card) { gameGrid.appendChild(card); });
+      }
+
+      function applyFilters() {
+        var q = searchInput.value.trim().toLowerCase();
+        var f = currentFilter;
+        var visible = 0;
+        cards.forEach(function (c) {
+          var name = (c.querySelector(".name") ? c.querySelector(".name").textContent : "").toLowerCase();
+          var desc = (c.querySelector(".desc") ? c.querySelector(".desc").textContent : "").toLowerCase();
+          var tagMatch = (f === "all") || (f === "fav" ? faves.has((c.querySelector(".name")||{}).textContent.trim()) : ("," + c.dataset.tags + ",").indexOf("," + f + ",") >= 0);
+          var searchMatch = !q || name.indexOf(q) >= 0 || desc.indexOf(q) >= 0;
+          var show = tagMatch && searchMatch;
+          c.style.display = show ? "" : "none";
+          if (show) visible++;
+        });
+        document.getElementById("filter-empty").style.display = visible ? "none" : "block";
+        searchClear.style.display = q ? "block" : "none";
+      }
+
+      bar.addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-f]"); if (!b) return;
+        bar.querySelectorAll("button[data-f]").forEach(function (x) { x.classList.remove("on"); });
+        b.classList.add("on");
+        currentFilter = b.dataset.f;
+        applyFilters();
+      });
+
+      bar.addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-s]"); if (!b) return;
+        var s = b.dataset.s;
+        if (currentSort === s) {
+          currentSort = null;
+          bar.querySelectorAll("button[data-s]").forEach(function (x) { x.classList.remove("on"); });
+        } else {
+          currentSort = s;
+          bar.querySelectorAll("button[data-s]").forEach(function (x) { x.classList.remove("on"); });
+          b.classList.add("on");
+        }
+        applySort();
+        applyFilters();
+      });
+
+      searchInput.addEventListener("input", applyFilters);
+      searchClear.addEventListener("click", function () {
+        searchInput.value = ""; applyFilters(); searchInput.focus();
+      });
+    })();
+  </script>
+
+  <script>
+    // Create room modal
+    (function () {
+      var modal = document.getElementById("create-modal");
+      document.getElementById("hub-create-btn").addEventListener("click", function () { modal.hidden = false; });
+      document.getElementById("cm-close").addEventListener("click", function () { modal.hidden = true; });
+      modal.addEventListener("click", function (e) { if (e.target === modal) modal.hidden = true; });
+    })();
+  </script>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="../shared/lobby.js?v=8"></script>
+  <script>
+    // Hub: PeerJS probe to find room and redirect
+    (function () {
+      var input = document.getElementById("hub-join-code");
+      var btn = document.getElementById("hub-join-btn");
+      var msg = document.getElementById("hub-join-msg");
+      var ROOM_PREFIX = "ngroom-";
+      var PEER_CFG = {
+        config: {
+          iceServers: [
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" },
+            { urls: "stun:stun2.l.google.com:19302" },
+            { urls: "stun:stun3.l.google.com:19302" },
+            { urls: "turn:openrelay.metered.ca:80",  username: "openrelayproject", credential: "openrelayproject" },
+            { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+            { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
+          ],
+        },
+      };
+
+      function go() {
+        var code = (input.value || "").trim();
+        if (!/^\d{4}$/.test(code)) { msg.textContent = "Please enter a 4-digit code."; return; }
+        if (typeof Peer === "undefined") {
+          msg.textContent = "Communication library is loading. Please try again shortly."; return;
+        }
+        btn.disabled = true;
+        msg.textContent = "Searching for room...";
+
+        var peer = new Peer(PEER_CFG);
+        var settled = false;
+
+        function fail(m) {
+          msg.textContent = m;
+          btn.disabled = false;
+          try { peer.destroy(); } catch (e) {}
+        }
+
+        peer.on("open", function () {
+          var c = peer.connect(ROOM_PREFIX + code, { reliable: true });
+          c.on("data", function (m) {
+            if (settled || !m || typeof m !== "object") return;
+            if (m.t === "hello") {
+              settled = true;
+              var paths = window.OnlineLobby && window.OnlineLobby.GAME_PATHS;
+              var path = paths && paths[m.game];
+              if (!path) { fail("Unknown game room (ID: " + m.game + ")"); return; }
+              try { peer.destroy(); } catch (e) {}
+              // Adjust path for en/ subdirectory
+              var adjustedPath = path.startsWith("games/") ? "../" + path : "../" + path;
+              location.href = adjustedPath + "?autojoin=" + code + "&_v=2";
+            }
+          });
+          c.on("error", function () { if (!settled) fail("Could not connect. Please check the code."); });
+          setTimeout(function () { if (!settled) fail("No response. Please check the code."); }, 8000);
+        });
+        peer.on("error", function (err) {
+          var t = err && err.type;
+          if (t === "peer-unavailable") fail("Room not found. Please check the code.");
+          else fail("Connection error: " + (t || "unknown"));
+        });
+      }
+
+      btn.addEventListener("click", go);
+      input.addEventListener("keydown", function (e) { if (e.key === "Enter") go(); });
+    })();
+  </script>
+
+  <script>
+    // Reconnect to interrupted game
+    (function () {
+      var TTL = 60 * 60 * 1000;
+      var btn = document.getElementById("hub-reconnect");
+      if (!btn) return;
+      var best = null;
+      try {
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (!k || k.indexOf("ngRoom:") !== 0) continue;
+          var o = null; try { o = JSON.parse(localStorage.getItem(k)); } catch (e) { continue; }
+          if (!o || !o.ts || !o.path) continue;
+          if (Date.now() - o.ts > TTL) { try { localStorage.removeItem(k); } catch (e) {} continue; }
+          if (!best || o.ts > best.ts) best = o;
+        }
+      } catch (e) {}
+      if (best) {
+        btn.hidden = false;
+        btn.addEventListener("click", function () {
+          var sep = best.path.indexOf("?") >= 0 ? "&" : "?";
+          location.href = best.path + sep + "reconnect=1";
+        });
+      }
+    })();
+  </script>
+
+  <script>window.FIREBASE_COUNTER_ID='hub';</script>
+  <script src="../shared/firebase-counter.js"></script>
+  <script>
+    // Display play counts on hub cards
+    (function () {
+      var GID = {
+        'Catan':'カタン','Mahjong':'mahjong','Othello':'othello','Gomoku':'gomoku',
+        'Checkers':'checkers','Dots and Boxes':'dots',
+        'Chinese Checkers':'chinese','Otrio':'otrio',
+        'Quoridor':'quoridor','Mancala':'mancala','Hex':'hex',
+        '2048':'g2048','Tetris':'tetris','Space Invaders':'invader',
+        'Connect Four':'connect4','Solitaire':'solitaire',
+        'Minesweeper':'mines','Mastermind':'hitblow',
+        'Memory Match':'memory','Blackjack':'blackjack','Daifugo':'daifugo',
+        'Sevens':'sevens','Chinchiro':'chinchiro','Yacht':'yacht',"Hol's der Geier":'hagetaka',"6 Nimmt!":'nimmt','Algo':'algo','Speed':'speed',
+        'Shogi':'shogi','Go':'go','Chess':'chess','Tic-Tac-Toe':'tictactoe',
+        'Sudoku':'sudoku','Carcassonne':'carcassonne','Geister':'geister',
+        'Dobutsu Shogi':'dobutsu','Backgammon':'backgammon',
+        'Hasami Shogi':'hasami',"Nine Men's Morris":'morris','Hanafuda Koi-Koi':'hanafuda'
+      };
+      FirebaseCounter.loadAll(function (counts) {
+        document.querySelectorAll('.col-games .grid .card').forEach(function (card) {
+          var nameEl = card.querySelector('.name');
+          if (!nameEl) return;
+          var gid = GID[nameEl.textContent.trim()];
+          if (!gid) return;
+          var n = counts[gid];
+          if (!n) return;
+          var el = document.createElement('span');
+          el.className = 'play-count';
+          el.textContent = Number(n).toLocaleString('en-US') + ' plays';
+          var desc = card.querySelector('.desc');
+          if (desc) desc.after(el);
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

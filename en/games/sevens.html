@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Sevens | Free Browser Game</title>
+<meta name="description" content="Play Sevens for free in your browser. A classic card game where you place cards in sequence around 7. Play against CPU, no installation required.">
+<meta name="keywords" content="Sevens,free,browser game,card game,playing cards">
+<meta property="og:title" content="Sevens | Free Browser Game">
+<meta property="og:description" content="Play Sevens for free in your browser. CPU opponents supported.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/sevens.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/sevens.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/sevens.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/sevens.html">
+<style>
+:root{--bg:#0E2A1C;--felt:#13402A;--txt:#EDE6D6;--sub:#8FB29C;--gold:#C9A227;--cardbg:#F4EFE3;--cardline:#C9BFA8;--red:#C23B26;--blk:#1C1C1C;--empty:#1c4d34;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:radial-gradient(ellipse at 50% 30%,#164a30,#0E2A1C);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:12px 6px 26px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:23px;letter-spacing:.18em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:8px}
+.setup{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.setup .lab{font-size:11px;color:var(--sub);margin-right:2px}
+.setup button{background:rgba(0,0,0,.25);border:1px solid #3a6a4c;color:var(--sub);padding:5px 13px;border-radius:16px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s}
+.setup button.on{border-color:var(--gold);color:var(--gold);font-weight:700}
+.cpus{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:8px}
+.cpu{background:rgba(0,0,0,.25);border-radius:8px;padding:5px 11px;font-size:12px;text-align:center;min-width:74px}
+.cpu .nm{color:var(--txt)}.cpu .ct{color:var(--gold);font-size:11px}
+.cpu.active{box-shadow:0 0 0 2px var(--gold)}
+.cpu.me .nm{color:#7fd6a0}
+.cpu.done{opacity:.5}.cpu.out{opacity:.4;color:#e0533e}
+.board{display:grid;grid-template-rows:repeat(4,1fr);gap:3px;background:rgba(0,0,0,.18);padding:6px;border-radius:8px;margin:4px 0}
+.brow{display:grid;grid-template-columns:repeat(13,1fr);gap:2px}
+.bc{aspect-ratio:5/7;min-width:24px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:min(2.6vw,13px);font-weight:700;background:var(--empty)}
+.bc.on{background:var(--cardbg)}
+.bc.red{color:var(--red)}.bc.blk{color:var(--blk)}
+.msg{min-height:20px;font-size:13px;color:var(--gold);margin:8px 0;text-align:center}
+.myhand{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px;width:min(98vw,560px)}
+.handlab{font-size:11px;color:var(--sub);margin-top:6px;min-height:14px}
+.card{width:42px;height:60px;border-radius:6px;background:var(--cardbg);border:1px solid var(--cardline);position:relative;font-weight:700;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .1s}
+.card.red{color:var(--red)}.card.blk{color:var(--blk)}
+.card .crn{position:absolute;top:3px;left:5px;font-size:13px;line-height:1.05}
+.card .big{position:absolute;bottom:2px;right:5px;font-size:17px;opacity:.8}
+.card.playable{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,162,39,.5)}
+.card.playable:hover{transform:translateY(-6px)}
+.card.dim{opacity:.4}
+.actions{display:flex;gap:10px;margin-top:10px}
+.actions button{background:var(--gold);border:none;color:#13402A;font-weight:700;padding:10px 22px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit}
+.actions button.alt{background:transparent;border:1px solid #3a6a4c;color:var(--txt)}
+.actions button:disabled{opacity:.4}
+.foot{margin-top:8px}
+.foot button{background:transparent;border:1px solid #3a6a4c;color:var(--txt);padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit}
+.joker-card{background:linear-gradient(135deg,#4a1a7a,#1a3a9a);border-color:#b08aff !important;color:#fff !important}
+.joker-card .crn,.joker-card .big{color:#fff !important}
+.joker-card.playable{border-color:#ffd700 !important;box-shadow:0 0 0 2px rgba(255,215,0,.6)}
+.joker-card.joker-sel{transform:translateY(-6px);box-shadow:0 0 0 3px #ffd700}
+.bc.joker-tgt{background:#2a4a20;border:2px solid var(--gold);cursor:pointer}
+.bc.joker-tgt:hover{background:#3a6a30}
+.bc.joker-placed{background:#3a205a !important}
+.win,.handoff{position:fixed;inset:0;background:rgba(8,20,14,.86);display:none;align-items:center;justify-content:center;z-index:30}
+.win.show,.handoff.show{display:flex}
+.win .c,.handoff .c{background:#13402A;border:1px solid var(--gold);border-radius:10px;padding:24px 34px;text-align:center;max-width:90vw}
+.win .t,.handoff .t{font-size:22px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:10px}
+.win .rk{font-size:13px;line-height:1.9;margin-bottom:14px}
+.handoff .s{font-size:13px;margin-bottom:16px}
+.win button,.handoff button{background:var(--gold);border:none;color:#13402A;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.hidden{display:none!important}
+.eval-panel{margin:6px 0;width:min(98vw,420px)}
+.eval-panel .ep-title{font-size:10px;color:var(--sub);letter-spacing:.15em;margin-bottom:3px}
+.eval-row{display:flex;align-items:center;gap:6px;margin:2px 0;font-size:11px}
+.eval-row .enm{min-width:56px;text-align:right;font-weight:700}
+.eval-row .ebar{flex:1;height:10px;background:rgba(0,0,0,.3);border-radius:5px;overflow:hidden}
+.eval-row .efill{height:100%;border-radius:5px;transition:width .4s}
+.eval-row .esc{min-width:28px;font-size:10px;color:var(--sub)}
+@media (max-width:480px){
+  .bc{min-width:0;font-size:min(3.8vw,13px)}
+  .card{width:34px;height:48px}
+  .card .crn{font-size:10px}
+  .card .big{font-size:12px}
+}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Sevens","description":"Sevens - a classic card game where you place cards in sequence around 7.","url":"https://naganuma2003.github.io/game/en/games/sevens.html","genre":["Card Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":"MultiPlayer","numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":4},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>Sevens</h1><div class="sub">SEVENS &mdash; 3 passes and you're out</div>
+<div class="setup" id="setup">
+  <span class="lab">Mode:</span><button data-g="cpu" class="on">CPU</button><button data-g="local">Local</button>
+  <span class="lab" style="margin-left:8px">Players:</span><button data-n="2">2</button><button data-n="3">3</button><button data-n="4" class="on">4</button>
+  <span class="lab" style="margin-left:8px">Jokers:</span><button data-j="0" class="on">0</button><button data-j="1">1</button><button data-j="2">2</button>
+  <span class="lab" style="margin-left:8px">CPU Level:</span><button data-lv="1">Easy</button><button data-lv="2" class="on">Normal</button><button data-lv="3">Hard</button>
+</div>
+<div class="cpus" id="cpus"></div>
+<div class="board" id="board"></div>
+<div class="msg" id="msg"></div>
+<div class="handlab" id="handlab"></div>
+<div class="myhand" id="myhand"></div>
+<div class="actions"><button id="pass" class="alt">Pass</button></div>
+<div class="eval-panel hidden" id="evalpanel"><div class="ep-title">AI EVALUATION</div><div id="evalbars"></div></div>
+<div class="foot"><button id="new">Redeal</button></div>
+<div class="win" id="winov"><div class="c"><div class="t" id="wint">Results</div><div class="rk" id="winrk"></div><button id="again">Play Again</button></div></div>
+<div class="handoff" id="handoff"><div class="c"><div class="t" id="ho-t">Switch</div><div class="s" id="ho-s">Pass the device</div><button id="ho-ok">View Hand</button></div></div>
+<script>
+const SUITS=['♠','♥','♦','♣'],RED={'♥':1,'♦':1};
+const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+let gmode='cpu',np=4,jokerCount=0;
+let ONLINE=false,MYSEAT=0,roomSend=null;
+let hands,board,turn,passes,outCnt,finished,gameOver,busy,jokerPending=null,localView=0;
+let NAMES=[];
+const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a'];
+function isHuman(o){return ONLINE||gmode==='local'||o===0;}
+function viewSeat(){return ONLINE?MYSEAT:(gmode==='cpu'?0:localView);}
+function myControlSeat(){return ONLINE?MYSEAT:(gmode==='cpu'?0:turn);}
+function canAct(){return turn===myControlSeat()&&!gameOver&&!busy&&!outCnt[turn]&&isHuman(turn);}
+function makeNames(){
+  const a=[];for(let i=0;i<np;i++){
+    if(ONLINE)a.push(i===MYSEAT?'You':'P'+(i+1));
+    else if(gmode==='cpu')a.push(i===0?'You':'CPU '+String.fromCharCode(64+i));
+    else a.push('Player '+(i+1));
+  }return a;}
+function init(){
+  jokerPending=null;
+  const deck=[];for(let s=0;s<4;s++)for(let r=0;r<13;r++)deck.push({s,r});
+  for(let k=0;k<jokerCount;k++)deck.push({joker:true,s:-1,r:-1});
+  for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+  NAMES=makeNames();
+  hands=Array.from({length:np},()=>[]);deck.forEach((c,i)=>hands[i%np].push(c));
+  hands.forEach(h=>h.sort((a,b)=>{if(a.joker)return 1;if(b.joker)return -1;return a.s-b.s||a.r-b.r;}));
+  board=Array.from({length:4},()=>new Array(13).fill(false));
+  passes=new Array(np).fill(0);outCnt=new Array(np).fill(false);finished=[];gameOver=false;busy=false;
+  for(let s=0;s<4;s++){board[s][6]=true;for(let o=0;o<np;o++){const idx=hands[o].findIndex(c=>!c.joker&&c.r===6);if(idx>=0)hands[o].splice(idx,1);}}
+  turn=Math.floor(Math.random()*np);localView=0;
+  document.getElementById('winov').classList.remove('show');
+  document.getElementById('handoff').classList.remove('show');
+  beginTurn(true);
+}
+function msg(s){document.getElementById('msg').textContent=s;}
+function canPlace(c){
+  if(c.joker)return validJokerPositions().length>0;
+  const r=c.r;if(board[c.s][r])return false;
+  if(r===6)return true;
+  if(r<6)return board[c.s][r+1];
+  return board[c.s][r-1];}
+function validJokerPositions(){
+  const pos=[];for(let s=0;s<4;s++)for(let r=0;r<13;r++){
+    if(!board[s][r]&&((r<6&&board[s][r+1])||(r>6&&board[s][r-1])))pos.push({s,r});}
+  return pos;}
+function legalCards(o){return hands[o].filter(canPlace);}
+function bestJokerPos(o){
+  const pos=validJokerPositions();if(!pos.length)return null;
+  let best=pos[0],bestScore=-1;
+  for(const p of pos){board[p.s][p.r]=true;
+    const score=hands[o].filter(c=>!c.joker&&canPlace(c)).length;
+    board[p.s][p.r]=false;
+    if(score>bestScore){bestScore=score;best=p;}}
+  return best;}
+function finRank(p){const i=finished.indexOf(p);if(i<0)return null;return['1st \u{1F3C6}','2nd','3rd','4th','5th'][i];}
+function render(){
+  const cpus=document.getElementById('cpus');cpus.innerHTML='';
+  for(let p=0;p<np;p++){const d=document.createElement('div');
+    d.className='cpu'+(turn===p&&!gameOver?' active':'')+(outCnt[p]?' out':'')+(hands[p].length===0?' done':'')+(ONLINE&&p===MYSEAT?' me':'');
+    const rk=finRank(p);
+    d.innerHTML=`<div class="nm" style="color:${PCOL[p]};font-weight:800">${NAMES[p]}</div><div class="ct">${rk||(outCnt[p]?'Out':hands[p].length+' cards')+' / Pass '+passes[p]}</div>`;
+    cpus.appendChild(d);}
+  const bd=document.getElementById('board');bd.innerHTML='';
+  const act=canAct();
+  const jTargets=(jokerPending&&act)?validJokerPositions():[];
+  for(let s=0;s<4;s++){const row=document.createElement('div');row.className='brow';
+    for(let r=0;r<13;r++){const c=document.createElement('div');
+      if(board[s][r]==='J'){c.className='bc on joker-placed '+(RED[SUITS[s]]?'red':'blk');c.textContent=RANKS[r]+SUITS[s];}
+      else if(board[s][r]){c.className='bc on '+(RED[SUITS[s]]?'red':'blk');c.textContent=RANKS[r]+SUITS[s];}
+      else{const isTarget=jTargets.some(p=>p.s===s&&p.r===r);c.className='bc'+(isTarget?' joker-tgt':'');
+        if(isTarget){const _s=s,_r=r;c.addEventListener('click',()=>emit({k:'joker',s:_s,r:_r}));}}
+      row.appendChild(c);}
+    bd.appendChild(row);}
+  const vs=viewSeat();
+  document.getElementById('handlab').textContent=(ONLINE||gmode==='local')?(NAMES[vs]+"'s hand"):'';
+  const mh=document.getElementById('myhand');mh.innerHTML='';
+  const showHand=hands[vs];
+  const legal=act?legalCards(turn):[];
+  showHand.forEach((c,ci)=>{const el=document.createElement('div');
+    const ok=act&&legal.includes(c);
+    if(c.joker){const isSel=jokerPending===c;
+      el.className='card joker-card'+(ok?' playable':act?' dim':'')+(isSel?' joker-sel':'');
+      el.innerHTML=`<span class="crn">JK</span><span class="big">\u{1F0CF}</span>`;
+      if(ok)el.addEventListener('click',()=>{jokerPending=isSel?null:c;if(!isSel)msg('Tap a position to place');render();});
+    }else{
+      el.className='card '+(RED[SUITS[c.s]]?'red':'blk')+(ok?' playable':act?' dim':'');
+      el.innerHTML=`<span class="crn">${RANKS[c.r]}<br>${SUITS[c.s]}</span><span class="big">${SUITS[c.s]}</span>`;
+      if(ok)el.addEventListener('click',()=>{jokerPending=null;emit({k:'play',ci});});
+    }
+    mh.appendChild(el);});
+  document.getElementById('pass').disabled=!act;
+  document.getElementById('msg').style.color=gameOver?'var(--gold)':PCOL[turn];document.getElementById('msg').style.fontWeight='700';
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(turn===MYSEAT&&!gameOver);
+  renderEval();
+}
+/* ---- input relay ---- */
+function emit(a){if(ONLINE){if(turn!==MYSEAT)return;roomSend(a);}else doAction(a);}
+function doAction(a){
+  if(a.k==='play')_play(turn,a.ci);
+  else if(a.k==='pass')_pass(turn);
+  else if(a.k==='joker')_joker(turn,a.s,a.r);
+}
+function _play(o,ci){if(gameOver)return;const c=hands[o][ci];if(!c||c.joker||!canPlace(c))return;
+  board[c.s][c.r]=true;hands[o].splice(ci,1);
+  if(hands[o].length===0&&!finished.includes(o))finished.push(o);next();}
+function _joker(o,s,r){if(gameOver||board[s][r])return;const idx=hands[o].findIndex(c=>c.joker);if(idx<0)return;
+  board[s][r]='J';hands[o].splice(idx,1);jokerPending=null;
+  if(hands[o].length===0&&!finished.includes(o))finished.push(o);next();}
+function _pass(o){passes[o]++;if(passes[o]>=3){forceOut(o);return;}next();}
+function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&((OnlineRoom.isCpu&&OnlineRoom.isCpu(s))||(OnlineRoom.isGone&&OnlineRoom.isGone(s)));}
+function autoKick(){if(!ONLINE||!OnlineRoom.isHost()||gameOver)return;const a=turn;if(!isAutoSeat(a))return;
+  setTimeout(()=>{
+    if(!(ONLINE&&OnlineRoom.isHost()&&!gameOver&&turn===a&&isAutoSeat(a)))return;
+    if(OnlineRoom.isCpu&&OnlineRoom.isCpu(a)){
+      const legal=legalCards(a);const reg=legal.filter(c=>!c.joker);const jk=legal.filter(c=>c.joker);
+      if(reg.length){reg.sort((x,y)=>Math.min(x.r,12-x.r)-Math.min(y.r,12-y.r));OnlineRoom.send({k:'play',ci:hands[a].indexOf(reg[0])});}
+      else if(jk.length){const pos=bestJokerPos(a);if(pos)OnlineRoom.send({k:'joker',s:pos.s,r:pos.r});else OnlineRoom.send({k:'pass'});}
+      else OnlineRoom.send({k:'pass'});
+    }else OnlineRoom.send({k:'pass'});
+  },650);}
+function forceOut(o){outCnt[o]=true;
+  for(const c of hands[o].slice()){if(c.joker){const pos=bestJokerPos(o);if(pos)board[pos.s][pos.r]='J';hands[o].splice(hands[o].indexOf(c),1);}}
+  let changed=true;while(changed){changed=false;for(const c of hands[o].slice()){if(canPlace(c)){board[c.s][c.r]=true;hands[o].splice(hands[o].indexOf(c),1);changed=true;}}}
+  for(const c of hands[o].slice()){if(c.s>=0)board[c.s][c.r]=true;}
+  hands[o]=[];msg(NAMES[o]+' passed 3 times and is out! Cards placed on the board.');next();}
+function next(){
+  const remain=[...Array(np).keys()].filter(p=>hands[p].length>0&&!outCnt[p]);
+  if(finished.length>=np-1||remain.length<=1){endGame();return;}
+  let n=turn;for(let k=0;k<np;k++){n=(n+1)%np;if(hands[n].length>0&&!outCnt[n]){turn=n;break;}}
+  beginTurn(false);
+}
+function beginTurn(first){
+  jokerPending=null;
+  if(gameOver){render();return;}
+  if(!isHuman(turn)){busy=true;render();setTimeout(cpuTurn,650);return;}
+  if(ONLINE){busy=false;render();msg(turn===MYSEAT?'Your turn. Tap a highlighted card.':NAMES[turn]+"'s turn...");autoKick();return;}
+  if(gmode==='cpu'){busy=false;localView=0;render();msg('Your turn');return;}
+  busy=true;render();
+  document.getElementById('ho-t').textContent=NAMES[turn]+"'s Turn";
+  document.getElementById('ho-s').textContent='Pass the device to '+NAMES[turn];
+  document.getElementById('handoff').classList.add('show');
+}
+document.getElementById('ho-ok').addEventListener('click',()=>{
+  document.getElementById('handoff').classList.remove('show');
+  localView=turn;busy=false;render();msg(NAMES[turn]+"'s turn. Tap a highlighted card.");
+});
+function cpuTurn(){const o=turn;busy=false;
+  const legal=legalCards(o);const regularLegal=legal.filter(c=>!c.joker);const jokerLegal=legal.filter(c=>c.joker);
+  if(regularLegal.length){
+    if(cpuLv===1){_play(o,hands[o].indexOf(regularLegal[Math.floor(Math.random()*regularLegal.length)]));return;}
+    regularLegal.sort((a,b)=>Math.min(a.r,12-a.r)-Math.min(b.r,12-b.r));
+    _play(o,hands[o].indexOf(regularLegal[0]));}
+  else if(jokerLegal.length){
+    if(cpuLv===1){msg(NAMES[o]+' plays a Joker');setTimeout(()=>_joker(o,jokerLegal[0].s,jokerLegal[0].r),400);return;}
+    const pos=bestJokerPos(o);if(pos){msg(NAMES[o]+' plays a Joker');setTimeout(()=>_joker(o,pos.s,pos.r),400);}else{msg(NAMES[o]+' passes ('+(passes[o]+1)+'/3)');_pass(o);}}
+  else{msg(NAMES[o]+' passes ('+(passes[o]+1)+'/3)');_pass(o);}
+}
+function endGame(){gameOver=true;
+  const rest=[...Array(np).keys()].filter(p=>!finished.includes(p)&&!outCnt[p]).sort((a,b)=>hands[a].length-hands[b].length);
+  for(const p of rest)finished.push(p);
+  const outs=[...Array(np).keys()].filter(p=>outCnt[p]&&!finished.includes(p));for(const p of outs)finished.push(p);
+  render();
+  let html='';finished.forEach((p,i)=>{html+=`${['1st','2nd','3rd','4th','5th'][i]}: ${NAMES[p]}${outCnt[p]?' (Out)':''}<br>`;});
+  const meSeat=ONLINE?MYSEAT:0;
+  const myRank=finished.indexOf(meSeat)+1;
+  document.getElementById('wint').textContent=(ONLINE||gmode==='cpu')?('You placed '+myRank+(['st','nd','rd'][myRank-1]||'th')+(myRank===1?' \u{1F389}':'')):'Results';
+  document.getElementById('winrk').innerHTML=html;
+  document.getElementById('winov').classList.add('show');
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
+document.getElementById('pass').addEventListener('click',()=>{if(!canAct())return;
+  if(legalCards(turn).length){msg('You have playable cards (cannot pass)');return;}emit({k:'pass'});});
+function newGame(){if(ONLINE)return;init();}
+document.getElementById('new').addEventListener('click',newGame);
+document.getElementById('again').addEventListener('click',newGame);
+document.getElementById('setup').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;
+  if(b.dataset.g){gmode=b.dataset.g;document.querySelectorAll('#setup button[data-g]').forEach(x=>x.classList.toggle('on',x===b));}
+  if(b.dataset.n){np=+b.dataset.n;document.querySelectorAll('#setup button[data-n]').forEach(x=>x.classList.toggle('on',x===b));}
+  if(b.dataset.j!==undefined){jokerCount=+b.dataset.j;document.querySelectorAll('#setup button[data-j]').forEach(x=>x.classList.toggle('on',x===b));}
+  if(b.dataset.lv){cpuLv=+b.dataset.lv;document.querySelectorAll('#setup button[data-lv]').forEach(x=>x.classList.toggle('on',x===b));return;}
+  init();});
+let cpuLv=2;
+function renderEval(){
+  const panel=document.getElementById('evalpanel');
+  if(gmode!=='cpu'||ONLINE||gameOver){panel.classList.add('hidden');return;}
+  panel.classList.remove('hidden');
+  const bars=document.getElementById('evalbars');bars.innerHTML='';
+  const maxCards=Math.ceil(52/np);
+  for(let p=0;p<np;p++){
+    if(outCnt[p]){
+      const row=document.createElement('div');row.className='eval-row';
+      row.innerHTML=`<span class="enm" style="color:${PCOL[p]}">${NAMES[p]}</span><span class="ebar"><span class="efill" style="width:0;background:#e0533e"></span></span><span class="esc">OUT</span>`;
+      bars.appendChild(row);continue;
+    }
+    const cardScore=(1-hands[p].length/maxCards)*70;
+    const passScore=((3-passes[p])/3)*30;
+    const score=Math.round(Math.min(100,Math.max(0,cardScore+passScore)));
+    const row=document.createElement('div');row.className='eval-row';
+    row.innerHTML=`<span class="enm" style="color:${PCOL[p]}">${NAMES[p]}</span><span class="ebar"><span class="efill" style="width:${score}%;background:${PCOL[p]}"></span></span><span class="esc">${score}</span>`;
+    bars.appendChild(row);
+  }
+}
+init();
+
+function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
+  document.getElementById('setup').classList.add('hidden');
+  document.querySelector('.foot').classList.add('hidden');
+  if(seat===0)roomSend({k:'setup',np:n,jokerCount});
+  else msg('Waiting for host setup...');}
+function applySetup(a){np=a.np;jokerCount=a.jokerCount;init();}
+function getState(){return {hands,board,turn,passes,outCnt,finished,gameOver,jokerCount};}
+function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;
+  document.getElementById('setup').classList.add('hidden');
+  document.querySelector('.foot').classList.add('hidden');
+  const s=o.state;jokerCount=s.jokerCount;hands=s.hands;board=s.board;turn=s.turn;passes=s.passes;outCnt=s.outCnt;finished=s.finished;gameOver=s.gameOver;
+  busy=false;jokerPending=null;localView=MYSEAT;NAMES=makeNames();
+  document.getElementById('winov').classList.remove('show');
+  document.getElementById('handoff').classList.remove('show');
+  render();
+  if(gameOver)endGame();
+  else msg(turn===MYSEAT?'Your turn. Tap a highlighted card.':NAMES[turn]+"'s turn...");
+  autoKick();}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-room.js?v=8"></script>
+<script>
+OnlineRoom.init({gameId:'sevens',minPlayers:2,maxPlayers:4,note:'Everyone connects cards in sequence to empty their hand first.',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>{ if(msg.k==='setup')applySetup(msg); else doAction(msg); },
+  onLeft:(seat)=>autoKick(),
+  getState,applyState});
+</script>
+<script src="../../shared/firebase-counter.js"></script></body>
+</html>

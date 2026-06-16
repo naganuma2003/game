@@ -1,0 +1,238 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Dobutsu Shogi | Free Browser Game</title>
+<meta name="description" content="Play Dobutsu Shogi (Animal Chess) for free in your browser. CPU and online multiplayer supported. Mobile-friendly — a fun mini shogi for all ages.">
+<meta property="og:title" content="Dobutsu Shogi | Free Browser Game">
+<meta property="og:description" content="Play Dobutsu Shogi for free in your browser. CPU and online multiplayer supported. Mobile-friendly.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/dobutsu.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/dobutsu.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/dobutsu.html">
+<style>
+:root{--bg:#1A140C;--board:#E8C887;--line:#7A5A2E;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--piece:#FFF6E2;--me:#2E7D46;--you:#C23B26;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 10px 26px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:23px;letter-spacing:.12em;margin:2px 0}
+.sub{font-size:10px;color:var(--sub);letter-spacing:.2em;margin-bottom:10px}
+.row{display:flex;gap:8px;margin-bottom:8px}
+.row button{background:transparent;border:1px solid #3a3326;color:var(--sub);padding:6px 13px;border-radius:18px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:all .2s}
+.row button.on{border-color:var(--gold);color:var(--gold)}
+.status{font-size:14px;min-height:24px;margin:4px 0 8px;letter-spacing:.05em;text-align:center}
+.status .chk{color:var(--you)}
+.hand{display:flex;gap:6px;min-height:46px;align-items:center;justify-content:center;flex-wrap:wrap;width:min(86vw,330px)}
+.hand.top{margin-bottom:6px}.hand.bot{margin-top:6px}
+.hlabel{font-size:10px;color:var(--sub);margin-right:2px}
+#bd{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;width:min(72vw,270px);background:var(--line);border:3px solid var(--line);border-radius:6px}
+.sq{background:var(--board);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
+.sq.sel{background:#F0D89A;box-shadow:inset 0 0 0 3px var(--gold)}
+.sq.move::after{content:"";position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(46,125,70,.5)}
+.sq.cap::after{content:"";position:absolute;inset:8%;border-radius:6px;border:3px solid rgba(194,59,38,.6)}
+.pc{width:84%;height:84%;background:var(--piece);border:1px solid #b89b63;border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;line-height:1;position:relative}
+.pc.you{transform:rotate(180deg)}
+.pc .em{font-size:min(8vw,30px)}
+.pc .mv{position:absolute;font-size:5px;color:#c23b26}
+.hand .pc{width:34px;height:40px;cursor:pointer}
+.hand .pc.sel{box-shadow:0 0 0 3px var(--gold)}
+.hand .pc .cnt{position:absolute;right:-4px;bottom:-4px;background:var(--gold);color:#1A140C;border-radius:50%;width:15px;height:15px;font-size:10px;display:flex;align-items:center;justify-content:center}
+.foot{margin-top:14px;display:flex;gap:10px}
+.foot button{background:transparent;border:1px solid var(--line);color:var(--txt);padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit}
+.foot button:hover{border-color:var(--gold)}
+.eval-row{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
+.eval-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.45);padding:3px 9px;border-radius:12px;font-size:11px;cursor:pointer;font-family:inherit;transition:.2s;white-space:nowrap}
+.eval-btn.on{border-color:var(--gold,#c9a030);color:var(--gold,#c9a030)}
+.eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
+.eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
+.eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+.win{position:fixed;inset:0;background:rgba(10,8,4,.85);display:none;align-items:center;justify-content:center;z-index:30}
+.win.show{display:flex}
+.win .c{background:#251c10;border:1px solid var(--gold);border-radius:10px;padding:26px 38px;text-align:center}
+.win .t{font-size:24px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:14px}
+.win button{background:var(--gold);border:none;color:#251c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.assist-toggle{display:inline-flex;align-items:center;gap:6px;margin:4px 0;font-size:13px;cursor:pointer}
+.assist-toggle input{accent-color:var(--gold,#c9a227);cursor:pointer}
+.sq.assist-from{box-shadow:inset 0 0 0 3px #6cd08a}
+.sq.assist-to::before{content:"";position:absolute;inset:20%;border-radius:50%;background:rgba(108,208,138,0.4)}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Dobutsu Shogi","description":"Play Dobutsu Shogi (Animal Chess) for free in your browser. CPU and online multiplayer supported.","url":"https://naganuma2003.github.io/game/en/games/dobutsu.html","genre":["Board Game","Strategy Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","operatingSystem":"Any","playMode":["SinglePlayer","MultiPlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":2},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"inLanguage":"en"}
+</script>
+</head><body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>Dobutsu Shogi</h1><div class="sub">ANIMAL CHESS</div>
+<div class="row" id="mode"><button data-m="cpu" class="on">vs CPU</button><button data-m="pvp">2 Players</button></div>
+<div class="row" id="lv" style="display:flex;gap:6px;justify-content:center;margin-bottom:8px"><span style="font-size:11px;color:#9a8f7b;align-self:center;margin-right:2px">CPU Level:</span><button data-lv="1" style="background:transparent;border:1px solid #3a3326;color:#9a8f7b;padding:4px 10px;border-radius:14px;font-size:11px;cursor:pointer;font-family:inherit">Easy</button><button data-lv="2" class="on" style="background:transparent;border:1px solid #c9a227;color:#c9a227;padding:4px 10px;border-radius:14px;font-size:11px;cursor:pointer;font-family:inherit">Normal</button><button data-lv="3" style="background:transparent;border:1px solid #3a3326;color:#9a8f7b;padding:4px 10px;border-radius:14px;font-size:11px;cursor:pointer;font-family:inherit">Hard</button></div>
+<div class="hand top"><span class="hlabel">Opponent</span><div class="hand" id="hand-you" style="min-height:auto"></div></div>
+<div class="status" id="status"></div>
+<div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">Eval</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+<label class="assist-toggle"><input type="checkbox" id="assist"> AI Assistant (show best move)</label>
+<div id="bd"></div>
+<div class="hand bot"><span class="hlabel">You</span><div class="hand" id="hand-me" style="min-height:auto"></div></div>
+<div class="foot" style="display:flex;gap:8px;justify-content:center"><button id="undo" style="background:transparent;border:1px solid #3a3326;color:#EDE6D6;font-weight:700;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit">Undo</button><button id="reset">New Game</button></div>
+<div class="win" id="winov"><div class="c"><div class="t" id="wint">You Win!</div><button id="again">Play Again</button></div></div>
+<script>
+const ME=0,YOU=1;
+const EMO={L:'\u{1F981}',G:'\u{1F992}',E:'\u{1F418}',C:'\u{1F425}',H:'\u{1F414}'};
+const MOVES={
+  L:[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]],
+  G:[[-1,0],[1,0],[0,-1],[0,1]],
+  E:[[-1,-1],[-1,1],[1,-1],[1,1]],
+  C:[[-1,0]],
+  H:[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,0]]
+};
+let board,hands,turn,sel,mode='cpu',over,busy,posCount,hist=[];
+function snapshot(){return JSON.stringify({board,hands,turn,over});}
+function restore(s){const o=JSON.parse(s);board=o.board;hands=o.hands;turn=o.turn;over=o.over;}
+function posKey(){
+  let k='';
+  for(let r=0;r<4;r++)for(let c=0;c<3;c++){const p=board[r][c];k+=p?(p.t+p.o):'-';}
+  k+='|'+hands[0].slice().sort().join('')+'/'+hands[1].slice().sort().join('');
+  k+='|'+turn;
+  return k;
+}
+function recordPos(){const k=posKey();posCount[k]=(posCount[k]||0)+1;return posCount[k];}
+const bdEl=document.getElementById('bd'),sqs=[];
+for(let i=0;i<12;i++){const d=document.createElement('div');d.className='sq';const r=Math.floor(i/3),c=i%3;d.addEventListener('click',()=>onSq(r,c));bdEl.appendChild(d);sqs.push(d);}
+function init(){
+  board=[
+    [{t:'G',o:YOU},{t:'L',o:YOU},{t:'E',o:YOU}],
+    [null,{t:'C',o:YOU},null],
+    [null,{t:'C',o:ME},null],
+    [{t:'E',o:ME},{t:'L',o:ME},{t:'G',o:ME}]
+  ];
+  hands={0:[],1:[]};turn=ME;sel=null;over=false;busy=false;posCount={};hist=[];
+  recordPos();
+  document.getElementById('winov').classList.remove('show');render();
+  if(mode==='cpu'&&Math.random()<0.5){turn=YOU;busy=true;render();setTimeout(cpuMove,500);}
+}
+const inB=(r,c)=>r>=0&&r<4&&c>=0&&c<3;
+function pieceMoves(r,c){const p=board[r][c];if(!p)return[];const sign=p.o===ME?1:-1;const out=[];for(const[dr,dc]of MOVES[p.t]){const nr=r+dr*sign,nc=c+dc;if(inB(nr,nc)&&(!board[nr][nc]||board[nr][nc].o!==p.o))out.push([nr,nc]);}return out;}
+function findLion(o){for(let r=0;r<4;r++)for(let c=0;c<3;c++){const p=board[r][c];if(p&&p.t==='L'&&p.o===o)return[r,c];}return null;}
+function attacked(r,c,by){for(let i=0;i<4;i++)for(let j=0;j<3;j++){const p=board[i][j];if(p&&p.o===by){for(const[mr,mc]of pieceMoves(i,j))if(mr===r&&mc===c)return true;}}return false;}
+function render(){
+  for(let r=0;r<4;r++)for(let c=0;c<3;c++){const sq=sqs[r*3+c];sq.className='sq';sq.innerHTML='';const p=board[r][c];
+    if(p){const d=document.createElement('div');d.className='pc'+(p.o===YOU?' you':'');let mv='';d.innerHTML='<span class="em">'+EMO[p.t]+'</span>';sq.appendChild(d);}
+  }
+  if(sel){if(sel.k==='b'){sqs[sel.r*3+sel.c].classList.add('sel');for(const[r,c]of sel.moves){const sq=sqs[r*3+c];sq.classList.add(board[r][c]?'cap':'move');}}else{for(const[r,c]of sel.moves){sqs[r*3+c].classList.add('move');}}}
+  renderHand('hand-me',ME);renderHand('hand-you',YOU);
+  const s=document.getElementById('status');
+  if(over)return;
+  let txt;if(mode==='pvp')txt=(turn===ME?'Bottom':'Top')+'\'s turn';else txt=turn===ME?'Your turn':'CPU\'s turn';
+  const lk=findLion(turn);if(lk&&attacked(lk[0],lk[1],1-turn))txt+=' <span class="chk">Check!</span>';
+  s.innerHTML=txt;
+  renderAssist();
+  updateEval();
+}
+function renderHand(id,o){const el=document.getElementById(id);el.innerHTML='';const counts={};hands[o].forEach(t=>counts[t]=(counts[t]||0)+1);Object.keys(counts).forEach(t=>{const d=document.createElement('div');d.className='pc'+(o===YOU?' you':'')+(sel&&sel.k==='h'&&sel.o===o&&sel.t===t?' sel':'');d.innerHTML='<span class="em">'+EMO[t]+'</span>'+(counts[t]>1?'<span class="cnt">'+counts[t]+'</span>':'');if(o===turn&&canControl())d.addEventListener('click',()=>onHand(o,t));el.appendChild(d);});}
+const canControl=()=>!over&&!busy&&(mode==='pvp'||turn===ME);
+function legalMovesFrom(r,c){const p=board[r][c];const raw=pieceMoves(r,c);return raw.filter(([nr,nc])=>{const sav=board[nr][nc];board[nr][nc]=p;board[r][c]=null;const lk=findLion(p.o);const safe=!lk||!attacked(lk[0],lk[1],1-p.o);board[r][c]=p;board[nr][nc]=sav;return safe;});}
+function legalDrops(o,t){const out=[];for(let r=0;r<4;r++)for(let c=0;c<3;c++){if(board[r][c])continue;board[r][c]={t,o};const lk=findLion(o);const safe=!lk||!attacked(lk[0],lk[1],1-o);board[r][c]=null;if(safe)out.push([r,c]);}return out;}
+function onSq(r,c){if(!canControl())return;const p=board[r][c];
+  if(sel){const hit=sel.moves.find(m=>m[0]===r&&m[1]===c);if(hit){if(sel.k==='b')doMove(sel.r,sel.c,r,c);else doDrop(sel.t,r,c);return;}}
+  if(p&&p.o===turn){sel={k:'b',r,c,moves:legalMovesFrom(r,c)};render();}
+  else{sel=null;render();}
+}
+function onHand(o,t){if(!canControl()||o!==turn)return;if(sel&&sel.k==='h'&&sel.t===t){sel=null;render();return;}sel={k:'h',o,t,moves:legalDrops(o,t)};render();}
+function doMove(fr,fc,tr,tc){hist.push(snapshot());const p=board[fr][fc];const cap=board[tr][tc];
+  if(cap){const base=cap.t==='H'?'C':cap.t;hands[p.o].push(base);}
+  board[fr][fc]=null;let np={t:p.t,o:p.o};
+  if(p.t==='C'&&((p.o===ME&&tr===0)||(p.o===YOU&&tr===3)))np.t='H';
+  board[tr][tc]=np;sel=null;
+  if(cap&&cap.t==='L'){return finish(p.o);}
+  if(p.t==='L'){const goal=p.o===ME?0:3;if(tr===goal&&!attacked(tr,tc,1-p.o)){return finish(p.o);}}
+  next();
+}
+function doDrop(t,r,c){hist.push(snapshot());board[r][c]={t,o:turn};const idx=hands[turn].indexOf(t);if(idx>=0)hands[turn].splice(idx,1);sel=null;next();}
+function next(){turn=1-turn;
+  const c=recordPos();
+  if(c>=3){over=true;render();const t=document.getElementById('wint');t.textContent='Draw (Repetition)';document.getElementById('winov').classList.add('show');return;}
+  render();checkNoMove();if(!over&&mode==='cpu'&&turn===YOU){busy=true;render();setTimeout(cpuMove,420);}}
+function allMoves(o){const list=[];for(let r=0;r<4;r++)for(let c=0;c<3;c++){const p=board[r][c];if(p&&p.o===o)for(const m of legalMovesFrom(r,c))list.push({k:'b',fr:r,fc:c,tr:m[0],tc:m[1]});}const seen=new Set();hands[o].forEach(t=>{if(seen.has(t))return;seen.add(t);for(const d of legalDrops(o,t))list.push({k:'h',t,tr:d[0],tc:d[1]});});return list;}
+function checkNoMove(){if(allMoves(turn).length===0){finish(1-turn);}}
+const VAL={L:1000,H:6,G:5,E:5,C:1};
+function evalBoard(o){let s=0;const opp=1-o;for(let r=0;r<4;r++)for(let c=0;c<3;c++){const p=board[r][c];if(!p)continue;s+=(p.o===o?1:-1)*VAL[p.t];}hands[o].forEach(t=>s+=VAL[t]*0.8);hands[opp].forEach(t=>s-=VAL[t]*0.8);return s;}
+function applyForAI(m,o){const undo={};if(m.k==='b'){const p=board[m.fr][m.fc],cap=board[m.tr][m.tc];undo.p=p;undo.cap=cap;undo.fr=m.fr;undo.fc=m.fc;undo.tr=m.tr;undo.tc=m.tc;undo.captured=null;if(cap){const base=cap.t==='H'?'C':cap.t;hands[o].push(base);undo.captured=base;}board[m.fr][m.fc]=null;let np={t:p.t,o};if(p.t==='C'&&((o===ME&&m.tr===0)||(o===YOU&&m.tr===3)))np.t='H';board[m.tr][m.tc]=np;undo.np=np;undo.wasLionCap=cap&&cap.t==='L';}else{board[m.tr][m.tc]={t:m.t,o};const idx=hands[o].indexOf(m.t);undo.dropIdx=idx;undo.t=m.t;undo.tr=m.tr;undo.tc=m.tc;hands[o].splice(idx,1);}return undo;}
+function undoForAI(u,o){if(u.np!==undefined){board[u.fr][u.fc]={t:u.np.t==='H'&&u.p.t==='C'?'C':u.p.t,o:u.p.o};board[u.fr][u.fc]=u.p;board[u.tr][u.tc]=u.cap;if(u.captured){const i=hands[o].lastIndexOf(u.captured);if(i>=0)hands[o].splice(i,1);}}else{board[u.tr][u.tc]=null;hands[o].splice(u.dropIdx,0,u.t);}}
+function search(o,depth,a,b){const lkO=findLion(o),lkOpp=findLion(1-o);if(!lkOpp)return 9999;if(!lkO)return-9999;if(depth===0)return evalBoard(o);const moves=allMoves(o);if(!moves.length)return-9999;let best=-Infinity;for(const m of moves){const u=applyForAI(m,o);let val;if(u.wasLionCap){val=9999;}else{val=-search(1-o,depth-1,-b,-a);}undoForAI(u,o);if(val>best)best=val;if(best>a)a=best;if(a>=b)break;}return best;}
+function cpuMove(){const o=YOU;const moves=allMoves(o);
+  if(cpuLv===1){busy=false;const m=moves[Math.floor(Math.random()*moves.length)];if(m.k==='b')doMove(m.fr,m.fc,m.tr,m.tc);else doDrop(m.t,m.tr,m.tc);return;}
+  const depth=cpuLv===2?1:3;
+  let best=moves[0],bs=-Infinity;for(const m of moves){const u=applyForAI(m,o);let val;if(u.wasLionCap)val=9999;else val=-search(ME,depth,-Infinity,Infinity);
+  if(m.k==='b'){const p=board[m.tr][m.tc];if(p&&p.t==='L'&&m.tr===3&&!attacked(m.tr,m.tc,ME))val=9000;}
+  undoForAI(u,o);if(val>bs){bs=val;best=m;}}
+  busy=false;
+  if(best.k==='b')doMove(best.fr,best.fc,best.tr,best.tc);else doDrop(best.t,best.tr,best.tc);
+}
+function finish(winner){over=true;sel=null;render();const t=document.getElementById('wint');if(mode==='pvp')t.textContent=(winner===ME?'Bottom':'Top')+' wins!';else t.textContent=winner===ME?'You win!':'CPU wins';document.getElementById('winov').classList.add('show');}
+document.getElementById('undo').addEventListener('click',()=>{if(!hist.length||busy)return;let s=hist.pop();if(mode==='cpu'){while(hist.length&&JSON.parse(s).turn!==ME)s=hist.pop();}restore(s);sel=null;document.getElementById('winov').classList.remove('show');render();});
+document.getElementById('reset').addEventListener('click',init);
+document.getElementById('again').addEventListener('click',init);
+document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
+let cpuLv=2;
+document.getElementById('lv').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;cpuLv=+b.dataset.lv;document.querySelectorAll('#lv button').forEach(x=>{x.classList.remove('on');x.style.borderColor='#3a3326';x.style.color='#9a8f7b';});b.classList.add('on');b.style.borderColor='#c9a227';b.style.color='#c9a227';});
+// ===== AI Assistant =====
+const assistEl=document.getElementById('assist');
+if(assistEl) assistEl.addEventListener('change', render);
+function computeAssist(){
+  if(!assistEl||!assistEl.checked||over||busy||!canControl())return null;
+  const moves=allMoves(turn);
+  if(!moves.length)return null;
+  let best=null,bestS=-Infinity;
+  for(const m of moves){
+    const u=applyForAI(m,turn);
+    const s=u.wasLionCap?9999:evalBoard(turn);
+    undoForAI(u,turn);
+    if(s>bestS){bestS=s;best=m;}
+  }
+  return best;
+}
+function renderAssist(){
+  sqs.forEach(sq=>{sq.classList.remove('assist-from','assist-to');});
+  if(!assistEl||!assistEl.checked)return;
+  const bm=computeAssist();
+  if(!bm)return;
+  sqs[bm.tr*3+bm.tc].classList.add('assist-to');
+  if(bm.k==='b') sqs[bm.fr*3+bm.fc].classList.add('assist-from');
+}
+init();
+// ===== AI Eval =====
+var evalOn=false;
+function toggleEval(){
+  evalOn=!evalOn;
+  document.getElementById('eval-btn').classList.toggle('on',evalOn);
+  document.getElementById('eval-bar').style.display=evalOn?'block':'none';
+  document.getElementById('eval-lbl').style.display=evalOn?'inline':'none';
+  updateEval();
+}
+function updateEval(){
+  if(!evalOn)return;
+  const s=evalScore(),MAX=20;
+  const C1='#2E7D46',C2='#C23B26',N1='You',N2='CPU';
+  const pct=Math.min(Math.max((s+MAX)/(2*MAX),0),1);
+  document.getElementById('eval-fill').style.cssText=`width:${pct*100}%;background:${s>0.3?C1:s<-0.3?C2:'#888'}`;
+  document.getElementById('eval-lbl').textContent=Math.abs(s)<0.3?'Even':s>0?`${N1}+${Math.round(Math.abs(s))}`:`${N2}+${Math.round(Math.abs(s))}`;
+}
+function evalScore(){
+  if(over)return 0;
+  const PIECE_VAL={L:5,G:3,E:3,C:1,H:2};
+  let s=0;
+  for(let r=0;r<4;r++)for(let c=0;c<3;c++){
+    const p=board[r][c];
+    if(!p)continue;
+    const v=PIECE_VAL[p.t]||0;
+    s+=(p.o===ME?1:-1)*v;
+  }
+  hands[ME].forEach(t=>s+=(PIECE_VAL[t]||0)*0.8);
+  hands[YOU].forEach(t=>s-=(PIECE_VAL[t]||0)*0.8);
+  return s;
+}
+</script><script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-core.js?v=8"></script>
+<script>OnlineCore.init({gameId:'dobutsu',statusSel:'#status',hostMark:'Bottom\'s turn',guestMark:'Top\'s turn',pvpSel:'#mode button[data-m=\"pvp\"]',hideSel:'#mode',flip:{board:'#bd',upright:'.sq'}});</script>
+<script src="../../shared/firebase-counter.js"></script></body></html>

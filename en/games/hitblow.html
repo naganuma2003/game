@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Hit &amp; Blow (Mastermind) | Free Browser Game</title>
+<meta name="description" content="Play Hit & Blow (Mastermind) for free in your browser. A logic puzzle where you deduce numbers by position and value. Adjustable difficulty, no registration required.">
+<meta name="keywords" content="Hit and Blow,Mastermind,free,browser game,number guessing,logic puzzle,deduction">
+<meta property="og:title" content="Hit & Blow (Mastermind) | Free Browser Game">
+<meta property="og:description" content="Play the deduction game Hit & Blow (Mastermind) for free in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://naganuma2003.github.io/game/en/games/hitblow.html">
+<link rel="canonical" href="https://naganuma2003.github.io/game/en/games/hitblow.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/hitblow.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/hitblow.html">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Hit & Blow (Mastermind)","description":"Play Hit & Blow (Mastermind) for free in your browser. A logic puzzle where you deduce numbers by position and value. Adjustable difficulty, no registration required.","url":"https://naganuma2003.github.io/game/en/games/hitblow.html","genre":["Puzzle Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer","MultiPlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":4},"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"},"inLanguage":"en"}</script>
+<style>
+:root{--bg:#14110E;--panel:#1F1A14;--txt:#EDE6D6;--sub:#9A8F7B;--gold:#C9A227;--line:#352C20;--hit:#6CC56C;--blow:#E8C84F;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font-family:"Hiragino Sans","Yu Gothic UI",sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:14px 10px 28px;user-select:none}
+h1{font-family:"Hiragino Mincho ProN",serif;font-size:24px;letter-spacing:.12em;margin:2px 0}
+.sub{font-size:10.5px;color:var(--sub);letter-spacing:.2em;margin-bottom:10px}
+.opts{display:flex;flex-direction:column;gap:8px;align-items:center;margin-bottom:8px}
+.row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:center}
+.row .lbl{font-size:11px;color:var(--sub);margin-right:2px}
+.row button{background:transparent;border:1px solid #3a3326;color:var(--sub);padding:6px 13px;border-radius:18px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:all .2s}
+.row button.on{border-color:var(--gold);color:var(--gold)}
+.disp{display:flex;gap:8px;margin:10px 0 4px;min-height:60px}
+.slot{width:54px;height:60px;background:var(--panel);border:2px solid var(--line);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800}
+.slot.active{border-color:var(--gold)}
+.ball{width:34px;height:34px;border-radius:50%;box-shadow:inset -3px -4px 6px rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.4)}
+.pad{display:grid;gap:7px;margin:10px 0}
+.pad.num{grid-template-columns:repeat(5,52px)}
+.pad.col{grid-template-columns:repeat(4,58px)}
+.pad button{background:var(--panel);border:1px solid var(--line);color:var(--txt);font-size:20px;padding:11px 0;border-radius:9px;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center}
+.pad button:active{border-color:var(--gold)}
+.pad button.wide{grid-column:span 2;font-size:14px}
+.pad.col button{padding:9px 0}
+.go{background:var(--gold)!important;color:#14110E!important;font-weight:700;font-size:15px!important}
+.go:disabled{opacity:.4}
+.msg{min-height:22px;font-size:14px;color:var(--gold);margin:6px 0;letter-spacing:.04em;text-align:center}
+.history{width:min(94vw,380px);margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.h-row{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 12px}
+.h-no{font-size:12px;color:var(--sub);width:24px}
+.h-guess{font-size:19px;font-weight:700;letter-spacing:.18em;flex:1;display:flex;gap:6px;align-items:center}
+.h-guess .ball{width:22px;height:22px}
+.h-res{display:flex;gap:10px;font-size:13px;font-weight:700}
+.h-res .hit{color:var(--hit)}.h-res .blow{color:var(--blow)}
+.foot{margin-top:14px}
+.foot button{background:transparent;border:1px solid var(--line);color:var(--txt);padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit}
+.over{position:fixed;inset:0;background:rgba(10,8,5,.85);display:none;align-items:center;justify-content:center;z-index:30}
+.over.show{display:flex}
+.over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:26px 38px;text-align:center;max-width:90vw}
+.over .t{font-size:24px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:8px}
+.over .s{font-size:14px;color:var(--txt);margin-bottom:16px;letter-spacing:.06em;display:flex;flex-direction:column;gap:8px;align-items:center}
+.over .s .answer{display:flex;gap:6px}
+.over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.rule{width:min(94vw,380px);margin-top:14px;font-size:11px;line-height:1.7;color:var(--sub);border-top:1px solid var(--line);padding-top:10px}
+.rule b{color:var(--txt)}
+.h-row .h-pl{font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid var(--line)}
+.hidden{display:none!important}
+.ai-eval{width:min(94vw,380px);margin:8px 0 2px;display:none;flex-direction:column;gap:5px}
+.ai-eval.show{display:flex}
+.ai-eval .ev-lbl{font-size:11px;color:var(--sub);display:flex;align-items:center;gap:6px}
+.ai-eval .ev-pl{font-weight:700;min-width:28px}
+.ai-eval .ev-bar-bg{flex:1;height:10px;background:var(--panel);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.ai-eval .ev-bar{height:100%;border-radius:4px;transition:width .4s ease}
+.ai-eval .ev-pct{font-size:10px;color:var(--sub);min-width:32px;text-align:right}
+
+@media(max-width:480px){
+  h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
+  .modes,.row{flex-wrap:wrap;justify-content:center}
+  .modes button,.row button,.foot button{min-height:44px}
+}
+</style>
+</head>
+<body>
+<a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">&larr; Back to List</a>
+<h1>Hit &amp; Blow</h1><div class="sub">MASTERMIND</div>
+<div class="opts">
+  <div class="row" id="pmode"><span class="lbl">Mode:</span>
+    <button data-p="solo" class="on">Solo</button>
+    <button data-p="race">Race (same code)</button>
+    <button data-p="duel">Duel</button>
+  </div>
+  <div class="row hidden" id="nprow"><span class="lbl">Players:</span>
+    <button data-np="2" class="on">2P</button>
+    <button data-np="3">3P</button>
+    <button data-np="4">4P</button>
+  </div>
+  <div class="row" id="mode"><span class="lbl">Type:</span>
+    <button data-m="num" class="on">Numbers</button>
+    <button data-m="col">Colors (Balls)</button>
+  </div>
+  <div class="row" id="len"><span class="lbl">Digits:</span>
+    <button data-n="3">3</button>
+    <button data-n="4" class="on">4</button>
+    <button data-n="5">5</button>
+  </div>
+  <div class="row" id="dup"><span class="lbl">Duplicates:</span>
+    <button data-d="0" class="on">No</button>
+    <button data-d="1">Yes</button>
+  </div>
+</div>
+<div class="disp" id="disp"></div>
+<div class="pad num" id="pad"></div>
+<div class="msg" id="msg"></div>
+<div class="ai-eval" id="ai-eval"></div>
+<div class="history" id="history"></div>
+<div class="foot"><button id="new">Start with these settings</button></div>
+<div class="rule" id="rule"></div>
+<div class="over" id="over"><div class="c"><div class="t" id="ov-t">Correct!</div><div class="s" id="ov-s"></div><button id="again">Play Again</button></div></div>
+<div class="over" id="ho"><div class="c"><div class="t" id="ho-t">Switch</div><div class="s">Pass the device to the next player</div><button id="ho-ok">Ready</button></div></div>
+<script>
+const COLORS=[
+  {id:0,name:'Red',css:'#e0473a'},{id:1,name:'Blue',css:'#3e87d6'},
+  {id:2,name:'Yellow',css:'#e8c244'},{id:3,name:'White',css:'#f0ece0'},
+  {id:4,name:'Green',css:'#5cb568'},{id:5,name:'Purple',css:'#9a6dd0'}
+];
+let mode='num',N=4,DUP=false,MAX=10;
+let pmode='solo',np=2,curPlayer=0,winner=-1;
+let secret;
+let secrets=[];
+let guess=[],tries=0,over=false;
+let mHist=[];
+let phase='play';
+let setStage=0;
+let setDone=[];
+let mySecretSet=false;
+let ONLINE=false,MYSEAT=0,roomSend=null,onlineSetup=false;
+const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a'];
+function canEditSetup(){return !ONLINE||(onlineSetup&&MYSEAT===0);}
+function myTurn(){return !ONLINE||curPlayer===MYSEAT;}
+const disp=document.getElementById('disp'),pad=document.getElementById('pad'),hist=document.getElementById('history');
+function symbols(){return mode==='num'?[0,1,2,3,4,5,6,7,8,9]:COLORS.map(c=>c.id);}
+function maxTries(){return mode==='col'?(N+6):(N===3?8:N===4?10:12);}
+function genSecret(){
+  const syms=symbols();const out=[];
+  if(DUP){for(let i=0;i<N;i++)out.push(syms[Math.floor(Math.random()*syms.length)]);return out;}
+  const pool=syms.slice();for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}return pool.slice(0,N);
+}
+function effNp(){return pmode==='duel'?2:(pmode==='solo'?1:np);}
+function init(){
+  MAX=maxTries();guess=[];tries=0;over=false;winner=-1;mHist=[];hist.innerHTML='';
+  secrets=[];setDone=[];mySecretSet=false;
+  document.getElementById('over').classList.remove('show');
+  document.getElementById('ho').classList.remove('show');
+  if(pmode==='duel'){
+    np=2;phase='set';setStage=0;
+    autoKick();
+  }else{
+    phase='play';
+    secret=genSecret();
+    curPlayer=(pmode==='race')?Math.floor(Math.random()*np):0;
+  }
+  buildPad();renderDisp();renderRule();updatePad();updateTurnMsg();renderEval();
+}
+function turnLabel(){return ONLINE?(curPlayer===MYSEAT?'★ You (P'+(curPlayer+1)+')':'Opponent (P'+(curPlayer+1)+')'):'Player '+(curPlayer+1);}
+function canActNow(){
+  if(over)return false;
+  if(pmode==='solo')return true;
+  if(pmode==='duel'&&phase==='set'){
+    if(ONLINE)return !mySecretSet;
+    return true;
+  }
+  return myTurn();
+}
+function updateTurnMsg(){
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(canActNow()&&!over);
+  const mEl=document.getElementById('msg');
+  if(over)return;
+  mEl.style.fontWeight='700';
+  if(pmode==='duel'&&phase==='set'){
+    mEl.style.color='var(--gold)';
+    if(ONLINE)msg(mySecretSet?'Waiting for opponent to set their code...':'Enter your secret code and press "Confirm"');
+    else msg('Player '+(setStage+1)+': Enter your secret code and press "Confirm" (hide from opponent)');
+    return;
+  }
+  if(pmode==='solo'){mEl.style.color='var(--gold)';msg(mode==='num'?'Select numbers and press "Check"':'Select colors and press "Check"');return;}
+  mEl.style.color=PCOL[curPlayer];
+  if(pmode==='duel')msg(turnLabel()+'\'s turn: Guess the opponent\'s code');
+  else msg(turnLabel()+'\'s turn: Enter '+(mode==='num'?'numbers':'colors')+' and press "Check"');
+}
+function updatePad(){const off=!canActNow();pad.style.opacity=off?'.4':'1';pad.style.pointerEvents=off?'none':'auto';
+  const go=document.getElementById('go');if(go)go.textContent=(pmode==='duel'&&phase==='set')?'Confirm':'Check';}
+function msg(s){document.getElementById('msg').textContent=s;}
+function symHtml(v){return mode==='num'?String(v):`<span class="ball" style="background:${COLORS[v].css}"></span>`;}
+function renderDisp(){disp.innerHTML='';for(let i=0;i<N;i++){const d=document.createElement('div');d.className='slot'+(i===guess.length?' active':'');
+  if(guess[i]!==undefined)d.innerHTML=symHtml(guess[i]);disp.appendChild(d);}}
+function buildPad(){pad.className='pad '+(mode==='num'?'num':'col');pad.innerHTML='';
+  for(const v of symbols()){const b=document.createElement('button');
+    if(mode==='num')b.textContent=v;
+    else{b.innerHTML=`<span class="ball" style="background:${COLORS[v].css}"></span>`;b.title=COLORS[v].name;}
+    b.addEventListener('click',()=>push(v));pad.appendChild(b);}
+  const del=document.createElement('button');del.className='wide';del.textContent='⌫ Delete';del.addEventListener('click',pop);pad.appendChild(del);
+  const go=document.createElement('button');go.className='wide go';go.id='go';go.textContent=(pmode==='duel'&&phase==='set')?'Confirm':'Check';go.addEventListener('click',submit);pad.appendChild(go);}
+function push(v){if(over||guess.length>=N)return;if(!canActNow())return;if(!DUP&&guess.includes(v)){msg(mode==='num'?'No duplicate numbers allowed':'No duplicate colors allowed');return;}guess.push(v);renderDisp();}
+function pop(){if(over||!guess.length)return;if(!canActNow())return;guess.pop();renderDisp();}
+function evaluate(g,s){
+  let hit=0;const restG=[],restS=[];
+  for(let i=0;i<N;i++){if(g[i]===s[i])hit++;else{restG.push(g[i]);restS.push(s[i]);}}
+  const cnt={};for(const v of restS)cnt[v]=(cnt[v]||0)+1;
+  let blow=0;for(const v of restG){if(cnt[v]>0){blow++;cnt[v]--;}}
+  return{hit,blow};
+}
+function submit(){if(over)return;if(guess.length!==N){msg('Enter all '+N+' positions');return;}
+  if(pmode==='solo'){
+    const{hit,blow}=evaluate(guess,secret);tries++;
+    addHistory(guess.slice(),hit,blow);
+    if(hit===N){finish(true);return;}
+    if(tries>=MAX){finish(false);return;}
+    msg(`${hit} Hit / ${blow} Blow (${MAX-tries} tries left)`);
+    guess=[];renderDisp();return;
+  }
+  if(pmode==='duel'&&phase==='set'){
+    const s=guess.slice();guess=[];renderDisp();
+    if(ONLINE){
+      if(mySecretSet)return;mySecretSet=true;
+      roomSend({k:'setsecret',seat:MYSEAT,s});
+      updatePad();updateTurnMsg();
+    }else{
+      secrets[setStage]=s;setDone.push(setStage);
+      if(setStage===0){setStage=1;showHandoff('Player 2\'s secret code',()=>{renderDisp();updatePad();updateTurnMsg();});}
+      else{phase='play';curPlayer=Math.floor(Math.random()*2);startDuelPlay();}
+    }
+    return;
+  }
+  emit({k:'guess',g:guess.slice()});guess=[];renderDisp();}
+function emit(a){if(ONLINE){if(!myTurn())return;roomSend(a);}else doAction(a);}
+function doAction(a){
+  if(a.k==='setup')applySetup(a);
+  else if(a.k==='setsecret')applySetSecret(a.seat,a.s);
+  else if(a.k==='guess'){if(pmode==='duel')applyGuessDuel(curPlayer,a.g);else applyGuessRace(curPlayer,a.g);}
+  else if(a.k==='skip')applySkip();
+}
+function applySetSecret(seat,s){
+  secrets[seat]=s;if(!setDone.includes(seat))setDone.push(seat);
+  if(phase==='set'&&setDone.includes(0)&&setDone.includes(1)){
+    phase='play';curPlayer=0;
+    startDuelPlay();
+  }else{updateTurnMsg();updatePad();autoKick();}
+}
+function startDuelPlay(){
+  tries=0;mHist=[];hist.innerHTML='';guess=[];
+  buildPad();renderDisp();updatePad();updateTurnMsg();renderEval();autoKick();
+}
+function applyGuessRace(player,g){
+  const{hit,blow}=evaluate(g,secret);tries++;
+  mHist.push({player,g:g.slice(),hit,blow});
+  addHistoryMulti(player,g,hit,blow);renderEval();
+  if(hit===N){finishMulti(player);return;}
+  curPlayer=(curPlayer+1)%np;guess=[];renderDisp();updateTurnMsg();updatePad();autoKick();}
+function applyGuessDuel(attacker,g){
+  const target=1-attacker;
+  if(!secrets[target]){return;}
+  const{hit,blow}=evaluate(g,secrets[target]);tries++;
+  mHist.push({player:attacker,g:g.slice(),hit,blow});
+  addHistoryMulti(attacker,g,hit,blow);renderEval();
+  if(hit===N){finishDuel(attacker);return;}
+  curPlayer=1-attacker;guess=[];renderDisp();updateTurnMsg();updatePad();autoKick();}
+function applySkip(){if(over)return;curPlayer=(curPlayer+1)%effNp();guess=[];renderDisp();updateTurnMsg();updatePad();autoKick();}
+function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&((OnlineRoom.isCpu&&OnlineRoom.isCpu(s))||(OnlineRoom.isGone&&OnlineRoom.isGone(s)));}
+function cpuGuess(histEntries){
+  const hs=histEntries||mHist;
+  const syms=symbols();
+  let cands=[[]];
+  for(let pos=0;pos<N;pos++){const next=[];for(const c of cands)for(const s of syms){if(!DUP&&c.includes(s))continue;next.push(c.concat(s));}cands=next;if(cands.length>120000)break;}
+  for(const h of hs){cands=cands.filter(c=>{const r=evaluate(h.g,c);return r.hit===h.hit&&r.blow===h.blow;});if(cands.length<=1)break;}
+  if(cands.length)return cands[Math.floor(Math.random()*cands.length)];
+  if(DUP){const g=[];for(let i=0;i<N;i++)g.push(syms[Math.floor(Math.random()*syms.length)]);return g;}
+  const pool=syms.slice();for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}return pool.slice(0,N);
+}
+function autoKick(){
+  if(!ONLINE||!OnlineRoom.isHost()||over)return;
+  if(pmode==='duel'){
+    if(phase==='set'){
+      for(let s=0;s<2;s++){if(isAutoSeat(s)&&!setDone.includes(s)){const sec=genSecret();
+        setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&phase==='set'&&!setDone.includes(s))OnlineRoom.send({k:'setsecret',seat:s,s:sec});},700);}}
+      return;
+    }
+    const a=curPlayer;if(!isAutoSeat(a))return;
+    if(OnlineRoom.isCpu&&OnlineRoom.isCpu(a)){
+      setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!over&&curPlayer===a&&isAutoSeat(a))OnlineRoom.send({k:'guess',g:cpuGuess(mHist.filter(h=>h.player===a))});},800);
+    }else{setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!over&&curPlayer===a&&isAutoSeat(a))OnlineRoom.send({k:'skip'});},800);}
+    return;
+  }
+  if(pmode!=='race')return;
+  const a=curPlayer;if(!isAutoSeat(a))return;
+  if(OnlineRoom.isCpu&&OnlineRoom.isCpu(a)){
+    setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!over&&curPlayer===a&&isAutoSeat(a))OnlineRoom.send({k:'guess',g:cpuGuess(mHist)});},800);
+  }else{setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&!over&&curPlayer===a&&isAutoSeat(a))OnlineRoom.send({k:'skip'});},800);}
+}
+function applySetup(a){
+  onlineSetup=false;
+  document.querySelectorAll('#pmode,#nprow,#mode,#len,#dup').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('new').parentElement.classList.add('hidden');
+  mode=a.mode;N=a.N;DUP=a.DUP;np=a.np;pmode=a.pmode||'race';init();}
+function addHistory(g,hit,blow){const r=document.createElement('div');r.className='h-row';
+  r.innerHTML=`<span class="h-no">${tries}</span><span class="h-guess">${g.map(symHtml).join(mode==='num'?' ':'')}</span>`+
+    `<span class="h-res"><span class="hit">${hit} H</span><span class="blow">${blow} B</span></span>`;
+  hist.insertBefore(r,hist.firstChild);}
+function addHistoryMulti(player,g,hit,blow){const r=document.createElement('div');r.className='h-row';
+  const nm=ONLINE&&player===MYSEAT?'You':'P'+(player+1);
+  r.innerHTML=`<span class="h-pl" style="color:${PCOL[player]};border-color:${PCOL[player]}">${nm}</span>`+
+    `<span class="h-guess">${g.map(symHtml).join(mode==='num'?' ':'')}</span>`+
+    `<span class="h-res"><span class="hit">${hit} H</span><span class="blow">${blow} B</span></span>`;
+  hist.insertBefore(r,hist.firstChild);}
+function finishMulti(player){over=true;winner=player;
+  const t=document.getElementById('ov-t'),s=document.getElementById('ov-s');
+  const win=ONLINE?(player===MYSEAT?'You win! 🎉':'Player '+(player+1)+' wins'):'Player '+(player+1)+' wins! 🎉';
+  t.textContent=win;t.style.color='var(--gold)';
+  s.innerHTML='Solved in '+tries+' guesses<div class="answer">'+secret.map(symHtml).join(mode==='num'?' ':'')+'</div>';
+  document.getElementById('over').classList.add('show');
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(false);
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
+function finishDuel(wseat){over=true;winner=wseat;
+  const t=document.getElementById('ov-t'),s=document.getElementById('ov-s');
+  const win=ONLINE?(wseat===MYSEAT?'You win! 🎉':'Player '+(wseat+1)+' wins'):'Player '+(wseat+1)+' wins! 🎉';
+  t.textContent=win;t.style.color='var(--gold)';
+  const sec=(p)=>(secrets[p]||[]).map(symHtml).join(mode==='num'?' ':'');
+  s.innerHTML='Solved in '+tries+' guesses<div style="font-size:12px;color:var(--sub)">P1\'s code</div><div class="answer">'+sec(0)+'</div>'+
+    '<div style="font-size:12px;color:var(--sub)">P2\'s code</div><div class="answer">'+sec(1)+'</div>';
+  document.getElementById('over').classList.add('show');
+  if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(false);
+  try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}
+function finish(win){over=true;const t=document.getElementById('ov-t'),s=document.getElementById('ov-s');
+  if(win){t.textContent='Correct! 🎉';t.style.color='var(--gold)';
+    s.innerHTML='Solved in '+tries+' guesses<div class="answer">'+secret.map(symHtml).join(mode==='num'?' ':'')+'</div>';}
+  else{t.textContent='Game Over';t.style.color='#e0533e';
+    s.innerHTML='The answer was<div class="answer">'+secret.map(symHtml).join(mode==='num'?' ':'')+'</div>';}
+  document.getElementById('over').classList.add('show');}
+function renderRule(){
+  const r=document.getElementById('rule');
+  const kind=mode==='num'?'digits 0-9':'6 colors (Red, Blue, Yellow, White, Green, Purple)';
+  const d=DUP?'<b>with duplicates</b>':'without duplicates';
+  let head;
+  if(pmode==='duel')head=`<b>Duel</b>: Each player sets a secret code, then take turns guessing the opponent's code. First to crack it wins.`;
+  else if(pmode==='race')head=`<b>Race</b>: All players take turns guessing the same secret code. First to solve it wins.`;
+  else head=`Guess the secret code.`;
+  r.innerHTML=`${head}<br>Using ${kind}, arranged ${d}. <b style="color:var(--hit)">Hit</b> = correct ${mode==='num'?'number':'color'} in the correct position. <b style="color:var(--blow)">Blow</b> = correct ${mode==='num'?'number':'color'} in the wrong position.`;
+}
+function showHandoff(title,cb){const ho=document.getElementById('ho');document.getElementById('ho-t').textContent=title;ho.classList.add('show');
+  document.getElementById('ho-ok').onclick=()=>{ho.classList.remove('show');cb&&cb();};}
+window.addEventListener('keydown',e=>{if(mode==='num'&&e.key>='0'&&e.key<='9')push(+e.key);else if(e.key==='Backspace'){e.preventDefault();pop();}else if(e.key==='Enter')submit();});
+function newGame(){
+  if(ONLINE){
+    if(onlineSetup&&MYSEAT===0){onlineSetup=false;document.getElementById('new').disabled=true;roomSend({k:'setup',mode,N,DUP,np,pmode});}
+    return;
+  }
+  init();
+}
+document.getElementById('new').addEventListener('click',newGame);
+document.getElementById('again').addEventListener('click',newGame);
+document.getElementById('pmode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!canEditSetup())return;
+  if(ONLINE&&b.dataset.p==='solo')return;
+  pmode=b.dataset.p;
+  document.querySelectorAll('#pmode button').forEach(x=>x.classList.toggle('on',x===b));
+  if(!ONLINE){document.getElementById('nprow').classList.toggle('hidden',pmode!=='race');init();}});
+document.getElementById('nprow').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;np=+b.dataset.np;
+  document.querySelectorAll('#nprow button').forEach(x=>x.classList.toggle('on',x===b));init();});
+document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!canEditSetup())return;mode=b.dataset.m;
+  document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');if(!ONLINE)init();});
+document.getElementById('len').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!canEditSetup())return;N=+b.dataset.n;
+  document.querySelectorAll('#len button').forEach(x=>x.classList.remove('on'));b.classList.add('on');if(!ONLINE)init();});
+document.getElementById('dup').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!canEditSetup())return;DUP=b.dataset.d==='1';
+  document.querySelectorAll('#dup button').forEach(x=>x.classList.remove('on'));b.classList.add('on');if(!ONLINE)init();});
+init();
+
+function hasCpu(){return ONLINE&&window.OnlineRoom&&OnlineRoom.isCpu&&Array.from({length:effNp()},(_,i)=>i).some(s=>OnlineRoom.isCpu(s));}
+function calcEval(player){
+  const ph=mHist.filter(h=>h.player===player);
+  if(!ph.length)return 0;
+  const last=ph[ph.length-1];
+  const hitScore=last.hit/N;
+  const blowScore=last.blow/(N*2);
+  let trend=0;
+  if(ph.length>=2){const prev=ph[ph.length-2];trend=((last.hit-prev.hit)*0.15)+((last.blow-prev.blow)*0.05);}
+  const used=ph.length;
+  const remaining=(MAX-used)/MAX;
+  const raw=(hitScore+blowScore+trend)*0.7 + remaining*0.3;
+  return Math.max(0,Math.min(1,raw));
+}
+function renderEval(){
+  const el=document.getElementById('ai-eval');
+  if(!hasCpu()||phase==='set'||over){el.classList.remove('show');return;}
+  el.classList.add('show');
+  const np2=effNp();
+  let html='';
+  for(let p=0;p<np2;p++){
+    const v=calcEval(p);
+    const pct=Math.round(v*100);
+    const col=PCOL[p];
+    const lbl=(ONLINE&&p===MYSEAT)?'You':'P'+(p+1);
+    html+=`<div class="ev-lbl"><span class="ev-pl" style="color:${col}">${lbl}</span>`+
+      `<div class="ev-bar-bg"><div class="ev-bar" style="width:${pct}%;background:${col}"></div></div>`+
+      `<span class="ev-pct">${pct}%</span></div>`;
+  }
+  el.innerHTML=html;
+}
+
+function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
+  document.getElementById('nprow').classList.add('hidden');
+  if(seat===0){
+    onlineSetup=true;
+    if(pmode==='solo'){pmode='race';document.querySelectorAll('#pmode button').forEach(x=>x.classList.toggle('on',x.dataset.p==='race'));}
+    document.querySelector('#pmode button[data-p="solo"]').classList.add('hidden');
+    const duelBtn=document.querySelector('#pmode button[data-p="duel"]');
+    if(n!==2){duelBtn.classList.add('hidden');if(pmode==='duel'){pmode='race';document.querySelectorAll('#pmode button').forEach(x=>x.classList.toggle('on',x.dataset.p==='race'));}}
+    document.getElementById('new').textContent='Start with these settings';
+    msg('Choose game settings and press "Start with these settings"');
+  }else{
+    document.querySelectorAll('#pmode,#mode,#len,#dup').forEach(el=>el.classList.add('hidden'));
+    document.getElementById('new').parentElement.classList.add('hidden');
+    msg('Waiting for host to set up the game...');
+  }}
+function getState(){return {pmode,phase,secret,secrets,setDone,curPlayer,mode,N,DUP,tries,over,winner,mHist};}
+function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;
+  document.querySelectorAll('#pmode,#nprow,#mode,#len,#dup').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('new').parentElement.classList.add('hidden');
+  const s=o.state;pmode=s.pmode||'race';phase=s.phase||'play';secret=s.secret;secrets=s.secrets||[];setDone=s.setDone||[];
+  curPlayer=s.curPlayer;mode=s.mode;N=s.N;DUP=s.DUP;tries=s.tries;over=s.over;winner=s.winner;mHist=s.mHist||[];
+  mySecretSet=Array.isArray(setDone)&&setDone.includes(MYSEAT);
+  MAX=maxTries();guess=[];
+  buildPad();renderDisp();renderRule();hist.innerHTML='';
+  mHist.forEach(h=>addHistoryMulti(h.player,h.g,h.hit,h.blow));
+  if(over&&winner>=0){pmode==='duel'?finishDuel(winner):finishMulti(winner);}
+  else{updateTurnMsg();updatePad();}
+  autoKick();}
+</script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="../../shared/lobby.js?v=8"></script>
+<script src="../../shared/online-room.js?v=8"></script>
+<script>
+OnlineRoom.init({gameId:'hitblow',minPlayers:2,maxPlayers:4,note:'Race (same code) or Duel (2 players). Choose type, digits, and duplicates before starting.',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>doAction(msg),
+  onLeft:(seat)=>autoKick(),
+  getState,applyState});
+</script>
+<script src="../../shared/firebase-counter.js"></script></body>
+</html>

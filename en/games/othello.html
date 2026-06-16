@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Othello (Reversi) | Free Browser Game</title>
+  <meta name="description" content="Play Othello (Reversi) for free in your browser. CPU and online multiplayer supported. Mobile-friendly, play anytime, anywhere.">
+  <meta property="og:title" content="Othello (Reversi) | Free Browser Game">
+  <meta property="og:description" content="Play Othello (Reversi) for free in your browser. CPU and online multiplayer supported. Mobile-friendly.">
+  <meta property="og:type" content="website">
+  <link rel="canonical" href="https://naganuma2003.github.io/game/en/games/othello.html">
+  <link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/othello.html">
+  <link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/othello.html">
+<style>
+:root {
+  --board-bg: #1f7a4d;
+  --board-line: #0f5235;
+  --cell-size: 56px;
+  --gap: 2px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: #14201a;
+  color: #eef5f0;
+  font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+}
+
+.app {
+  width: 100%;
+  max-width: 520px;
+  padding: 24px 16px 48px;
+  text-align: center;
+}
+
+h1 {
+  margin: 8px 0 20px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+/* Setup screen */
+.setup {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  padding: 22px 18px 26px;
+  margin: 0 auto;
+}
+.setup h2 {
+  margin: 0 0 18px;
+  font-size: 18px;
+  letter-spacing: 0.1em;
+}
+.setup-players {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+}
+.player-config {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px 12px;
+}
+.player-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.type-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  width: fit-content;
+  margin: 0 auto 14px;
+}
+.type-options label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 15px;
+}
+.type-options input { accent-color: #2f9d6a; cursor: pointer; }
+.level-row {
+  font-size: 13px;
+  opacity: 0.9;
+}
+.level-row select { margin-left: 6px; }
+.btn-primary {
+  margin-top: 22px;
+  background: #ffb02e;
+  color: #14201a;
+  font-size: 16px;
+  padding: 12px 36px;
+}
+.btn-primary:hover { background: #ffc14d; }
+
+/* Scoreboard */
+.scoreboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.score.active {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 2px #ffd34d inset;
+}
+
+.score .label { font-size: 13px; opacity: 0.85; }
+.score .count { font-size: 26px; font-weight: 700; }
+
+.disc {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.disc-black { background: radial-gradient(circle at 35% 30%, #555, #000); }
+.disc-white { background: radial-gradient(circle at 35% 30%, #fff, #c8c8c8); }
+
+.turn {
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 10px;
+  min-width: 96px;
+}
+
+/* Board */
+.board-wrap { display: flex; justify-content: center; }
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(8, var(--cell-size));
+  grid-template-rows: repeat(8, var(--cell-size));
+  gap: var(--gap);
+  padding: var(--gap);
+  background: var(--board-line);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.cell {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  background: var(--board-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  position: relative;
+}
+
+.cell.playable { cursor: pointer; }
+
+.cell .piece {
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.18s ease;
+}
+.cell .piece.show { transform: scale(1); }
+.cell .piece.black { background: radial-gradient(circle at 35% 30%, #555, #000); }
+.cell .piece.white { background: radial-gradient(circle at 35% 30%, #fff, #c8c8c8); }
+
+/* legal-move hint */
+.cell.playable::after {
+  content: "";
+  position: absolute;
+  width: 28%;
+  height: 28%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+}
+.cell.playable.has-piece::after { display: none; }
+
+/* AI-assistant evaluation overlay */
+.cell .hint-score {
+  position: absolute;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  display: none;
+}
+.cell.assist::after { display: none; }
+.cell.assist .hint-score { display: block; }
+
+.cell.assist.rank1 .hint-score { color: #ff4d4d; }
+.cell.assist.rank2 .hint-score { color: #ff9e2c; }
+.cell.assist.rank3 .hint-score { color: #ffe04d; }
+.cell.assist.rank1 { box-shadow: inset 0 0 0 3px #ff4d4d; }
+.cell.assist.rank2 { box-shadow: inset 0 0 0 3px #ff9e2c; }
+.cell.assist.rank3 { box-shadow: inset 0 0 0 3px #ffe04d; }
+
+/* Controls */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0 8px;
+}
+
+.mode { font-size: 14px; }
+
+select, .btn {
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn {
+  background: #2f9d6a;
+  color: #fff;
+  font-weight: 600;
+  transition: background 0.15s, opacity 0.15s;
+}
+.btn:hover { background: #37b67c; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+select { background: #eef5f0; color: #14201a; }
+
+.assist-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.assist-toggle input { accent-color: #2f9d6a; cursor: pointer; }
+
+.message {
+  min-height: 24px;
+  font-weight: 600;
+  color: #ffd34d;
+}
+
+@media (max-width: 520px) {
+  :root { --cell-size: 40px; }
+  .setup-players { flex-direction: column; }
+}
+
+/* ---- Online play ---- */
+.online-entry { margin-top: 14px; }
+.btn-online {
+  background: #2563c9;
+  font-size: 15px;
+  padding: 11px 22px;
+}
+.btn-online:hover { background: #2f74e0; }
+.btn-small { padding: 6px 12px; font-size: 13px; }
+
+.overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.overlay[hidden] { display: none; }
+
+.lobby-card {
+  position: relative;
+  background: #15321f;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 24px 22px;
+  width: 100%; max-width: 360px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+.lobby-card h2 { margin: 0 0 6px; font-size: 20px; }
+.lobby-note { font-size: 13px; opacity: 0.85; line-height: 1.6; margin: 0 0 18px; }
+.lobby-close {
+  position: absolute; top: 10px; right: 12px;
+  background: none; border: none; color: #eef5f0;
+  font-size: 24px; line-height: 1; cursor: pointer; opacity: 0.7;
+}
+.lobby-close:hover { opacity: 1; }
+
+.lobby-section h3 { font-size: 15px; margin: 0 0 10px; }
+.lobby-divider {
+  margin: 18px 0; font-size: 12px; opacity: 0.6;
+  display: flex; align-items: center; gap: 10px;
+}
+.lobby-divider::before, .lobby-divider::after {
+  content: ""; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.18);
+}
+
+.room-code-box {
+  margin-top: 14px; padding: 12px;
+  background: rgba(255, 255, 255, 0.06); border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.rc-label { font-size: 12px; opacity: 0.7; }
+.room-code {
+  font-size: 34px; font-weight: 800; letter-spacing: 0.25em;
+  color: #ffd34d; font-family: "Consolas", monospace;
+}
+
+.join-row { display: flex; gap: 8px; justify-content: center; }
+.join-input {
+  font-size: 20px; font-weight: 700; letter-spacing: 0.2em;
+  text-align: center; text-transform: uppercase;
+  width: 140px; padding: 8px; border-radius: 8px; border: none;
+  background: #f3ead9; color: #14201a;
+}
+.online-status {
+  min-height: 20px; margin: 16px 0 0; font-size: 13px;
+  font-weight: 600; color: #ffd34d; line-height: 1.5;
+}
+.eval-row{display:flex;align-items:center;gap:7px;margin:4px 0 8px}
+.eval-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.45);padding:3px 9px;border-radius:12px;font-size:11px;cursor:pointer;font-family:inherit;transition:.2s;white-space:nowrap}
+.eval-btn.on{border-color:var(--gold,#c9a030);color:var(--gold,#c9a030)}
+.eval-bar{width:140px;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;position:relative}
+.eval-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;transition:width .3s,background .3s}
+.eval-lbl{font-size:11px;color:rgba(255,255,255,.5);white-space:nowrap}
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Othello (Reversi)","description":"Play Othello (Reversi) for free in your browser. CPU and online multiplayer supported.","url":"https://naganuma2003.github.io/game/en/games/othello.html","genre":["Board Game","Strategy Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","operatingSystem":"Any","playMode":["SinglePlayer","MultiPlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":2},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"inLanguage":"en"}
+</script>
+</head>
+<body>
+  <a href="../index.html" style="position:fixed;top:12px;left:12px;z-index:9999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 14px/1 'Segoe UI',sans-serif;padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.25);backdrop-filter:blur(4px);">← Back to List</a>
+  <div class="app">
+    <h1>Othello</h1>
+
+    <!-- Game setup screen -->
+    <section id="setup" class="setup">
+      <h2>Game Setup</h2>
+      <div class="setup-players">
+        <div class="player-config">
+          <div class="player-head"><span class="disc disc-black"></span> Black (1st)</div>
+          <div class="type-options">
+            <label><input type="radio" name="black-type" value="human" checked> Human</label>
+            <label><input type="radio" name="black-type" value="cpu"> CPU</label>
+          </div>
+          <label class="level-row">
+            Strength:
+            <select id="black-level" disabled>
+              <option value="1">Lv1 Beginner</option>
+              <option value="2">Lv2 Easy</option>
+              <option value="3" selected>Lv3 Normal</option>
+              <option value="4">Lv4 Hard</option>
+              <option value="5">Lv5 Expert</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="player-config">
+          <div class="player-head"><span class="disc disc-white"></span> White (2nd)</div>
+          <div class="type-options">
+            <label><input type="radio" name="white-type" value="human"> Human</label>
+            <label><input type="radio" name="white-type" value="cpu" checked> CPU</label>
+          </div>
+          <label class="level-row">
+            Strength:
+            <select id="white-level">
+              <option value="1">Lv1 Beginner</option>
+              <option value="2">Lv2 Easy</option>
+              <option value="3" selected>Lv3 Normal</option>
+              <option value="4">Lv4 Hard</option>
+              <option value="5">Lv5 Expert</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <button id="start" class="btn btn-primary">Start Game</button>
+      <div class="online-entry">
+        <button id="online-btn" class="btn btn-online">🌐 Play Online (Room Code)</button>
+      </div>
+    </section>
+
+    <!-- Online lobby -->
+    <div id="online-lobby" class="overlay" hidden>
+      <div class="lobby-card">
+        <button id="lobby-close" class="lobby-close" aria-label="Close">×</button>
+        <h2>Online Play</h2>
+        <p class="lobby-note">Share a room code with another player to start a match.<br>The room creator plays <b>Black (1st)</b>, the joiner plays <b>White (2nd)</b>.</p>
+
+        <div class="lobby-section">
+          <h3>Create a Room</h3>
+          <button id="create-room" class="btn btn-primary">Create Room</button>
+          <div id="room-code-box" class="room-code-box" hidden>
+            <span class="rc-label">Room Code</span>
+            <span id="room-code" class="room-code">----</span>
+            <button id="copy-code" class="btn btn-small">Copy</button>
+          </div>
+        </div>
+
+        <div class="lobby-divider">or</div>
+
+        <div class="lobby-section">
+          <h3>Join a Room</h3>
+          <div class="join-row">
+            <input id="join-code" class="join-input" maxlength="4" placeholder="4-digit code" inputmode="numeric" pattern="\d*" autocomplete="off">
+            <button id="join-room" class="btn btn-primary">Join</button>
+          </div>
+        </div>
+
+        <p id="online-status" class="online-status"></p>
+        <a href="../index.html" style="display:inline-block;margin-top:14px;color:#cfd6e4;font-size:13px;text-decoration:none;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:7px 16px">← Back to List</a>
+      </div>
+    </div>
+
+    <!-- Game screen -->
+    <section id="game" class="game" hidden>
+      <div class="scoreboard">
+        <div class="score" id="score-black">
+          <span class="disc disc-black"></span>
+          <span class="label" id="label-black">Black</span>
+          <span class="count" id="count-black">2</span>
+        </div>
+        <div class="turn" id="turn-indicator">Black's turn</div>
+        <div class="score" id="score-white">
+          <span class="disc disc-white"></span>
+          <span class="label" id="label-white">White</span>
+          <span class="count" id="count-white">2</span>
+        </div>
+      </div>
+
+      <div class="board-wrap">
+        <div id="board" class="board"></div>
+      </div>
+
+      <div class="controls">
+        <button id="undo" class="btn" disabled>Undo</button>
+        <button id="pass" class="btn" disabled>Pass</button>
+        <button id="reset" class="btn">Play Again</button>
+        <button id="back" class="btn">Change Settings</button>
+      </div>
+
+      <label class="assist-toggle">
+        <input type="checkbox" id="assist"> AI Assistant (show evaluation)
+      </label>
+
+      <div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">AI Eval</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
+      <p id="message" class="message"></p>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="../../shared/lobby.js?v=8"></script>
+<script>
+/* Othello AI
+ * Exposes window.OthelloAI with helpers for move generation and CPU choice.
+ * Board is an 8x8 array of 0 (empty), 1 (black), 2 (white).
+ */
+(function () {
+  const SIZE = 8;
+  const DIRS = [
+    [-1, -1], [-1, 0], [-1, 1],
+    [0, -1],           [0, 1],
+    [1, -1],  [1, 0],  [1, 1],
+  ];
+
+  const WEIGHTS = [
+    [120, -20, 20, 5, 5, 20, -20, 120],
+    [-20, -40, -5, -5, -5, -5, -40, -20],
+    [20, -5, 15, 3, 3, 15, -5, 20],
+    [5, -5, 3, 3, 3, 3, -5, 5],
+    [5, -5, 3, 3, 3, 3, -5, 5],
+    [20, -5, 15, 3, 3, 15, -5, 20],
+    [-20, -40, -5, -5, -5, -5, -40, -20],
+    [120, -20, 20, 5, 5, 20, -20, 120],
+  ];
+
+  const opponent = (p) => (p === 1 ? 2 : 1);
+  const inside = (r, c) => r >= 0 && r < SIZE && c >= 0 && c < SIZE;
+
+  function flipsFor(board, row, col, player) {
+    if (board[row][col] !== 0) return [];
+    const opp = opponent(player);
+    const flips = [];
+    for (const [dr, dc] of DIRS) {
+      let r = row + dr, c = col + dc;
+      const line = [];
+      while (inside(r, c) && board[r][c] === opp) {
+        line.push([r, c]);
+        r += dr; c += dc;
+      }
+      if (line.length && inside(r, c) && board[r][c] === player) {
+        flips.push(...line);
+      }
+    }
+    return flips;
+  }
+
+  function legalMoves(board, player) {
+    const moves = [];
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const flips = flipsFor(board, r, c, player);
+        if (flips.length) moves.push({ row: r, col: c, flips });
+      }
+    }
+    return moves;
+  }
+
+  function applyMove(board, move, player) {
+    const next = board.map((row) => row.slice());
+    next[move.row][move.col] = player;
+    for (const [r, c] of move.flips) next[r][c] = player;
+    return next;
+  }
+
+  function counts(board) {
+    let black = 0, white = 0;
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (board[r][c] === 1) black++;
+        else if (board[r][c] === 2) white++;
+      }
+    }
+    return { black, white };
+  }
+
+  function evaluate(board, player) {
+    const opp = opponent(player);
+    let positional = 0, mine = 0, theirs = 0;
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const v = board[r][c];
+        if (v === player) { positional += WEIGHTS[r][c]; mine++; }
+        else if (v === opp) { positional -= WEIGHTS[r][c]; theirs++; }
+      }
+    }
+    const myMoves = legalMoves(board, player).length;
+    const oppMoves = legalMoves(board, opp).length;
+    const mobility = 10 * (myMoves - oppMoves);
+
+    const empties = SIZE * SIZE - mine - theirs;
+    const discDiff = empties <= 12 ? 10 * (mine - theirs) : (mine - theirs);
+
+    return positional + mobility + discDiff;
+  }
+
+  function orderedMoves(board, player) {
+    const moves = legalMoves(board, player);
+    moves.sort((a, b) => WEIGHTS[b.row][b.col] - WEIGHTS[a.row][a.col]);
+    return moves;
+  }
+
+  function terminalScore(board, player) {
+    const { black, white } = counts(board);
+    const mine = player === 1 ? black : white;
+    return mine - (mine === black ? white : black);
+  }
+
+  function negamax(board, player, depth, alpha, beta) {
+    if (depth === 0) return evaluate(board, player);
+
+    const moves = orderedMoves(board, player);
+    if (moves.length === 0) {
+      if (legalMoves(board, opponent(player)).length === 0) {
+        return evaluate(board, player);
+      }
+      return -negamax(board, opponent(player), depth - 1, -beta, -alpha);
+    }
+
+    let best = -Infinity;
+    for (const move of moves) {
+      const next = applyMove(board, move, player);
+      const score = -negamax(next, opponent(player), depth - 1, -beta, -alpha);
+      if (score > best) best = score;
+      if (best > alpha) alpha = best;
+      if (alpha >= beta) break;
+    }
+    return best;
+  }
+
+  function endgameSolve(board, player, alpha, beta) {
+    const moves = orderedMoves(board, player);
+    if (moves.length === 0) {
+      if (legalMoves(board, opponent(player)).length === 0) {
+        return terminalScore(board, player);
+      }
+      return -endgameSolve(board, opponent(player), -beta, -alpha);
+    }
+
+    let best = -Infinity;
+    for (const move of moves) {
+      const next = applyMove(board, move, player);
+      const score = -endgameSolve(next, opponent(player), -beta, -alpha);
+      if (score > best) best = score;
+      if (best > alpha) alpha = best;
+      if (alpha >= beta) break;
+    }
+    return best;
+  }
+
+  const LEVELS = {
+    1: { kind: "random" },
+    2: { kind: "greedy" },
+    3: { kind: "search", mid: 2, end: 4 },
+    4: { kind: "search", mid: 4, end: 6 },
+    5: { kind: "search", mid: 5, end: 8 },
+  };
+
+  function pickRandom(moves) {
+    return moves[Math.floor(Math.random() * moves.length)];
+  }
+
+  function pickGreedy(moves) {
+    let best = moves[0], bestScore = -Infinity;
+    for (const m of moves) {
+      const score = m.flips.length + WEIGHTS[m.row][m.col] * 0.2;
+      if (score > bestScore) { bestScore = score; best = m; }
+    }
+    return best;
+  }
+
+  function searchDepth(board, cfg) {
+    const filled = counts(board).black + counts(board).white;
+    const empties = SIZE * SIZE - filled;
+    return empties <= 8 ? Math.min(empties, cfg.end)
+      : empties <= 12 ? cfg.end
+      : cfg.mid;
+  }
+
+  function pickSearch(board, player, moves, cfg) {
+    const depth = searchDepth(board, cfg);
+
+    let best = moves[0], bestScore = -Infinity;
+    let alpha = -Infinity;
+    const beta = Infinity;
+    for (const move of moves) {
+      const next = applyMove(board, move, player);
+      const score = -negamax(next, opponent(player), depth - 1, -beta, -alpha);
+      if (score > bestScore) { bestScore = score; best = move; }
+      if (score > alpha) alpha = score;
+    }
+    return best;
+  }
+
+  const ASSIST_MID_DEPTH = 7;
+  const ASSIST_EXACT_EMPTIES = 12;
+
+  function evaluateMoves(board, player) {
+    const filled = counts(board).black + counts(board).white;
+    const empties = SIZE * SIZE - filled;
+    const exact = empties <= ASSIST_EXACT_EMPTIES;
+    return legalMoves(board, player).map((move) => {
+      const next = applyMove(board, move, player);
+      const score = exact
+        ? -endgameSolve(next, opponent(player), -Infinity, Infinity)
+        : -negamax(next, opponent(player), ASSIST_MID_DEPTH - 1, -Infinity, Infinity);
+      return { row: move.row, col: move.col, score };
+    });
+  }
+
+  function chooseMove(board, player, level) {
+    const moves = legalMoves(board, player);
+    if (moves.length === 0) return null;
+
+    const cfg = LEVELS[Number(level)] || LEVELS[3];
+    if (cfg.kind === "random") return pickRandom(moves);
+    if (cfg.kind === "greedy") return pickGreedy(moves);
+    return pickSearch(board, player, moves, cfg);
+  }
+
+  window.OthelloAI = {
+    SIZE,
+    legalMoves,
+    flipsFor,
+    applyMove,
+    counts,
+    chooseMove,
+    evaluateMoves,
+    opponent,
+  };
+})();
+</script>
+<script>
+(function () {
+  const AI = window.OthelloAI;
+  const SIZE = AI.SIZE;
+  const BLACK = 1, WHITE = 2;
+
+  const setupEl = document.getElementById("setup");
+  const gameEl = document.getElementById("game");
+  const startBtn = document.getElementById("start");
+  const blackLevelSel = document.getElementById("black-level");
+  const whiteLevelSel = document.getElementById("white-level");
+
+  const boardEl = document.getElementById("board");
+  const countBlackEl = document.getElementById("count-black");
+  const countWhiteEl = document.getElementById("count-white");
+  const labelBlackEl = document.getElementById("label-black");
+  const labelWhiteEl = document.getElementById("label-white");
+  const turnEl = document.getElementById("turn-indicator");
+  const messageEl = document.getElementById("message");
+  const resetBtn = document.getElementById("reset");
+  const passBtn = document.getElementById("pass");
+  const backBtn = document.getElementById("back");
+  const undoBtn = document.getElementById("undo");
+  const assistEl = document.getElementById("assist");
+  const scoreBlackEl = document.getElementById("score-black");
+  const scoreWhiteEl = document.getElementById("score-white");
+
+  const LEVEL_NAMES = { 1: "Beginner", 2: "Easy", 3: "Normal", 4: "Hard", 5: "Expert" };
+
+  const players = {
+    [BLACK]: { type: "human", level: "3" },
+    [WHITE]: { type: "cpu", level: "3" },
+  };
+
+  let online = null;
+
+  let board, current, busy, gameOver;
+  let history = [];
+  const cells = [];
+
+  const colorName = (p) => (p === BLACK ? "Black" : "White");
+  const isCpu = (p) => !online && players[p].type === "cpu";
+  function isCpuTurn() { return !gameOver && isCpu(current); }
+  function myTurn() {
+    if (gameOver || busy) return false;
+    if (online) return current === online.myColor;
+    return !isCpu(current);
+  }
+
+  function playerLabel(p) {
+    if (online) {
+      const mine = p === online.myColor ? "You" : "Opponent";
+      return `${colorName(p)} (${mine})`;
+    }
+    if (players[p].type === "human") return `${colorName(p)} (Human)`;
+    const lv = LEVEL_NAMES[players[p].level] || players[p].level;
+    return `${colorName(p)} (CPU Lv${players[p].level} ${lv})`;
+  }
+
+  function syncLevelEnabled() {
+    const blackType = document.querySelector('input[name="black-type"]:checked').value;
+    const whiteType = document.querySelector('input[name="white-type"]:checked').value;
+    blackLevelSel.disabled = blackType !== "cpu";
+    whiteLevelSel.disabled = whiteType !== "cpu";
+  }
+
+  document.querySelectorAll('input[name="black-type"], input[name="white-type"]')
+    .forEach((el) => el.addEventListener("change", syncLevelEnabled));
+
+  function readConfig() {
+    players[BLACK].type = document.querySelector('input[name="black-type"]:checked').value;
+    players[WHITE].type = document.querySelector('input[name="white-type"]:checked').value;
+    players[BLACK].level = blackLevelSel.value;
+    players[WHITE].level = whiteLevelSel.value;
+  }
+
+  function showSetup() {
+    gameEl.hidden = true;
+    setupEl.hidden = false;
+  }
+
+  function enterGameScreen() {
+    setupEl.hidden = true;
+    gameEl.hidden = false;
+    labelBlackEl.textContent = playerLabel(BLACK);
+    labelWhiteEl.textContent = playerLabel(WHITE);
+    undoBtn.style.display = online ? "none" : "";
+    backBtn.style.display = online ? "none" : "";
+    resetBtn.style.display = online ? "none" : "";
+    assistEl.parentElement.style.display = online ? "none" : "";
+    newGame();
+  }
+
+  function randomizeFirst() {
+    const b = players[BLACK].type, w = players[WHITE].type;
+    const oneEach = (b === "human" && w === "cpu") || (b === "cpu" && w === "human");
+    if (oneEach && Math.random() < 0.5) {
+      const tmp = players[BLACK];
+      players[BLACK] = players[WHITE];
+      players[WHITE] = tmp;
+    }
+  }
+
+  startBtn.addEventListener("click", () => {
+    online = null;
+    readConfig();
+    randomizeFirst();
+    enterGameScreen();
+  });
+
+  function buildGrid() {
+    boardEl.innerHTML = "";
+    cells.length = 0;
+    for (let r = 0; r < SIZE; r++) {
+      cells.push([]);
+      for (let c = 0; c < SIZE; c++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        const piece = document.createElement("div");
+        piece.className = "piece";
+        cell.appendChild(piece);
+        const score = document.createElement("span");
+        score.className = "hint-score";
+        cell.appendChild(score);
+        cell.addEventListener("click", () => onCellClick(r, c));
+        boardEl.appendChild(cell);
+        cells[r].push(cell);
+      }
+    }
+  }
+
+  function newGame() {
+    board = Array.from({ length: SIZE }, () => new Array(SIZE).fill(0));
+    board[3][3] = WHITE; board[3][4] = BLACK;
+    board[4][3] = BLACK; board[4][4] = WHITE;
+    current = BLACK;
+    busy = false;
+    gameOver = false;
+    history = [];
+    messageEl.textContent = "";
+    render();
+    maybeCpuMove();
+  }
+
+  function render() {
+    const moves = gameOver ? [] : AI.legalMoves(board, current);
+    const moveSet = new Set(moves.map((m) => m.row * SIZE + m.col));
+    const humanToMove = myTurn();
+
+    let scoreMap = null, rankOf = null;
+    if (!online && assistEl.checked && humanToMove && moves.length) {
+      scoreMap = new Map();
+      for (const m of AI.evaluateMoves(board, current)) {
+        scoreMap.set(m.row * SIZE + m.col, m.score);
+      }
+      const uniqueDesc = [...new Set(scoreMap.values())].sort((a, b) => b - a);
+      rankOf = (s) => uniqueDesc.indexOf(s);
+    }
+
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const cell = cells[r][c];
+        const piece = cell.querySelector(".piece");
+        const scoreEl = cell.querySelector(".hint-score");
+        const v = board[r][c];
+        piece.classList.toggle("black", v === BLACK);
+        piece.classList.toggle("white", v === WHITE);
+        piece.classList.toggle("show", v !== 0);
+        cell.classList.toggle("has-piece", v !== 0);
+
+        const key = r * SIZE + c;
+        const showHint = humanToMove && moveSet.has(key);
+        cell.classList.toggle("playable", showHint);
+
+        const hasScore = scoreMap && scoreMap.has(key);
+        cell.classList.toggle("assist", !!hasScore);
+        const rank = hasScore ? rankOf(scoreMap.get(key)) : -1;
+        cell.classList.toggle("rank1", rank === 0);
+        cell.classList.toggle("rank2", rank === 1);
+        cell.classList.toggle("rank3", rank === 2);
+        scoreEl.textContent = hasScore ? scoreMap.get(key) : "";
+      }
+    }
+
+    const { black, white } = AI.counts(board);
+    countBlackEl.textContent = black;
+    countWhiteEl.textContent = white;
+
+    scoreBlackEl.classList.toggle("active", !gameOver && current === BLACK);
+    scoreWhiteEl.classList.toggle("active", !gameOver && current === WHITE);
+
+    if (gameOver) {
+      turnEl.textContent = "Game Over";
+    } else if (online) {
+      turnEl.textContent = current === online.myColor ? "Your turn" : "Opponent's turn";
+    } else if (isCpuTurn()) {
+      turnEl.textContent = `${colorName(current)}'s turn (CPU thinking...)`;
+    } else {
+      turnEl.textContent = `${colorName(current)}'s turn`;
+    }
+
+    const noMoves = !gameOver && moves.length === 0;
+    passBtn.disabled = !(noMoves && humanToMove);
+
+    undoBtn.disabled = busy || online || history.length === 0;
+    updateEval();
+  }
+
+  function onCellClick(r, c) {
+    if (!myTurn()) return;
+    const flips = AI.flipsFor(board, r, c, current);
+    if (!flips.length) return;
+    if (online) online.send({ t: "move", row: r, col: c });
+    play({ row: r, col: c, flips });
+  }
+
+  function play(move) {
+    history.push({ board: board.map((row) => row.slice()), current });
+    board = AI.applyMove(board, move, current);
+    current = AI.opponent(current);
+    advanceTurn();
+  }
+
+  function undo() {
+    if (busy || online || history.length === 0) return;
+    let snap = history.pop();
+    while (isCpu(snap.current) && history.length > 0) {
+      snap = history.pop();
+    }
+    board = snap.board.map((row) => row.slice());
+    current = snap.current;
+    gameOver = false;
+    messageEl.textContent = "";
+    render();
+    maybeCpuMove();
+  }
+
+  function advanceTurn() {
+    const myMoves = AI.legalMoves(board, current);
+    if (myMoves.length === 0) {
+      const oppMoves = AI.legalMoves(board, AI.opponent(current));
+      if (oppMoves.length === 0) {
+        endGame();
+        return;
+      }
+      messageEl.textContent = `${colorName(current)} has no moves — pass`;
+      current = AI.opponent(current);
+      render();
+      maybeCpuMove();
+      return;
+    }
+    messageEl.textContent = "";
+    render();
+    maybeCpuMove();
+  }
+
+  function maybeCpuMove() {
+    if (!isCpuTurn()) return;
+    busy = true;
+    render();
+    setTimeout(() => {
+      const move = AI.chooseMove(board, current, players[current].level);
+      busy = false;
+      if (!move) { advanceTurn(); return; }
+      play(move);
+    }, 450);
+  }
+
+  function endGame() {
+    gameOver = true;
+    render();
+    const { black, white } = AI.counts(board);
+    let result;
+    if (black > white) result = "Black wins!";
+    else if (white > black) result = "White wins!";
+    else result = "Draw";
+    if (online) {
+      const won = (black > white && online.myColor === BLACK) ||
+                  (white > black && online.myColor === WHITE);
+      const tag = black === white ? "Draw" : (won ? "You win!" : "You lose...");
+      messageEl.textContent = `Game Over — ${tag} (Black ${black} : ${white} White)`;
+    } else {
+      messageEl.textContent = `Game Over — ${result} (Black ${black} : ${white} White)`;
+    }
+  }
+
+  passBtn.addEventListener("click", () => {
+    if (passBtn.disabled) return;
+    if (online) online.send({ t: "pass" });
+    messageEl.textContent = "";
+    current = AI.opponent(current);
+    advanceTurn();
+  });
+
+  resetBtn.addEventListener("click", newGame);
+  backBtn.addEventListener("click", showSetup);
+  undoBtn.addEventListener("click", undo);
+  assistEl.addEventListener("change", render);
+
+  buildGrid();
+  syncLevelEnabled();
+
+  // ===== AI Eval =====
+  var evalOn=false;
+  function toggleEval(){
+    evalOn=!evalOn;
+    document.getElementById('eval-btn').classList.toggle('on',evalOn);
+    document.getElementById('eval-bar').style.display=evalOn?'block':'none';
+    document.getElementById('eval-lbl').style.display=evalOn?'inline':'none';
+    updateEval();
+  }
+  function updateEval(){
+    if(!evalOn)return;
+    const s=evalScore(),MAX=64;
+    const C1='#222',C2='#e0e0e0',N1='Black',N2='White';
+    const pct=Math.min(Math.max((s+MAX)/(2*MAX),0),1);
+    document.getElementById('eval-fill').style.cssText=`width:${pct*100}%;background:${s>0.3?C1:s<-0.3?C2:'#888'}`;
+    document.getElementById('eval-lbl').textContent=Math.abs(s)<0.3?'Even':s>0?`${N1}+${Math.round(Math.abs(s))}`:`${N2}+${Math.round(Math.abs(s))}`;
+  }
+  const EVAL_W=[
+    [5,-2,2,2,2,2,-2,5],
+    [-2,-3,-1,-1,-1,-1,-3,-2],
+    [2,-1,1,1,1,1,-1,2],
+    [2,-1,1,1,1,1,-1,2],
+    [2,-1,1,1,1,1,-1,2],
+    [2,-1,1,1,1,1,-1,2],
+    [-2,-3,-1,-1,-1,-1,-3,-2],
+    [5,-2,2,2,2,2,-2,5]
+  ];
+  function evalScore(){
+    if(gameOver)return 0;
+    let score=0;
+    for(let r=0;r<SIZE;r++)for(let c=0;c<SIZE;c++){
+      const v=board[r][c];
+      if(v===BLACK)score+=EVAL_W[r][c];
+      else if(v===WHITE)score-=EVAL_W[r][c];
+    }
+    const bMoves=AI.legalMoves(board,BLACK).length;
+    const wMoves=AI.legalMoves(board,WHITE).length;
+    score+=(bMoves-wMoves)*0.5;
+    return score;
+  }
+  window.toggleEval=toggleEval;
+  window.updateEval=updateEval;
+
+  window.OthelloGame = {
+    startOnline(myColor, sendFn) {
+      online = { myColor, send: sendFn };
+      enterGameScreen();
+    },
+    remoteMove(row, col) {
+      if (!online) return;
+      const flips = AI.flipsFor(board, row, col, current);
+      if (!flips.length) return;
+      play({ row, col, flips });
+    },
+    remotePass() {
+      if (!online) return;
+      current = AI.opponent(current);
+      advanceTurn();
+    },
+    peerLeft() {
+      if (!online) return;
+      gameOver = true;
+      messageEl.textContent = "Opponent disconnected.";
+      render();
+    },
+  };
+})();
+</script>
+<script>
+(function () {
+  const Game = window.OthelloGame;
+  window.OnlineLobby.init({
+    gameId: "othello",
+    hostColor: 1,
+    guestColor: 2,
+    basePrefix: "../../",
+    startOnline: (myColor, send) => Game.startOnline(myColor, send),
+    applyRemote: (msg) => {
+      if (msg.t === "move") Game.remoteMove(msg.row, msg.col);
+      else if (msg.t === "pass") Game.remotePass();
+    },
+    onPeerLeft: () => Game.peerLeft(),
+  });
+})();
+</script>
+<script src="../../shared/firebase-counter.js"></script></body>
+</html>

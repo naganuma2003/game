@@ -216,7 +216,7 @@ function cpuChoose(hand, prize, diff) {
   const r=Math.random();return s[r<.45?0:r<.75?Math.min(1,n-1):Math.min(2,n-1)];
 }
 
-function initGame(numP, diff, online, mySeat) {
+function initGame(numP, diff, online, mySeat, sharedDeck) {
   G = {
     numP, diff, online, mySeat,
     names: online
@@ -227,7 +227,7 @@ function initGame(numP, diff, online, mySeat) {
           return n;
         })()
       : ['あなた',...Array.from({length:numP-1},(_,i)=>`CPU ${i+1}`)],
-    deck: shuffle(PRIZES),
+    deck: sharedDeck || shuffle(PRIZES),
     hands: Array.from({length:numP},()=>new Set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15])),
     scores: Array(numP).fill(0),
     round: 0, prize:null, phase:'picking',
@@ -241,8 +241,10 @@ function initGame(numP, diff, online, mySeat) {
 function startRound(){
   if(G.round>=15){showGameOver();return;}
   G.prize=G.deck[G.round];G.myChoice=null;G.opChoice=null;G.cpuChoices=[];G.phase='picking';
-  // In online mode, pre-generate CPU bids so both peers use the seeded PRNG at the same point
-  if(G.online){for(let i=2;i<G.numP;i++)G.cpuChoices.push(cpuChoose([...G.hands[i]],G.prize,G.diff));}
+  if(G.online&&G.mySeat===0){
+    for(let i=2;i<G.numP;i++)G.cpuChoices.push(cpuChoose([...G.hands[i]],G.prize,G.diff));
+    OnlineCore.send({t:'cpu',bids:G.cpuChoices});
+  }
   document.getElementById('reveal-area').style.display='none';
   document.getElementById('round-info').textContent=`ラウンド ${G.round+1} / 15`;
   renderPrize();renderHand();renderScores();renderStatus();updateBtn();
@@ -269,6 +271,7 @@ function confirmChoice(){
 }
 
 function handleOnlineMsg(msg){
+  if(msg.t==='cpu'){G.cpuChoices=msg.bids;return;}
   if(msg.t!=='choice')return;
   G.opChoice=msg.card;
   if(G.phase==='waiting')doReveal();
@@ -450,17 +453,18 @@ document.getElementById('again-btn').addEventListener('click',()=>{
     const cpuDiff=document.getElementById('online-cpu-diff').value;
     const totalPlayers=2+cpuCount;
     // Host sends config to guest
-    pendingSend({t:'cpucfg',cpu:cpuCount,diff:cpuDiff});
+    const deck=shuffle(PRIZES);
+    pendingSend({t:'cpucfg',cpu:cpuCount,diff:cpuDiff,deck:deck});
     const b=document.getElementById('oc-badge');if(b)b.style.display='none';
     document.getElementById('setup').style.display='none';
-    initGame(totalPlayers,cpuDiff,true,pendingSeat);
+    initGame(totalPlayers,cpuDiff,true,pendingSeat,deck);
   });
 
   window._onlineCpuApply=function(msg,seat){
     const totalPlayers=2+msg.cpu;
     const b=document.getElementById('oc-badge');if(b)b.style.display='none';
     document.getElementById('setup').style.display='none';
-    initGame(totalPlayers,msg.diff,true,seat);
+    initGame(totalPlayers,msg.diff,true,seat,msg.deck);
   };
 })();
 

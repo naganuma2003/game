@@ -162,11 +162,12 @@ function initGame(numP,diff,online,mySeat){
     const cards=deck.splice(0,4).sort(cardSort).map(c=>({...c,revealed:false}));
     players.push({name:names[i],cards,eliminated:false});
   }
-  G={players,deck,numP,diff,online,myIdx,cur:0,drawn:null,phase:'idle',target:null,selectedNum:null,log:[]};
+  const firstTurn=online?0:Math.floor(Math.random()*numP);
+  G={players,deck,numP,diff,online,myIdx,cur:firstTurn,drawn:null,phase:'idle',target:null,selectedNum:null,log:[]};
   document.getElementById('setup').style.display='none';
   document.getElementById('game').style.display='flex';
   buildNumGrid();
-  beginTurn(0);
+  beginTurn(firstTurn);
 }
 
 // ===== TURN FLOW =====

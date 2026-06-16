@@ -38,6 +38,12 @@ svg{display:block;width:min(92vw,400px);height:auto}
 .over .t{font-size:22px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:14px}
 .over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
 .hidden{display:none!important}
+.eval-wrap{width:min(92vw,400px);margin:6px 0 2px;display:none}
+.eval-wrap.show{display:block}
+.eval-label{font-size:10px;color:var(--sub);margin-bottom:2px;display:flex;justify-content:space-between}
+.eval-bar{height:14px;border-radius:7px;overflow:hidden;display:flex;background:var(--panel);border:1px solid var(--line)}
+.eval-seg{height:100%;transition:width .4s ease}
+.eval-txt{font-size:10px;color:var(--sub);text-align:center;margin-top:1px}
 
 @media(max-width:480px){
   h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
@@ -54,6 +60,7 @@ svg{display:block;width:min(92vw,400px);height:auto}
 <div class="turn" id="turn"></div>
 <div class="stock" id="stock"></div>
 <div class="bwrap"><svg id="bd"></svg></div>
+<div class="eval-wrap" id="evalWrap"><div class="eval-label"><span>形勢判断</span><span id="evalBest"></span></div><div class="eval-bar" id="evalBar"></div><div class="eval-txt" id="evalTxt"></div></div>
 <div class="msg" id="msg"></div>
 <div class="rule">
 <b>勝利条件:</b> 自分の色で以下のいずれかを作る ①縦/横/斜めに同じサイズ3つ ②縦/横/斜めに小→中→大の順 ③1マスに小・中・大の同心円<br>
@@ -88,7 +95,7 @@ function init(){
   turn=Math.floor(Math.random()*np);over=false;winner=null;winInfo=null;hist=[]; // 先手ランダム
   document.getElementById('over').classList.remove('show');
   document.getElementById('msg').textContent='';
-  render();updateTurn();updateStock();
+  render();updateTurn();updateStock();evalPosition();
   if(shouldRunCpu())setTimeout(cpuMove,600);
   else if(!ONLINE&&!isHuman())setTimeout(cpuMove,600);
 }
@@ -206,7 +213,7 @@ function doAction(a){
     if(w){winner=turn;winInfo=w;over=true;render();finish();return;}
     if([...Array(np).keys()].every(p=>noStock(p))){over=true;render();finishDraw();return;}
     turn=(turn+1)%np;
-    render();updateTurn();updateStock();
+    render();updateTurn();updateStock();evalPosition();
     if(shouldRunCpu())setTimeout(cpuMove,600);
     else if(!ONLINE&&!isHuman()&&!over)setTimeout(cpuMove,600);
   }
@@ -279,6 +286,68 @@ document.getElementById('again').addEventListener('click',init);
 document.getElementById('reset').addEventListener('click',init);
 document.getElementById('undo').addEventListener('click',()=>{if(!hist.length||ONLINE)return;let s=hist.pop();if(mode==='cpu'){while(hist.length&&JSON.parse(s).turn!==0)s=hist.pop();}restoreOtrio(s);document.getElementById('over').classList.remove('show');render();updateTurn();updateStock();});
 init();
+
+// --- AI Evaluation ---
+function evalPosition(){
+  const wrap=document.getElementById('evalWrap');
+  if(mode!=='cpu'||ONLINE){wrap.classList.remove('show');return;}
+  wrap.classList.add('show');
+  const scores=new Array(np).fill(0);
+  for(let p=0;p<np;p++){
+    // 1. Line threats: count how many of own pieces per line/win-type
+    for(const L of LINES){
+      // same-size lines
+      for(let s=0;s<3;s++){
+        const mine=L.filter(([r,c])=>board[r][c][s]===p).length;
+        const blocked=L.some(([r,c])=>board[r][c][s]!==-1&&board[r][c][s]!==p);
+        if(!blocked){if(mine===3)scores[p]+=100;else if(mine===2)scores[p]+=12;else if(mine===1)scores[p]+=2;}
+      }
+      // ascending/descending
+      for(const order of [[0,1,2],[2,1,0]]){
+        let mine=0,blocked=false;
+        L.forEach(([r,c],i)=>{const v=board[r][c][order[i]];if(v===p)mine++;else if(v!==-1)blocked=true;});
+        if(!blocked){if(mine===3)scores[p]+=100;else if(mine===2)scores[p]+=12;else if(mine===1)scores[p]+=2;}
+      }
+    }
+    // concentric
+    for(let r=0;r<3;r++)for(let c=0;c<3;c++){
+      const mine=board[r][c].filter(v=>v===p).length;
+      const blocked=board[r][c].some(v=>v!==-1&&v!==p);
+      if(!blocked){if(mine===3)scores[p]+=100;else if(mine===2)scores[p]+=12;else if(mine===1)scores[p]+=2;}
+    }
+    // 2. Available moves
+    let moves=0;for(let r=0;r<3;r++)for(let c=0;c<3;c++)for(let s=0;s<3;s++)if(placeable(r,c,s,p))moves++;
+    scores[p]+=moves*0.5;
+    // 3. Center bonus
+    scores[p]+=board[1][1].filter(v=>v===p).length*2;
+  }
+  // Render bar
+  const total=scores.reduce((a,b)=>a+b,0)||1;
+  const bar=document.getElementById('evalBar');
+  bar.innerHTML='';
+  const pcts=scores.map(s=>Math.max(s/total*100,2));
+  const pctSum=pcts.reduce((a,b)=>a+b,0);
+  pcts.forEach((v,i)=>pcts[i]=v/pctSum*100);
+  for(let p=0;p<np;p++){
+    const seg=document.createElement('div');
+    seg.className='eval-seg';
+    seg.style.width=pcts[p].toFixed(1)+'%';
+    seg.style.background=COLORS[p].c;
+    seg.style.opacity=0.8;
+    bar.appendChild(seg);
+  }
+  // Text
+  const best=scores.indexOf(Math.max(...scores));
+  const txt=document.getElementById('evalTxt');
+  const names=scores.map((_,i)=>mode==='cpu'?(i===0?'あなた':'CPU'+(np>2?'('+ COLORS[i].nm+')':'')):COLORS[i].nm);
+  if(scores.every(s=>s===scores[0])){txt.textContent='互角';document.getElementById('evalBest').textContent='';}
+  else{
+    const adv=((scores[best]/total)*100).toFixed(0);
+    txt.textContent=names.map((n,i)=>n+' '+scores[i].toFixed(0)).join(' / ');
+    document.getElementById('evalBest').textContent=names[best]+'優勢 ('+adv+'%)';
+    document.getElementById('evalBest').style.color=COLORS[best].c;
+  }
+}
 
 function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
   document.getElementById('np').classList.add('hidden');

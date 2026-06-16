@@ -135,7 +135,7 @@ function renderSeatCfg(){
 }
 
 function init(){dice=[1,1,1,1,1];keep=[false,false,false,false,false];rolls=0;
-  allScores=Array.from({length:np},()=>({}));turn=0;curPlayer=0;over=false;cpuBusy=false;
+  allScores=Array.from({length:np},()=>({}));turn=0;curPlayer=ONLINE?0:Math.floor(Math.random()*np);over=false;cpuBusy=false;
   document.getElementById('over').classList.remove('show');
   document.getElementById('curp').style.display=np>1?'block':'none';
   updateCurP();renderDice();renderSheet();updateRollBtn();scheduleCpuTurn();}

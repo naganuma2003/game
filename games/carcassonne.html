@@ -75,6 +75,30 @@ h1 {
 .tile-btns button:disabled { opacity: .35; }
 #tile-remaining { font-size: 12px; color: var(--sub); text-align: center; }
 
+#eval-bar-wrap {
+  display: none; width: 100%; max-width: 380px; margin-bottom: 6px;
+}
+#eval-bar-wrap.show { display: block; }
+#eval-bar-label { font-size: 11px; color: var(--sub); text-align: center; margin-bottom: 3px; }
+#eval-bar-outer {
+  height: 18px; border-radius: 9px; overflow: hidden;
+  background: var(--blue); position: relative;
+  border: 1px solid rgba(255,255,255,.12);
+}
+#eval-bar-inner {
+  height: 100%; background: var(--red); border-radius: 9px 0 0 9px;
+  transition: width .4s ease; width: 50%;
+}
+#eval-bar-marker {
+  position: absolute; top: 0; bottom: 0; width: 2px; background: #fff;
+  left: 50%; transform: translateX(-1px); pointer-events: none;
+}
+#eval-bar-text {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6);
+  pointer-events: none;
+}
+
 #msg { min-height: 20px; font-size: 13px; color: var(--gold); margin: 4px 0 6px; text-align: center; letter-spacing: .05em; }
 
 #canvas-wrap {
@@ -159,6 +183,15 @@ h1 {
   <button data-m="pvp2" class="on">2人対戦</button>
   <button data-m="pvp3">3人対戦</button>
   <button data-m="pvp4">4人対戦</button>
+</div>
+
+<div id="eval-bar-wrap">
+  <div id="eval-bar-label">形勢判断</div>
+  <div id="eval-bar-outer">
+    <div id="eval-bar-inner"></div>
+    <div id="eval-bar-marker"></div>
+    <div id="eval-bar-text"></div>
+  </div>
 </div>
 
 <div id="hud"></div>
@@ -1009,6 +1042,67 @@ function doCPUTurn() {
   }, 400);
 }
 
+/* ===== EVAL BAR ===== */
+function computeEval() {
+  if (!state || cpuLevel === 0) {
+    document.getElementById('eval-bar-wrap').classList.remove('show');
+    return;
+  }
+  document.getElementById('eval-bar-wrap').classList.add('show');
+
+  // Compute potential points from incomplete features for each player
+  const potential = new Array(state.nPlayers).fill(0);
+  const scoredCities = new Set();
+  const scoredRoads = new Set();
+
+  for (const key of Object.keys(state.board)) {
+    const { x, y } = parseKey(key);
+    const cell = state.board[key];
+    const rotated = getRotatedTile(cell.tile, cell.rot);
+    const edges = [rotated.n, rotated.e, rotated.s, rotated.w];
+
+    for (let edge = 0; edge < 4; edge++) {
+      if (edges[edge] === 'C') {
+        const res = checkCityComplete(x, y, edge);
+        const sig = res.tiles.map(t => posKey(t.x, t.y)).sort().join('|');
+        if (!scoredCities.has(sig) && !res.complete && res.meeples.length > 0) {
+          scoredCities.add(sig);
+          const pts = res.tiles.length * 1.2 + res.shieldCount * 0.8;
+          const winners = getWinners(res.meeples);
+          for (const s of winners) potential[s] += pts;
+        } else { scoredCities.add(sig); }
+      }
+      if (edges[edge] === 'R') {
+        const res = checkRoadComplete(x, y, edge);
+        const sig = res.tiles.map(t => posKey(t.x, t.y)).sort().join('|');
+        if (!scoredRoads.has(sig) && !res.complete && res.meeples.length > 0) {
+          scoredRoads.add(sig);
+          const pts = res.tiles.length * 0.6;
+          const winners = getWinners(res.meeples);
+          for (const s of winners) potential[s] += pts;
+        } else { scoredRoads.add(sig); }
+      }
+    }
+
+    if (rotated.center === 'M' && cell.meeple && cell.meeple.dir === 'C') {
+      const { count } = checkMonastery(x, y);
+      potential[cell.meeple.seat] += (1 + count) * 0.7;
+    }
+  }
+
+  // Player 0 (human=red) vs CPU (seat 1, blue)
+  const humanVal = state.scores[0] + potential[0];
+  const cpuVal = state.scores[1] + potential[1];
+  const diff = humanVal - cpuVal;
+  // Map to 0-100 where 50 = even, 100 = human dominant
+  const pct = Math.max(2, Math.min(98, 50 + diff * 1.5));
+
+  document.getElementById('eval-bar-inner').style.width = pct + '%';
+  const sign = diff > 0 ? '+' : '';
+  document.getElementById('eval-bar-text').textContent =
+    diff === 0 ? '互角' : `${PLAYER_NAMES[0]} ${sign}${diff.toFixed(1)}`;
+}
+
 /* ===== CANVAS RENDERING ===== */
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
@@ -1357,6 +1451,7 @@ function updateHUD() {
     hud.appendChild(div);
   }
   document.getElementById('tile-remaining').textContent = `残り ${state.deck.length} 枚`;
+  computeEval();
 }
 
 function updateMsg() {

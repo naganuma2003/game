@@ -74,10 +74,11 @@ function init(){
   h=Array.from({length:SZ+1},()=>new Array(SZ).fill(-1));
   v=Array.from({length:SZ},()=>new Array(SZ+1).fill(-1));
   owner=Array.from({length:SZ},()=>new Array(SZ).fill(-1));
-  turn=0;score=[0,0];over=false;busy=false;hist=[];
+  turn=(typeof OnlineCore!=='undefined'&&OnlineCore.active)?0:(Math.random()<0.5?0:1);score=[0,0];over=false;busy=false;hist=[];
   document.getElementById('over').classList.remove('show');
   document.getElementById('cpulabel').firstChild.textContent=mode==='pvp'?'相手 ':'CPU ';
-  build();render();msg('線をタップして箱を作ろう。箱を取ると続けて打てます。');
+  build();render();msg(turn===0?'線をタップして箱を作ろう。箱を取ると続けて打てます。':'相手が先攻です…');
+  if(!isHuman()&&!over){busy=true;render();setTimeout(cpuMove,520);}
 }
 function build(){
   GAP=Math.min(86,Math.floor(360/SZ));PAD=26;DOT=5;

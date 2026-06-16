@@ -50,6 +50,17 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 .opp-pgrid{display:flex;flex-wrap:wrap;gap:2px}
 .opp-pc{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:3px;padding:2px}
 .opp-pc.used{opacity:.15;filter:grayscale(1)}
+#eval-bar{display:none;width:100%;max-width:860px;background:var(--surf);border-radius:10px;padding:8px 12px;font-size:11px}
+#eval-bar.show{display:block}
+.eval-hdr{display:flex;justify-content:space-between;margin-bottom:4px;color:var(--dim);font-size:10px}
+.eval-track{height:14px;border-radius:7px;background:#111118;display:flex;overflow:hidden;border:1px solid #252535}
+.eval-seg{height:100%;transition:width .4s ease}
+.eval-labels{display:flex;justify-content:space-between;margin-top:4px;font-size:10px;font-weight:700}
+.eval-detail{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.eval-card{flex:1;min-width:70px;background:#141420;border-radius:6px;padding:5px 7px;text-align:center;border:1px solid #252535}
+.eval-card .ev-name{font-size:9px;color:var(--dim)}
+.eval-card .ev-val{font-size:13px;font-weight:700;margin-top:1px}
+.eval-card .ev-sub{font-size:8px;color:var(--dim)}
 @media(max-width:580px){
   :root{--cs:17px}
   .play{flex-direction:column}
@@ -96,6 +107,12 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
   <div class="hdr">
     <div id="status">-</div>
     <div class="srow" id="srow"></div>
+  </div>
+  <div id="eval-bar">
+    <div class="eval-hdr"><span>形勢判断</span><span id="eval-leader"></span></div>
+    <div class="eval-track" id="eval-track"></div>
+    <div class="eval-labels" id="eval-labels"></div>
+    <div class="eval-detail" id="eval-detail"></div>
   </div>
   <div class="play">
     <div id="board"></div>
@@ -495,6 +512,7 @@ function renderScores(){
     row.appendChild(ch);
   });
   renderOppPieces();
+  evaluate();
 }
 
 function endGame(){
@@ -511,6 +529,64 @@ function endGame(){
       <span>${s.score === 0 ? '全部置けた！' : s.score+'マス残り'}</span>
     </div>`).join('');
   try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
+}
+
+// ===== EVAL BAR =====
+function countCornerAccess(pi){
+  const p=pi+1;let corners=0;
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    if(G.board[r][c])continue;
+    let adjOwn=false;
+    for(const [dr,dc] of DIRS){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<N&&nc>=0&&nc<N&&G.board[nr][nc]===p){adjOwn=true;break;}}
+    if(adjOwn)continue;
+    for(const [dr,dc] of DIAGS){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<N&&nc>=0&&nc<N&&G.board[nr][nc]===p){corners++;break;}}
+  }
+  return corners;
+}
+
+function evaluate(){
+  if(ONLINE)return;
+  const bar=document.getElementById('eval-bar');
+  if(!bar)return;
+  bar.classList.add('show');
+  const evals=[];
+  for(let pi=0;pi<G.numP;pi++){
+    const placed=G.pcs[pi].filter(p=>p.used).reduce((s,p)=>s+p.c.length,0);
+    const remaining=G.pcs[pi].filter(p=>!p.used).reduce((s,p)=>s+p.c.length,0);
+    const corners=G.first[pi]?1:countCornerAccess(pi);
+    const piecesLeft=G.pcs[pi].filter(p=>!p.used).length;
+    // Score: cells placed + corner access bonus - penalty for remaining
+    const score=placed*2 + corners*1.5 - remaining*0.3;
+    evals.push({pi,placed,corners,remaining,piecesLeft,score});
+  }
+  const total=evals.reduce((s,e)=>s+Math.max(0,e.score+50),0)||1;
+  const track=document.getElementById('eval-track');
+  const labels=document.getElementById('eval-labels');
+  const detail=document.getElementById('eval-detail');
+  const leader=document.getElementById('eval-leader');
+  track.innerHTML='';labels.innerHTML='';detail.innerHTML='';
+  const sorted=[...evals].sort((a,b)=>b.score-a.score);
+  const best=sorted[0];
+  leader.innerHTML=`<span style="color:${PCOL[best.pi+1]}">${PNAME[best.pi+1]}が優勢</span>`;
+  evals.forEach(e=>{
+    const pct=((Math.max(0,e.score+50)/total)*100);
+    const seg=document.createElement('div');
+    seg.className='eval-seg';
+    seg.style.width=pct+'%';
+    seg.style.background=PCOL[e.pi+1];
+    track.appendChild(seg);
+    const lbl=document.createElement('span');
+    lbl.style.color=PCOL[e.pi+1];
+    lbl.textContent=`${PNAME[e.pi+1]} ${Math.round(pct)}%`;
+    labels.appendChild(lbl);
+    const card=document.createElement('div');
+    card.className='eval-card';
+    card.style.borderColor=PCOL[e.pi+1]+'44';
+    card.innerHTML=`<div class="ev-name" style="color:${PCOL[e.pi+1]}">${PNAME[e.pi+1]}</div>
+      <div class="ev-val" style="color:${PCOL[e.pi+1]}">${e.placed}</div>
+      <div class="ev-sub">配置済 / 角${e.corners} / 残${e.piecesLeft}枚</div>`;
+    detail.appendChild(card);
+  });
 }
 
 document.addEventListener('keydown',e=>{

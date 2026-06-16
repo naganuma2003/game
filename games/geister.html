@@ -57,6 +57,14 @@ svg{display:block;width:min(96vw,420px);height:auto}
 .gh{pointer-events:none}
 .exit-mark{pointer-events:none;opacity:.8}
 
+.turn-ind{
+  margin-top:10px;padding:6px 18px;border-radius:20px;
+  font-size:13.5px;font-weight:600;letter-spacing:.08em;text-align:center;
+  transition:background .3s,color .3s,box-shadow .3s;
+}
+.turn-ind.mine{background:var(--gold);color:#181226;box-shadow:0 0 12px rgba(217,180,74,.45);animation:pulse-turn 1.6s ease-in-out infinite}
+.turn-ind.theirs{background:rgba(120,126,146,.25);color:var(--sub);box-shadow:none;animation:none}
+@keyframes pulse-turn{0%,100%{box-shadow:0 0 8px rgba(217,180,74,.3)}50%{box-shadow:0 0 18px rgba(217,180,74,.7)}}
 .msg{min-height:38px;font-size:13.5px;color:var(--gold);letter-spacing:.05em;margin-top:10px;text-align:center;line-height:1.5}
 .foot{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;justify-content:center}
 .foot button{
@@ -120,6 +128,7 @@ svg{display:block;width:min(96vw,420px);height:auto}
   <div class="t" id="tray1"><span>相手が取った:</span></div>
 </div>
 
+<div class="turn-ind" id="turn-ind" style="display:none"></div>
 <div class="bwrap"><svg id="bd"></svg></div>
 
 <div class="msg" id="msg"></div>
@@ -416,10 +425,31 @@ function render(){
     }
   }
   updateEval();
+  if(typeof updateTurnInd==='function')updateTurnInd();
 }
 
 function msg(s){document.getElementById('msg').textContent=s;}
 function isHumanSide(o){return mode==='pvp'||o===0;}
+
+function updateTurnInd(){
+  const el=document.getElementById('turn-ind');
+  if(phase!=='play'){el.style.display='none';return;}
+  el.style.display='';
+  const isMine=mode==='pvp'
+    ?(onet?turn===oMy:turn===viewer)
+    :turn===0;
+  if(isMine){
+    el.textContent='▶ あなたのターン';
+    el.className='turn-ind mine';
+  }else{
+    if(mode==='pvp'){
+      el.textContent=onet?'相手のターン':(turn===0?'下側のターン':'上側のターン');
+    }else{
+      el.textContent='CPUのターン';
+    }
+    el.className='turn-ind theirs';
+  }
+}
 
 /* =============== input =============== */
 function onCell(r,c){

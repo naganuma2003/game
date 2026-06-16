@@ -29,6 +29,11 @@ svg{display:block;width:min(92vw,420px);height:auto}
 .over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:24px 36px;text-align:center}
 .over .t{font-size:23px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:8px}
 .over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit;margin-top:8px}
+.eval-wrap{display:none;margin:6px 0 2px;width:min(92vw,420px)}
+.eval-wrap.show{display:block}
+.eval-lab{font-size:10px;color:var(--sub);margin-bottom:3px;display:flex;justify-content:space-between}
+.eval-bar{height:10px;border-radius:5px;overflow:hidden;display:flex;background:var(--panel);border:1px solid #3a3326}
+.eval-seg{height:100%;transition:width .4s ease}
 
 @media(max-width:480px){
   h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
@@ -44,6 +49,7 @@ svg{display:block;width:min(92vw,420px);height:auto}
 <div class="row" id="mode"><span class="lab">対戦:</span><button data-m="cpu" class="on">CPU対戦</button><button data-m="pvp">人対人</button></div>
 <div class="row" id="lv"><span class="lab">CPU強さ:</span><button data-lv="1">弱</button><button data-lv="2" class="on">普通</button><button data-lv="3">強</button></div>
 <div class="turn" id="turn"></div>
+<div class="eval-wrap" id="eval-wrap"><div class="eval-lab" id="eval-lab"></div><div class="eval-bar" id="eval-bar"></div></div>
 <div class="bwrap"><svg id="bd"></svg></div>
 <div class="msg" id="msg">自分の駒をタップ→光った穴へ移動。対面の三角を全部埋めたら勝ち。</div>
 <div class="foot" style="display:flex;gap:8px;justify-content:center"><button id="undo" style="background:transparent;border:1px solid #352C20;color:#EDE6D6;font-weight:700;padding:7px 16px;border-radius:6px;font-size:12.5px;cursor:pointer;font-family:inherit">待った</button><button id="new">最初から</button></div>
@@ -101,9 +107,10 @@ function init(){
   for(let p=0;p<np;p++){
     cells.filter(c=>c.zone===su.start[p]).forEach(c=>occ[c.id]=p);
   }
-  sel=null;dests=[];turn=0;over=false;busy=false;winners=[];
+  sel=null;dests=[];over=false;busy=false;winners=[];
+  turn=(!ONLINE&&mode==='cpu')?Math.floor(Math.random()*np):0;
   document.getElementById('over').classList.remove('show');
-  render();updateTurn();
+  render();updateTurn();updateEval();
   if(!isHuman())setTimeout(cpuMove,520);
 }
 function myGoalZone(p){return SETUPS[np].goal[p];}
@@ -189,7 +196,7 @@ function doAction(a){
       if(winners.length>=np-1||np===2){over=true;render();finish();return;}
     }
     nextTurn();
-    render();updateTurn();
+    render();updateTurn();updateEval();
     if(shouldRunCpu()){busy=true;setTimeout(cpuMove,520);}
   }
 }
@@ -234,6 +241,38 @@ document.getElementById('mode').addEventListener('click',e=>{const b=e.target.cl
 document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 let cpuLv=2;
 document.getElementById('lv').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;cpuLv=+b.dataset.lv;document.querySelectorAll('#lv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
+function evalPlayer(p){
+  const gz=myGoalZone(p),gc=zoneCentroid(gz);
+  const goalCells=cells.filter(c=>c.zone===gz);
+  const maxD=Math.max(...cells.map(c=>Math.hypot(c.x-gc.x,c.y-gc.y)))||1;
+  let score=0;
+  for(const c of cells){if(occ[c.id]!==p)continue;
+    const d=Math.hypot(c.x-gc.x,c.y-gc.y);
+    score+=(1-d/maxD)*10;
+    if(c.zone===gz)score+=5;}
+  return score;
+}
+function updateEval(){
+  const wrap=document.getElementById('eval-wrap');
+  if(mode!=='cpu'||ONLINE){wrap.classList.remove('show');return;}
+  wrap.classList.add('show');
+  const scores=[];for(let p=0;p<np;p++)scores.push(evalPlayer(p));
+  const total=scores.reduce((a,b)=>a+b,0)||1;
+  const bar=document.getElementById('eval-bar');
+  const lab=document.getElementById('eval-lab');
+  bar.innerHTML='';lab.innerHTML='';
+  for(let p=0;p<np;p++){
+    const pct=Math.max(2,scores[p]/total*100);
+    const seg=document.createElement('div');
+    seg.className='eval-seg';seg.style.width=pct+'%';
+    seg.style.background=`linear-gradient(90deg,${COLORS[p].dark},${COLORS[p].light})`;
+    bar.appendChild(seg);
+    const sp=document.createElement('span');
+    sp.style.color=COLORS[p].light;
+    sp.textContent=(p===0?'あなた':'CPU'+(np>2?' '+p:''))+' '+Math.round(pct)+'%';
+    lab.appendChild(sp);
+  }
+}
 init();
 
 function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;

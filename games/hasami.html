@@ -157,7 +157,7 @@ text.kanji.promo{fill:var(--red)}
 /* board[81]: 0=空, 1=先手(歩・下), 2=後手(と・上) */
 const N=9,DIRS=[[-1,0],[1,0],[0,-1],[0,1]];
 const WIN_CAPS=5;
-let board,turn,mode='cpu1',history=[],last=[-1,-1],over=false,busy=false,sel=null,caps;
+let board,turn,mode='cpu1',history=[],last=[-1,-1],over=false,busy=false,sel=null,caps,humanMark=1;
 
 const inB=(r,c)=>r>=0&&r<N&&c>=0&&c<N;
 
@@ -165,9 +165,19 @@ function init(){
   board=new Array(81).fill(0);
   for(let c=0;c<9;c++){board[c]=2;board[72+c]=1;}
   turn=1;history=[];last=[-1,-1];over=false;busy=false;sel=null;caps={1:0,2:0};
+  humanMark=(mode.startsWith('cpu')&&Math.random()<0.5)?2:1;
   document.getElementById('gov').classList.remove('show');
   render();
-  msg('先手(歩)の番です');
+  msg((turn===humanMark?'あなた':'CPU')+'('+(turn===1?'歩':'と')+')の番です');
+  if(!humanTurn()){
+    busy=true;render();
+    setTimeout(()=>{
+      const m=cpuMove();
+      busy=false;
+      pushHist();
+      doMove(m[0],m[1]);
+    },520);
+  }
 }
 
 function movesFrom(bd,i){
@@ -289,7 +299,7 @@ function render(){
   }
   document.getElementById('cap1').textContent=caps[1];
   document.getElementById('cap2').textContent=caps[2];
-  document.getElementById('tlabel').textContent=over?'対局終了':(turn===1?'先手の番です':'後手の番です');
+  document.getElementById('tlabel').textContent=over?'対局終了':mode==='pvp'?(turn===1?'先手の番です':'後手の番です'):(turn===humanMark?'あなたの番です':'CPUの番です');
   document.getElementById('undo').disabled=!history.length||busy||over;
   if(assistLayer){
     const bm=computeAssist();
@@ -309,7 +319,7 @@ function render(){
 }
 
 function msg(s){document.getElementById('msg').textContent=s;}
-const humanTurn=()=>mode==='pvp'||turn===1;
+const humanTurn=()=>mode==='pvp'||turn===humanMark;
 
 function onSquare(i){
   if(over||busy)return;
@@ -338,7 +348,8 @@ function doMove(from,to){
   turn=3-turn;
   if(!allMoves(board,turn).length){render();finish(3-turn,(turn===1?'先手':'後手')+'は動けません');return;}
   render();
-  msg((got?(mover===1?'先手':'後手')+'が'+got+'枚取った! — ':'')+(turn===1?'先手(歩)':'後手(と)')+'の番です');
+  const pn=m=>mode==='pvp'?(m===1?'先手':'後手'):(m===humanMark?'あなた':'CPU');
+  msg((got?pn(mover)+'が'+got+'枚取った! — ':'')+pn(turn)+'('+(turn===1?'歩':'と')+')の番です');
   if(!humanTurn()){
     busy=true;render();
     setTimeout(()=>{
@@ -354,7 +365,7 @@ function finish(winner,how){
   over=true;busy=false;
   const t=document.getElementById('g-t');
   if(mode==='pvp')t.textContent=winner===1?'先手の勝ち':'後手の勝ち';
-  else t.textContent=winner===1?'勝利':'敗北';
+  else t.textContent=winner===humanMark?'勝利':'敗北';
   document.getElementById('g-s').textContent=`${how}(歩 ${caps[1]} − と ${caps[2]})`;
   msg('対局終了');render();
   setTimeout(()=>document.getElementById('gov').classList.add('show'),500);
@@ -372,12 +383,13 @@ function bestReply(bd,p){
 }
 
 function cpuMove(){
-  const ms=allMoves(board,2);
+  const cp=3-humanMark,hp=humanMark;
+  const ms=allMoves(board,cp);
   if(mode==='cpu1'){
     // 弱: 取れる手を優先するだけ(相手の反撃は見ない)
     const scored=ms.map(([f,t])=>{
       const nb=board.slice();
-      const g=applyMove(nb,f,t,2);
+      const g=applyMove(nb,f,t,cp);
       return[g*100+Math.random()*40,f,t];
     }).sort((a,b)=>b[0]-a[0]);
     const top=scored.slice(0,Math.min(6,scored.length));
@@ -390,13 +402,13 @@ function cpuMove(){
   let best=ms[0],bs=-Infinity;
   for(const[f,t]of ms){
     const nb=board.slice();
-    const g=applyMove(nb,f,t,2);
+    const g=applyMove(nb,f,t,cp);
     let s=g*100;
-    if(caps[2]+g>=WIN_CAPS)s+=10000;
-    const rep=bestReply(nb,1);
+    if(caps[cp]+g>=WIN_CAPS)s+=10000;
+    const rep=bestReply(nb,hp);
     s-=rep*replyWeight;
-    if(caps[1]+rep>=WIN_CAPS)s-=9000;
-    s+=Math.floor(t/9)*1.2;
+    if(caps[hp]+rep>=WIN_CAPS)s-=9000;
+    s+=(cp===2?1:-1)*Math.floor(t/9)*1.2;
     s+=Math.random()*noise;
     if(s>bs){bs=s;best=[f,t];}
   }
@@ -407,11 +419,11 @@ function cpuMove(){
 document.getElementById('undo').addEventListener('click',()=>{
   if(!history.length||busy)return;
   let h=history.pop();
-  if(mode!=='pvp'){while(history.length&&h.turn!==1)h=history.pop();}
+  if(mode!=='pvp'){while(history.length&&h.turn!==humanMark)h=history.pop();}
   board=h.bd;turn=h.turn;caps=h.caps;last=h.last;over=false;sel=null;
   document.getElementById('gov').classList.remove('show');
   render();
-  msg((turn===1?'先手(歩)':'後手(と)')+'の番です');
+  msg((mode==='pvp'?(turn===1?'先手(歩)':'後手(と)'):(turn===humanMark?'あなた':'CPU')+'('+(turn===1?'歩':'と')+')')+'の番です');
 });
 document.getElementById('reset').addEventListener('click',init);
 document.getElementById('g-again').addEventListener('click',init);

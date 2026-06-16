@@ -94,7 +94,7 @@ const svg=document.getElementById('bd');
 function init(){
   const su=SETUPS[np];
   pawns=su.starts.map(p=>({r:p[0],c:p[1]}));
-  walls=[]; turn=0; over=false; winners=[]; hist=[];
+  walls=[]; turn=(mode==='cpu'&&!ONLINE&&Math.random()<0.5)?1:0; over=false; winners=[]; hist=[];
   wallsLeft=new Array(np).fill(su.walls);
   action='move';
   document.getElementById('over').classList.remove('show');

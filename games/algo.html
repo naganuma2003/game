@@ -11,6 +11,9 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://naganuma2003.github.io/game/games/algo.html">
 <link rel="canonical" href="https://naganuma2003.github.io/game/games/algo.html">
+<link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/algo.html">
+<link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/algo.html">
+<link rel="alternate" hreflang="x-default" href="https://naganuma2003.github.io/game/games/algo.html">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"アルゴ（Algo）","description":"アルゴ（Algo）を無料で遊べるブラウザゲーム。数字の並びを推理するカードゲーム。AI対戦対応、登録不要でスマホ・PCからすぐプレイ。","url":"https://naganuma2003.github.io/game/games/algo.html","genre":["Card Game","Puzzle Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer","MultiPlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":4},"offers":{"@type":"Offer","price":0,"priceCurrency":"JPY"},"inLanguage":"ja"}</script>
 <style>
 :root{--bg:#0e0e18;--surf:#1a1a28;--gold:#c9a030;--gold2:#f0d060;--txt:#e8e8f0;--dim:#555;--red:#d94040;--grn:#3dba6a;}
@@ -172,17 +175,30 @@ function insertSorted(arr,c){const n=[...arr,{...c}];n.sort(cardSort);return n;}
 function cardLabel(c){return(c.color==='B'?'黒':'白')+c.value;}
 
 let G={};
+let ONLINE=false, MYSEAT=0, roomSend=null;
+function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&OnlineRoom.isAuto(s);}
+function makeNames(n){
+  if(!ONLINE)return['あなた',...Array.from({length:n-1},(_,i)=>`CPU ${i+1}`)];
+  const names=[];
+  for(let i=0;i<n;i++){
+    if(i===MYSEAT)names.push('あなた');
+    else if(OnlineRoom.isCpu(i))names.push(`CPU ${i+1}`);
+    else names.push(`P${i+1}`);
+  }
+  return names;
+}
 
 function initGame(numP,diff,online,mySeat){
+  ONLINE=online; MYSEAT=mySeat;
   const deck=shuffle([...Array(12).keys()].flatMap(v=>[{value:v,color:'B'},{value:v,color:'W'}]));
   const myIdx=online?mySeat:0;
-  const names=online?(mySeat===0?['あなた','相手']:['相手','あなた']):['あなた',...Array.from({length:numP-1},(_,i)=>`CPU ${i+1}`)];
+  const names=makeNames(numP);
   const players=[];
   for(let i=0;i<numP;i++){
     const cards=deck.splice(0,4).sort(cardSort).map(c=>({...c,revealed:false}));
     players.push({name:names[i],cards,eliminated:false});
   }
-  const firstTurn=online?0:Math.floor(Math.random()*numP);
+  const firstTurn=Math.floor(Math.random()*numP);
   G={players,deck,numP,diff,online,myIdx,cur:firstTurn,drawn:null,phase:'idle',target:null,selectedNum:null,log:[]};
   document.getElementById('setup').style.display='none';
   document.getElementById('game').style.display='flex';
@@ -194,7 +210,6 @@ function initGame(numP,diff,online,mySeat){
 function beginTurn(pi){
   G.cur=pi;G.target=null;G.selectedNum=null;
   if(G.deck.length===0||activePlayers()<=1){endGame();return;}
-  // Both sides pop the same card from the seeded deck
   G.drawn=G.deck.pop();
   const isMe=pi===G.myIdx;
   if(isMe){
@@ -204,21 +219,23 @@ function beginTurn(pi){
     renderDrawn(true);
     showActs([]);
     document.getElementById('num-pick').style.display='none';
-  } else if(G.online){
+    if(ONLINE)OnlineRoom.setTurn(true);
+  } else if(ONLINE && !isAutoSeat(pi)){
+    // another human's turn online
     G.phase='watching';
-    G.drawn=G.deck[G.deck.length]; // already popped above, G.drawn holds it
-    // Actually drawn is already set; just don't display it to us
     renderAll();
     document.getElementById('status').textContent=G.players[pi].name+' の番…';
     renderDrawn(false);
     showActs([]);
+    OnlineRoom.setTurn(false);
   } else {
+    // CPU turn (offline, or online CPU/gone seat — host drives)
     G.phase='cpu';
     renderAll();
     document.getElementById('status').textContent=G.players[pi].name+' の番…';
     renderDrawn(false);
     showActs([]);
-    setTimeout(cpuPlay,700);
+    if(!ONLINE || OnlineRoom.isHost()) setTimeout(cpuPlay,700);
   }
 }
 
@@ -231,7 +248,8 @@ function selectTarget(pi,pos){
   renderOpponents();
   document.getElementById('num-pick').style.display='block';
   renderNumPick();
-  document.getElementById('status').textContent=G.players[pi].name+'の位置'+(pos+1)+'（'+( G.players[pi].cards[pos].color==='B'?'黒':'白')+'）— 数字を選んでください';
+  const colHint=ONLINE?'':('（'+(G.players[pi].cards[pos].color==='B'?'黒':'白')+'）');
+  document.getElementById('status').textContent=G.players[pi].name+'の位置'+(pos+1)+colHint+'— 数字を選んでください';
   showActs([]);
 }
 
@@ -243,8 +261,9 @@ function selectNum(v){
 
 function humanDeclare(){
   if(G.target===null||G.selectedNum===null)return;
-  if(G.online){
-    OnlineCore.send({t:'attack',pos:G.target.pos,guess:G.selectedNum});
+  if(ONLINE){
+    roomSend({t:'attack',target:G.target.player,pos:G.target.pos,guess:G.selectedNum});
+    return; // wait for broadcast echo
   }
   applyAttack(G.target.player,G.target.pos,G.selectedNum);
 }
@@ -269,10 +288,13 @@ function applyAttack(targetPi,pos,guess){
         {label:'続けて攻撃',fn:continueAttack,cls:'p'},
         {label:'やめる（カードを伏せて追加）',fn:stopAttack,cls:'s'}
       ]);
+    } else if(isAutoSeat(G.cur)||!ONLINE){
+      document.getElementById('status').textContent=G.players[G.cur].name+' が続けるか考え中…';
+      showActs([]);
+      if(!ONLINE||OnlineRoom.isHost()) setTimeout(()=>{G.phase='cpu';cpuPlay();},900);
     } else {
       document.getElementById('status').textContent=G.players[G.cur].name+' が続けるか考え中…';
       showActs([]);
-      setTimeout(()=>{G.phase='cpu';cpuPlay();},900);
     }
   } else {
     addLog(`❌ ${G.players[G.cur].name}: 外れ（実際は${cardLabel(card)}）`,'miss');
@@ -286,6 +308,7 @@ function applyAttack(targetPi,pos,guess){
 }
 
 function continueAttack(){
+  if(ONLINE){roomSend({t:'continue'});return;}
   G.phase='attack';
   document.getElementById('status').textContent='引いたカードはまだあります — もう1枚当ててください';
   showActs([]);
@@ -293,7 +316,7 @@ function continueAttack(){
 }
 
 function stopAttack(){
-  if(G.online)OnlineCore.send({t:'stop'});
+  if(ONLINE){roomSend({t:'stop'});return;}
   doStop();
 }
 
@@ -319,12 +342,22 @@ function nextAlive(from){
 function activePlayers(){return G.players.filter(p=>!p.eliminated).length;}
 
 // ===== ONLINE =====
-function handleOnlineMsg(msg){
+function handleOnlineMsg(fromSeat,msg){
   if(msg.t==='attack'){
-    // Current player (opponent) attacked me
-    applyAttack(G.myIdx,msg.pos,msg.guess);
+    applyAttack(msg.target,msg.pos,msg.guess);
   } else if(msg.t==='stop'){
     doStop();
+  } else if(msg.t==='continue'){
+    G.phase='attack';
+    if(G.cur===G.myIdx){
+      document.getElementById('status').textContent='引いたカードはまだあります — もう1枚当ててください';
+      showActs([]);
+      renderOpponents();
+    } else {
+      document.getElementById('status').textContent=G.players[G.cur].name+' が攻撃中…';
+      showActs([]);
+      renderAll();
+    }
   }
 }
 
@@ -333,11 +366,18 @@ function cpuPlay(){
   if(G.phase!=='cpu')return;
   const known=buildKnown(G.cur);
   const t=cpuPickTarget(G.cur,known);
-  if(!t){doStop();return;}
+  if(!t){
+    if(ONLINE){roomSend({t:'stop'});return;}
+    doStop();return;
+  }
   G.target={player:t.pi,pos:t.pos};
   G.selectedNum=t.guess;
   renderOpponents();
-  setTimeout(()=>{applyAttack(t.pi,t.pos,t.guess);},800);
+  if(ONLINE){
+    setTimeout(()=>{roomSend({t:'attack',target:t.pi,pos:t.pos,guess:t.guess});},800);
+  } else {
+    setTimeout(()=>{applyAttack(t.pi,t.pos,t.guess);},800);
+  }
 }
 
 function buildKnown(viewerIdx){
@@ -406,7 +446,7 @@ function renderAll(){
 
 function renderEval(){
   const el=document.getElementById('ai-eval');
-  if(G.online){el.style.display='none';return;}
+  if(ONLINE){el.style.display='none';return;}
   el.style.display='';
   const bars=document.getElementById('eval-bars');bars.innerHTML='';
   for(let pi=0;pi<G.numP;pi++){
@@ -436,8 +476,9 @@ function renderOpponents(){
     p.cards.forEach((c,i)=>{
       const el=document.createElement('div');
       const isHid=!c.revealed;
-      let cls=c.revealed?(c.color==='B'?'bc':'wc'):(c.color==='B'?'hb':'hw');
-      // Selectable: only if it's my turn (attack phase), this player isn't eliminated, card is hidden
+      // In online mode, hide color of other players' unrevealed cards
+      const showColor=!ONLINE||c.revealed;
+      let cls=c.revealed?(c.color==='B'?'bc':'wc'):showColor?(c.color==='B'?'hb':'hw'):'hb';
       const canSelect=G.phase==='attack'&&isMyTurn()&&!p.eliminated&&isHid;
       if(canSelect)cls+=' selectable';
       if(G.target&&G.target.player===pi&&G.target.pos===i)cls+=' targeted';
@@ -445,6 +486,7 @@ function renderOpponents(){
       if(c.justRev)cls+=' just-rev';
       el.className='card-el '+cls;
       if(c.revealed)el.innerHTML=`<div class="cval">${c.value}</div><div class="cclr">${c.color==='B'?'黒':'白'}</div>`;
+      else if(showColor)el.innerHTML='<div class="cq">?</div>';
       else el.innerHTML='<div class="cq">?</div>';
       if(canSelect)el.addEventListener('click',()=>selectTarget(pi,i));
       cards.appendChild(el);
@@ -535,26 +577,46 @@ document.getElementById('start-btn').addEventListener('click',()=>{
 });
 document.getElementById('again-btn').addEventListener('click',()=>{
   document.getElementById('gameover').style.display='none';
-  if(G.online){location.reload();}else{document.getElementById('game').style.display='none';document.getElementById('setup').style.display='';}
+  if(ONLINE){if(window.OnlineRoom)OnlineRoom.clearSession();location.reload();}else{document.getElementById('game').style.display='none';document.getElementById('setup').style.display='';}
 });
 </script>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=8"></script>
-<script src="../shared/online-core.js?v=8"></script>
+<script src="../shared/online-room.js?v=8"></script>
 <script>
-OnlineCore.init({
-  gameId:'algo',
-  statusSel:'#status',
-  hostMark:'\x00',guestMark:'\x00',
-  blockRelay:()=>true,pvpSel:null,hideSel:null,
-  afterStart:(seat)=>{
-    const b=document.getElementById('oc-badge');if(b)b.style.display='none';
-    document.getElementById('setup').style.display='none';
-    initGame(2,'normal',true,seat);
+function startOnline(seat,n,send,cpus){
+  ONLINE=true;MYSEAT=seat;roomSend=send;
+  document.getElementById('setup').style.display='none';
+  const diff=document.getElementById('sel-diff').value||'normal';
+  initGame(n,diff,true,seat);
+}
+function getState(){
+  return {players:G.players,deck:G.deck,numP:G.numP,diff:G.diff,cur:G.cur,drawn:G.drawn,phase:G.phase,target:G.target,selectedNum:G.selectedNum,log:G.log};
+}
+function applyState(o){
+  ONLINE=true;MYSEAT=o.seat;roomSend=o.send;
+  document.getElementById('setup').style.display='none';
+  const s=o.state;
+  G={players:s.players,deck:s.deck,numP:s.numP,diff:s.diff||'normal',online:true,myIdx:o.seat,
+    cur:s.cur,drawn:s.drawn,phase:s.phase||'idle',target:s.target,selectedNum:s.selectedNum,log:s.log||[]};
+  G.players[o.seat].name='あなた';
+  document.getElementById('game').style.display='flex';
+  buildNumGrid();
+  renderAll();
+  // If it's a CPU/gone seat's turn and we're host, drive it
+  if(OnlineRoom.isHost()&&isAutoSeat(G.cur)&&G.phase!=='gameover') setTimeout(cpuPlay,700);
+}
+OnlineRoom.init({gameId:'algo',minPlayers:2,maxPlayers:4,
+  note:'アルゴ（Algo）をオンライン対戦。最大4人まで。',
+  onStart:(seat,n,send,cpus)=>startOnline(seat,n,send,cpus),
+  onMessage:(from,msg)=>handleOnlineMsg(from,msg),
+  onLeft:(seat)=>{
+    if(OnlineRoom.isHost()&&isAutoSeat(G.cur)&&(G.phase==='watching'||G.phase==='cpu')){
+      G.phase='cpu';setTimeout(cpuPlay,700);
+    }
   },
-  customMsg:handleOnlineMsg,
-});
+  getState,applyState});
 </script>
 <script src="../shared/firebase-counter.js"></script>
 </body>

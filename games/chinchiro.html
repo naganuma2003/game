@@ -50,6 +50,14 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;
 .rule{width:min(94vw,420px);margin-top:14px;font-size:11px;line-height:1.7;color:var(--sub);border-top:1px solid #1c5e3c;padding-top:10px}
 .rule b{color:var(--txt)}
 .hidden{display:none!important}
+/* AI eval bar */
+.eval-bar-wrap{width:min(94vw,420px);margin:6px 0}
+.eval-bar-wrap .eval-label{display:flex;justify-content:space-between;font-size:10px;color:var(--sub);margin-bottom:3px}
+.eval-bar-outer{height:18px;border-radius:9px;overflow:hidden;display:flex;background:#1a1a1a;border:1px solid #2c5a40}
+.eval-bar-outer .ev-cpu{background:linear-gradient(90deg,#e0533e,#c93a2a);transition:width .5s ease}
+.eval-bar-outer .ev-me{background:linear-gradient(90deg,#3eaa5e,#2a8c44);transition:width .5s ease}
+.eval-center{position:relative;display:flex;justify-content:center;margin-top:2px}
+.eval-center span{font-size:10px;color:var(--sub)}
 
 @media(max-width:480px){
   h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
@@ -77,6 +85,11 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;
 <!-- SOLO -->
 <div id="solo-area">
   <div class="chips"><span class="b">チップ <b id="chips">1000</b></span><span class="b">賭け <b id="betv2">100</b></span></div>
+  <div class="eval-bar-wrap" id="eval-wrap">
+    <div class="eval-label"><span id="ev-cpu-lab">CPU: 1000</span><span id="ev-me-lab">あなた: 1000</span></div>
+    <div class="eval-bar-outer"><div class="ev-cpu" id="ev-cpu" style="width:50%"></div><div class="ev-me" id="ev-me" style="width:50%"></div></div>
+    <div class="eval-center"><span id="ev-diff">±0</span></div>
+  </div>
   <div class="area"><div class="lab">親（CPU）</div><div class="bowl" id="cpu-bowl"></div><div class="role" id="cpu-role"></div></div>
   <div class="area"><div class="lab">あなた（子）</div><div class="bowl" id="me-bowl"></div><div class="role" id="me-role"></div></div>
   <div class="bet" id="betrow">
@@ -135,6 +148,18 @@ let ONLINE=false,MYSEAT=0,roomSend=null;
 function myTurn(){return !ONLINE||curPlayer===MYSEAT;}
 
 /* ============ SOLO (vs CPU) ============ */
+let cpuChips=1000; // track CPU's virtual chips for eval bar
+function updateEval(){
+  const total=chips+cpuChips||1;
+  const mePct=Math.max(2,Math.min(98,(chips/total)*100));
+  document.getElementById('ev-cpu').style.width=(100-mePct)+'%';
+  document.getElementById('ev-me').style.width=mePct+'%';
+  document.getElementById('ev-cpu-lab').textContent='CPU: '+cpuChips;
+  document.getElementById('ev-me-lab').textContent='あなた: '+chips;
+  const diff=chips-cpuChips;
+  document.getElementById('ev-diff').textContent=(diff>0?'+':'')+diff;
+  document.getElementById('ev-diff').style.color=diff>0?'#6CC56C':diff<0?'#e0533e':'var(--sub)';
+}
 let chips=+(localStorage.getItem('chinchip')||1000),bet=100,busy=false;
 function saveChips(){localStorage.setItem('chinchip',chips);}
 function setBet(){document.getElementById('betv').textContent=bet;document.getElementById('betv2').textContent=bet;}
@@ -194,9 +219,9 @@ function settleSolo(cpuR,meR){
   if(meR.rank>cpuR.rank){const m=meR.mult||1;delta=bet*m;text='あなたの勝ち！ +'+delta+(m>1?'（'+m+'倍）':'');}
   else if(meR.rank<cpuR.rank){const m=cpuR.mult||1;delta=-bet*m;text='親の勝ち… '+delta+(m>1?'（'+m+'倍）':'');}
   else{text='引き分け（賭け返却）';}
-  chips+=delta;saveChips();document.getElementById('chips').textContent=chips;msg(text);
+  chips+=delta;cpuChips-=delta;saveChips();document.getElementById('chips').textContent=chips;msg(text);updateEval();
   setTimeout(()=>{document.getElementById('roll').disabled=false;soloPhase='bet';
-    if(chips<=0){chips=1000;saveChips();document.getElementById('chips').textContent=chips;msg('チップが尽きたので1000補充。賭けて「振る」');}
+    if(chips<=0){chips=1000;cpuChips=1000;saveChips();document.getElementById('chips').textContent=chips;updateEval();msg('チップが尽きたので1000補充。賭けて「振る」');}
     else msg('次の勝負へ。賭けを決めて「振る」');
     bet=Math.min(bet,chips);setBet();},1300);
 }
@@ -325,7 +350,8 @@ function setMode(m){
   document.getElementById('betrow').classList.toggle('hidden',mode!=='solo');
   document.getElementById('mreset').classList.toggle('hidden',mode!=='multi');
   document.getElementById('rule').innerHTML=mode==='solo'?RULE_SOLO:RULE_MULTI;
-  if(mode==='solo'){document.getElementById('roll').classList.remove('hidden');document.getElementById('m-next').classList.add('hidden');document.getElementById('m-betrow').style.display='none';document.getElementById('roll').disabled=false;showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);setBet();msg('賭けを決めて「振る」');}
+  document.getElementById('eval-wrap').classList.toggle('hidden',mode!=='solo');
+  if(mode==='solo'){cpuChips=1000;document.getElementById('roll').classList.remove('hidden');document.getElementById('m-next').classList.add('hidden');document.getElementById('m-betrow').style.display='none';document.getElementById('roll').disabled=false;showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);setBet();updateEval();msg('賭けを決めて「振る」');}
   else initMulti();
 }
 document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;const m=b.dataset.m;setMode(m);});
@@ -340,6 +366,7 @@ document.getElementById('mreset').addEventListener('click',()=>{if(ONLINE)return
 showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);setBet();
 document.getElementById('chips').textContent=chips;
 document.getElementById('rule').innerHTML=RULE_SOLO;
+updateEval();
 
 function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
   document.getElementById('mode').classList.add('hidden');

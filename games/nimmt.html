@@ -82,6 +82,16 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 .score-chip{padding:5px 11px;border-radius:8px;background:var(--surf);font-size:12px;display:flex;gap:6px;align-items:center}
 .sc-val{font-size:14px;font-weight:800}
 
+/* AI Eval */
+#ai-eval{display:none;width:100%;max-width:600px;background:var(--surf);border-radius:10px;padding:10px 14px;margin-top:2px}
+#ai-eval .ae-title{font-size:10px;color:var(--dim);margin-bottom:6px}
+.ae-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.ae-name{font-size:11px;width:52px;text-align:right;flex-shrink:0;font-weight:700}
+.ae-bar-bg{flex:1;height:14px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;position:relative}
+.ae-bar{height:100%;border-radius:4px;transition:width .4s ease}
+.ae-val{font-size:10px;color:var(--dim);width:32px;flex-shrink:0}
+.ae-grade{font-size:11px;font-weight:800;width:18px;flex-shrink:0;text-align:center}
+
 /* Gameover */
 #gameover{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.83);align-items:center;justify-content:center;padding:16px}
 .go-card{background:var(--surf);border-radius:16px;padding:22px 18px;max-width:360px;width:100%;text-align:center}
@@ -163,6 +173,10 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
   </div>
 
   <div class="scores" id="scores"></div>
+  <div id="ai-eval">
+    <div class="ae-title">AI評価（ペナルティ少 = 好成績）</div>
+    <div id="ae-bars"></div>
+  </div>
 </div>
 
 <div id="row-pick">
@@ -401,6 +415,24 @@ function renderScores(){
     c.innerHTML=`<span style="color:${PCOLS[i]};font-weight:700">${G.names[i]}</span><span class="sc-val" style="color:var(--red)">${G.penalties[i]}頭</span>`;
     el.appendChild(c);
   }
+  renderAIEval();
+}
+function renderAIEval(){
+  const el=document.getElementById('ai-eval');
+  if(G.online){el.style.display='none';return;}
+  el.style.display='block';
+  const bars=document.getElementById('ae-bars');bars.innerHTML='';
+  const maxP=Math.max(1,...G.penalties);
+  const sorted=G.penalties.map((p,i)=>({i,p})).sort((a,b)=>a.p-b.p);
+  sorted.forEach(({i,p})=>{
+    const pct=maxP?Math.round(p/maxP*100):0;
+    const grade=p===0?'S':p<=5?'A':p<=15?'B':p<=30?'C':'D';
+    const gc=grade==='S'?'var(--gold2)':grade==='A'?'var(--grn)':grade==='B'?'var(--txt)':grade==='C'?'orange':'var(--red)';
+    const barC=i===G.myIdx?'var(--gold)':PCOLS[i];
+    const d=document.createElement('div');d.className='ae-row';
+    d.innerHTML=`<span class="ae-name" style="color:${PCOLS[i]}">${G.names[i]}</span><div class="ae-bar-bg"><div class="ae-bar" style="width:${pct}%;background:${barC}"></div></div><span class="ae-val">${p}頭</span><span class="ae-grade" style="color:${gc}">${grade}</span>`;
+    bars.appendChild(d);
+  });
 }
 function updateBtn(){
   const btn=document.getElementById('confirm-btn'),hint=document.getElementById('confirm-hint');

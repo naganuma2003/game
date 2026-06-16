@@ -65,6 +65,14 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 .my-area{width:100%}
 .my-lbl{font-size:11px;color:var(--dim);margin-bottom:7px;text-align:center}
 .my-cards{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+/* AI Eval */
+.ai-eval{width:100%;background:var(--surf);border-radius:10px;padding:8px 12px}
+.ai-eval-title{font-size:10px;color:var(--dim);margin-bottom:6px}
+.eval-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.eval-name{font-size:11px;width:56px;text-align:right;flex-shrink:0}
+.eval-bar-bg{flex:1;height:14px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;position:relative}
+.eval-bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.eval-pct{font-size:10px;color:var(--dim);width:32px;flex-shrink:0}
 /* Log */
 .log-area{width:100%;background:var(--surf);border-radius:10px;padding:8px 12px;max-height:80px;overflow-y:auto}
 .log-line{font-size:11px;color:var(--dim);line-height:1.7}
@@ -129,6 +137,10 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
   <div class="my-area">
     <div class="my-lbl">あなたのカード</div>
     <div class="my-cards" id="my-cards"></div>
+  </div>
+  <div class="ai-eval" id="ai-eval" style="display:none">
+    <div class="ai-eval-title">AI形勢判断（公開カード率 — 少ないほど有利）</div>
+    <div id="eval-bars"></div>
   </div>
   <div class="log-area" id="log-area"></div>
 </div>
@@ -381,6 +393,27 @@ function renderAll(){
   renderOpponents();
   renderMyCards();
   renderNumPick();
+  renderEval();
+}
+
+function renderEval(){
+  const el=document.getElementById('ai-eval');
+  if(G.online){el.style.display='none';return;}
+  el.style.display='';
+  const bars=document.getElementById('eval-bars');bars.innerHTML='';
+  for(let pi=0;pi<G.numP;pi++){
+    const p=G.players[pi];
+    const total=p.cards.length;
+    const rev=p.cards.filter(c=>c.revealed).length;
+    const pct=total?Math.round(rev/total*100):0;
+    const col=PCOLS[pi];
+    const d=document.createElement('div');d.className='eval-row';
+    d.innerHTML=`<div class="eval-name" style="color:${col}">${p.name}</div>`
+      +`<div class="eval-bar-bg"><div class="eval-bar-fill" style="width:${pct}%;background:${pct>=80?'var(--red)':pct>=50?'var(--gold)':'var(--grn)'}"></div></div>`
+      +`<div class="eval-pct">${pct}%</div>`;
+    if(p.eliminated)d.style.opacity='.35';
+    bars.appendChild(d);
+  }
 }
 
 function renderOpponents(){

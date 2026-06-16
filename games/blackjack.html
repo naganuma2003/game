@@ -42,6 +42,13 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.15em;
 .seat .stot{font-size:11px;color:var(--gold);margin-top:2px;min-height:15px}
 .seat .sres{font-size:11px;font-weight:700;min-height:15px}
 .hidden{display:none!important}
+.ai-eval{background:rgba(0,0,0,.28);border-radius:8px;padding:8px 12px;margin:6px 0;font-size:12px;color:var(--sub);max-width:min(94vw,460px)}
+.ai-eval .ev-title{font-size:10px;letter-spacing:.12em;margin-bottom:4px;color:var(--sub)}
+.ai-eval .ev-row{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.ai-eval .ev-label{min-width:72px;font-size:11px}
+.ai-eval .ev-bar{flex:1;height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
+.ai-eval .ev-fill{height:100%;border-radius:5px;transition:width .3s,background .3s}
+.ai-eval .ev-val{min-width:38px;text-align:right;font-size:11px;font-weight:700}
 
 @media(max-width:480px){
   h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
@@ -69,6 +76,11 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.15em;
     <button data-b="50">+50</button><button data-b="100">+100</button><button data-b="500">+500</button>
     <button data-b="max">MAX</button><button data-b="clear" class="alt2">クリア</button>
     <button id="deal" style="margin-left:auto;background:var(--gold);border:none;color:#13402A;font-weight:700;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:inherit">配る</button>
+  </div>
+  <div class="ai-eval hidden" id="ai-eval">
+    <div class="ev-title">AI 分析</div>
+    <div class="ev-row"><span class="ev-label">バスト率</span><div class="ev-bar"><div class="ev-fill" id="ev-bust"></div></div><span class="ev-val" id="ev-bust-v"></span></div>
+    <div class="ev-row"><span class="ev-label">ハンド強度</span><div class="ev-bar"><div class="ev-fill" id="ev-str"></div></div><span class="ev-val" id="ev-str-v"></span></div>
   </div>
   <div class="actions" id="actions" style="display:none">
     <button id="hit">ヒット</button>
@@ -112,7 +124,7 @@ function renderSolo(hideHole){document.getElementById('chips').textContent=chips
   document.getElementById('phand').innerHTML=pl.map(c=>cardHtml(c)).join('');
   document.getElementById('dhand').innerHTML=dl.map((c,i)=>cardHtml(c,hideHole&&i===1)).join('');
   document.getElementById('ptot').textContent=pl.length?'('+val(pl)+')':'';
-  document.getElementById('dtot').textContent=dl.length?(hideHole?'('+Math.min(dl[0].r+1,dl[0].r===0?11:10)+'+?)':'('+val(dl)+')'):'';}
+  document.getElementById('dtot').textContent=dl.length?(hideHole?'('+Math.min(dl[0].r+1,dl[0].r===0?11:10)+'+?)':'('+val(dl)+')'):'';updateAiEval();}
 function startRound(){if(bet<=0){msg('ベットしてください');return;}deck=freshDeck();pl=[deck.pop(),deck.pop()];dl=[deck.pop(),deck.pop()];phase='play';document.getElementById('betrow').style.display='none';document.getElementById('actions').style.display='flex';renderSolo(true);
   if(val(pl)===21){stand();}else msg('ヒット or スタンド');}
 function hit(){if(phase!=='play')return;pl.push(deck.pop());renderSolo(true);if(val(pl)>21){renderSolo(false);finishSolo('バスト！ あなたの負け',-1);}else if(val(pl)===21)stand();}
@@ -128,6 +140,33 @@ function stand(){if(phase!=='play')return;phase='dealer';while(val(dl)<17)dl.pus
 function finishSolo(m,r){phase='over';if(r>0)chips+=Math.floor(bet*r);else if(r<0)chips-=bet;saveChips();
   msg(m+'　('+(r>0?'+':'')+Math.floor(bet*r)+')');renderSolo(false);
   setTimeout(()=>{document.getElementById('actions').style.display='none';document.getElementById('betrow').style.display='flex';bet=0;phase='bet';if(chips<=0){chips=1000;saveChips();msg('チップが尽きたので1000補充しました');}else msg('次のベットをどうぞ');renderSolo(false);},1400);}
+
+/* ============ AI EVAL (solo only) ============ */
+function calcBustProb(hand){
+  const t=val(hand);if(t>=21)return t>21?100:0;
+  const need=21-t;let bust=0,total=0;
+  for(let r=0;r<13;r++){const v=Math.min(r+1,10);const w=(r===0)?11:v;
+    const cv=w>need?1:0;/* 4 copies per rank in a fresh-ish deck approx */
+    bust+=cv*4;total+=4;}
+  return Math.round(bust/total*100);}
+function calcStrength(hand){
+  const t=val(hand);if(t>21)return 0;if(t===21)return 100;
+  /* simple model: 21=100, 20=85, 19=70, 18=55, 17=40, below scales down */
+  if(t>=17)return Math.round(40+(t-17)*15);
+  return Math.max(5,Math.round(t/17*35));}
+function updateAiEval(){
+  const el=document.getElementById('ai-eval');
+  if(mode!=='solo'||phase==='bet'||phase==='over'||!pl||pl.length===0){el.classList.add('hidden');return;}
+  el.classList.remove('hidden');
+  const bp=calcBustProb(pl),str=calcStrength(pl);
+  const bustFill=document.getElementById('ev-bust');
+  const strFill=document.getElementById('ev-str');
+  bustFill.style.width=bp+'%';
+  bustFill.style.background=bp>60?'#e0533e':bp>30?'#e0c34a':'#4ec05e';
+  document.getElementById('ev-bust-v').textContent=bp+'%';
+  strFill.style.width=str+'%';
+  strFill.style.background=str>65?'#4ec05e':str>35?'#e0c34a':'#e0533e';
+  document.getElementById('ev-str-v').textContent=str+'%';}
 
 /* ============ MULTI (各自 vs ディーラー) ============ */
 let mDeck,players=[],dealer=[],mPhase='bet',curPlayer=0,pendBet=100;

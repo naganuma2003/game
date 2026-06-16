@@ -49,6 +49,14 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:22px;letter-spacing:.12em;
 .handoff .s{font-size:13px;margin-bottom:16px}
 .handoff button{background:var(--gold);border:none;color:#123040;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
 .hidden{display:none!important}
+.eval-panel{margin:8px auto 0;width:min(96vw,400px);display:none}
+.eval-panel.show{display:block}
+.eval-panel .ep-t{font-size:10px;color:var(--sub);letter-spacing:.12em;margin-bottom:4px}
+.eval-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:11px}
+.eval-row .en{width:52px;text-align:right;color:var(--sub);flex-shrink:0}
+.eval-row .ebar{flex:1;height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden}
+.eval-row .efill{height:100%;border-radius:5px;transition:width .4s}
+.eval-row .ev{width:28px;font-size:10px;color:var(--sub)}
 
 @media(max-width:480px){
   .card{width:36px;height:51px}
@@ -72,6 +80,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:22px;letter-spacing:.12em;
 <div class="handlab" id="handlab"></div>
 <div class="myhand" id="myhand"></div>
 <div class="actions"><button id="play">出す</button><button id="pass" class="alt">パス</button></div>
+<div class="eval-panel" id="evalpanel"><div class="ep-t">AI 評価</div><div id="evalrows"></div></div>
 <div class="foot" style="margin-top:8px"><button id="new" style="background:transparent;border:1px solid #3a5a6a;color:var(--txt);padding:7px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit">配り直し</button></div>
 <div class="win" id="winov"><div class="c"><div class="t" id="wint">結果</div><div class="rank" id="winrank"></div><button id="again">もう一度</button></div></div>
 <div class="handoff" id="handoff"><div class="c"><div class="t" id="ho-t">交代</div><div class="s" id="ho-s">端末を渡してください</div><button id="ho-ok">手札を見る</button></div></div>
@@ -123,6 +132,7 @@ function render(){
   document.getElementById('play').disabled=!act;document.getElementById('pass').disabled=!act||field.length===0;
   document.getElementById('msg').style.color=gameOver?'var(--gold)':PCOL[turn];document.getElementById('msg').style.fontWeight='700';
   if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(turn===MYSEAT&&!gameOver);
+  if(typeof renderEval==='function')renderEval();
 }
 function rankTitles(n){if(n<=2)return['大富豪','大貧民'];if(n===3)return['大富豪','平民','大貧民'];return['大富豪','富豪','貧民','大貧民'];}
 function finishedRank(p){const i=finished.indexOf(p);if(i<0)return null;const t=rankTitles(np);return t[i]||'上がり';}
@@ -261,6 +271,27 @@ document.getElementById('setup').addEventListener('click',e=>{const b=e.target.c
   if(b.dataset.lv){cpuLv=+b.dataset.lv;document.querySelectorAll('#setup button[data-lv]').forEach(x=>x.classList.toggle('on',x===b));return;}
   init();});
 let cpuLv=2;
+function evalScore(p){
+  const h=hands[p];if(!h||h.length===0)return 100;
+  const total=Math.ceil((52+jokerCount)/np);
+  const cardScore=(1-h.length/total)*50;
+  const avg=h.reduce((s,c)=>s+strength(c),0)/h.length;
+  const strScore=(avg/13)*50;
+  return Math.round(cardScore+strScore);
+}
+function renderEval(){
+  const panel=document.getElementById('evalpanel');
+  if(gmode!=='cpu'||ONLINE||gameOver){panel.classList.remove('show');return;}
+  panel.classList.add('show');
+  const rows=document.getElementById('evalrows');
+  let html='';
+  for(let p=0;p<np;p++){
+    const sc=finished.includes(p)?100:evalScore(p);
+    const col=PCOL[p];
+    html+='<div class="eval-row"><span class="en" style="color:'+col+'">'+NAMES[p]+'</span><span class="ebar"><span class="efill" style="width:'+sc+'%;background:'+col+'"></span></span><span class="ev">'+sc+'</span></div>';
+  }
+  rows.innerHTML=html;
+}
 init();
 
 function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;

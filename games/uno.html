@@ -105,6 +105,15 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 .win-btns .again{background:var(--gold);color:#111}
 .win-btns .home{background:#2a2a3e;color:var(--txt)}
 
+/* AI Eval */
+#ai-eval{width:100%;max-width:520px;background:var(--surf);border-radius:10px;padding:10px 14px;font-size:11px}
+#ai-eval .ae-title{color:var(--dim);margin-bottom:6px;font-weight:700;font-size:10px;letter-spacing:.5px}
+.ae-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.ae-name{min-width:48px;color:var(--txt);font-size:11px;white-space:nowrap}
+.ae-bar-bg{flex:1;height:14px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden;position:relative}
+.ae-bar{height:100%;border-radius:4px;transition:width .4s ease}
+.ae-val{min-width:28px;text-align:right;font-size:10px;color:var(--dim)}
+
 @media (max-width:480px){
   .hand-row{flex-wrap:wrap;overflow-x:visible;justify-content:center}
   .card-el{width:48px;height:68px}
@@ -171,6 +180,8 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
     <div class="hand-lbl">あなたの手札（<span id="hand-count">7</span>枚）</div>
     <div class="hand-row" id="hand-row"></div>
   </div>
+
+  <div id="ai-eval" style="display:none"></div>
 
   <div class="btns-row">
     <button class="btn primary" id="play-btn" onclick="playSelected()" disabled>出す</button>
@@ -754,6 +765,28 @@ function renderAll() {
   renderCenter();
   renderHand();
   updateColorInd();
+  renderAiEval();
+}
+
+function renderAiEval() {
+  const el = document.getElementById('ai-eval');
+  if (ONLINE) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const maxCards = Math.max(...G.hands.map(h => h.length), 1);
+  const colors = ['var(--gold2)','var(--cr)','var(--cb)','var(--cg)','var(--cy)','#c080e0'];
+  let html = '<div class="ae-title">AI 評価（残り枚数）</div>';
+  for (let i = 0; i < G.numP; i++) {
+    const n = G.hands[i].length;
+    const pct = (n / maxCards * 100).toFixed(1);
+    const col = colors[i % colors.length];
+    const label = i === meSeat() ? 'あなた' : G.names[i];
+    html += `<div class="ae-row">
+      <span class="ae-name">${label}</span>
+      <div class="ae-bar-bg"><div class="ae-bar" style="width:${pct}%;background:${col}"></div></div>
+      <span class="ae-val">${n}枚</span>
+    </div>`;
+  }
+  el.innerHTML = html;
 }
 
 function renderOpponents() {

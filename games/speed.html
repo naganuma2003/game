@@ -95,6 +95,15 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 .ov-btns .again{background:var(--gold);color:#111}
 .ov-btns .home{background:#2a2a3e;color:var(--txt)}
 
+/* AI Eval bar */
+#ai-eval{display:none;width:100%;max-width:560px;margin-top:2px}
+#ai-eval .eval-label{font-size:10px;color:var(--dim);margin-bottom:3px;display:flex;justify-content:space-between}
+#ai-eval .eval-track{height:14px;border-radius:7px;background:#1a1a28;overflow:hidden;display:flex;position:relative}
+#ai-eval .eval-fill{height:100%;transition:width .4s ease}
+#ai-eval .eval-fill.player{background:var(--grn);border-radius:7px 0 0 7px}
+#ai-eval .eval-fill.cpu{background:var(--red);border-radius:0 7px 7px 0}
+#ai-eval .eval-mid{position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(255,255,255,.15)}
+
 @media(max-width:480px){
   h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
   .modes,.row{flex-wrap:wrap;justify-content:center}
@@ -184,6 +193,12 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
     <span class="sel-info" id="sel-info">選択: -</span>
   </div>
   <div class="kb-hint">キー: 1-5 で手札選択 / A・D で左右の山に出す</div>
+</div>
+
+<!-- AI Evaluation -->
+<div id="ai-eval">
+  <div class="eval-label"><span id="eval-player">あなた: 26</span><span id="eval-cpu">CPU: 26</span></div>
+  <div class="eval-track"><div class="eval-fill player" id="eval-bar-p" style="width:50%"></div><div class="eval-fill cpu" id="eval-bar-c" style="width:50%"></div><div class="eval-mid"></div></div>
 </div>
 
 <!-- OVERLAY -->
@@ -322,6 +337,7 @@ function render() {
   renderCpuArea();
   renderPlayerHand();
   renderInfo();
+  renderEval();
 }
 
 function renderCenter() {
@@ -461,6 +477,21 @@ function renderPlayerHand() {
 
     el.appendChild(div);
   });
+}
+
+function renderEval() {
+  const el = document.getElementById('ai-eval');
+  if (G.online) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  const pRemain = G.hands[0].length + G.piles[0].length + G.beneath[0].reduce((s,b)=>s+b.length,0);
+  const cRemain = G.hands[1].length + G.piles[1].length + G.beneath[1].reduce((s,b)=>s+b.length,0);
+  const total = pRemain + cRemain || 1;
+  const pPct = (cRemain / total * 100).toFixed(1);
+  const cPct = (pRemain / total * 100).toFixed(1);
+  document.getElementById('eval-bar-p').style.width = pPct + '%';
+  document.getElementById('eval-bar-c').style.width = cPct + '%';
+  document.getElementById('eval-player').textContent = `あなた: 残${pRemain}`;
+  document.getElementById('eval-cpu').textContent = `CPU: 残${cRemain}`;
 }
 
 function renderInfo() {

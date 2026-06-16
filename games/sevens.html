@@ -56,6 +56,13 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:23px;letter-spacing:.18em;
 .handoff .s{font-size:13px;margin-bottom:16px}
 .win button,.handoff button{background:var(--gold);border:none;color:#13402A;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
 .hidden{display:none!important}
+.eval-panel{margin:6px 0;width:min(98vw,420px)}
+.eval-panel .ep-title{font-size:10px;color:var(--sub);letter-spacing:.15em;margin-bottom:3px}
+.eval-row{display:flex;align-items:center;gap:6px;margin:2px 0;font-size:11px}
+.eval-row .enm{min-width:56px;text-align:right;font-weight:700}
+.eval-row .ebar{flex:1;height:10px;background:rgba(0,0,0,.3);border-radius:5px;overflow:hidden}
+.eval-row .efill{height:100%;border-radius:5px;transition:width .4s}
+.eval-row .esc{min-width:28px;font-size:10px;color:var(--sub)}
 @media (max-width:480px){
   .bc{min-width:0;font-size:min(3.8vw,13px)}
   .card{width:34px;height:48px}
@@ -79,6 +86,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:23px;letter-spacing:.18em;
 <div class="handlab" id="handlab"></div>
 <div class="myhand" id="myhand"></div>
 <div class="actions"><button id="pass" class="alt">パス</button></div>
+<div class="eval-panel hidden" id="evalpanel"><div class="ep-title">AI 評価</div><div id="evalbars"></div></div>
 <div class="foot"><button id="new">配り直し</button></div>
 <div class="win" id="winov"><div class="c"><div class="t" id="wint">結果</div><div class="rk" id="winrk"></div><button id="again">もう一度</button></div></div>
 <div class="handoff" id="handoff"><div class="c"><div class="t" id="ho-t">交代</div><div class="s" id="ho-s">端末を渡してください</div><button id="ho-ok">手札を見る</button></div></div>
@@ -175,6 +183,7 @@ function render(){
   document.getElementById('pass').disabled=!act;
   document.getElementById('msg').style.color=gameOver?'var(--gold)':PCOL[turn];document.getElementById('msg').style.fontWeight='700';
   if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(turn===MYSEAT&&!gameOver);
+  renderEval();
 }
 /* ---- input relay ---- */
 function emit(a){if(ONLINE){if(turn!==MYSEAT)return;roomSend(a);}else doAction(a);}
@@ -267,6 +276,26 @@ document.getElementById('setup').addEventListener('click',e=>{const b=e.target.c
   if(b.dataset.lv){cpuLv=+b.dataset.lv;document.querySelectorAll('#setup button[data-lv]').forEach(x=>x.classList.toggle('on',x===b));return;}
   init();});
 let cpuLv=2;
+function renderEval(){
+  const panel=document.getElementById('evalpanel');
+  if(gmode!=='cpu'||ONLINE||gameOver){panel.classList.add('hidden');return;}
+  panel.classList.remove('hidden');
+  const bars=document.getElementById('evalbars');bars.innerHTML='';
+  const maxCards=Math.ceil(52/np);
+  for(let p=0;p<np;p++){
+    if(outCnt[p]){
+      const row=document.createElement('div');row.className='eval-row';
+      row.innerHTML=`<span class="enm" style="color:${PCOL[p]}">${NAMES[p]}</span><span class="ebar"><span class="efill" style="width:0;background:#e0533e"></span></span><span class="esc">OUT</span>`;
+      bars.appendChild(row);continue;
+    }
+    const cardScore=(1-hands[p].length/maxCards)*70;
+    const passScore=((3-passes[p])/3)*30;
+    const score=Math.round(Math.min(100,Math.max(0,cardScore+passScore)));
+    const row=document.createElement('div');row.className='eval-row';
+    row.innerHTML=`<span class="enm" style="color:${PCOL[p]}">${NAMES[p]}</span><span class="ebar"><span class="efill" style="width:${score}%;background:${PCOL[p]}"></span></span><span class="esc">${score}</span>`;
+    bars.appendChild(row);
+  }
+}
 init();
 
 function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;

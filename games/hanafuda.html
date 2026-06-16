@@ -56,6 +56,11 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:20px;letter-spacing:.14em;
 .rule{width:min(94vw,440px);margin-top:12px;font-size:10.5px;line-height:1.7;color:var(--sub);border-top:1px solid var(--line);padding-top:8px}
 .rule b{color:var(--txt)}
 .hidden{display:none!important}
+.eval-bar{display:none;width:min(96vw,440px);height:18px;border-radius:9px;overflow:hidden;background:#1a3d29;border:1px solid var(--line);margin:4px auto;position:relative}
+.eval-bar.show{display:block}
+.eval-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue));transition:width .5s ease;border-radius:9px 0 0 9px}
+.eval-bar .ev-lbl{position:absolute;inset:0;display:flex;justify-content:space-between;align-items:center;padding:0 8px;font-size:9px;color:rgba(255,255,255,.7);pointer-events:none}
+.eval-bar .ev-mid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:8.5px;color:var(--sub);white-space:nowrap}
 @media (max-width:480px){
   .card{width:34px;height:51px}
   .card .ico{font-size:16px}
@@ -83,6 +88,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:20px;letter-spacing:.14em;
   <div class="side"><div class="info" id="oInfo"></div><div class="cap" id="oCap"></div></div>
   <div class="side"><div class="info">相手の手札</div><div class="hand" id="oHand"></div></div>
   <div class="field" id="field"></div>
+  <div class="eval-bar" id="evalBar"><div class="eval-fill" id="evalFill"></div><div class="ev-lbl"><span id="evP">あなた</span><span id="evO">CPU</span></div><div class="ev-mid" id="evMid"></div></div>
   <div class="deckwrap"><div class="card back" id="deck"><span class="ico">花</span></div><div id="deckMsg" style="font-size:11px;color:var(--sub)"></div></div>
   <div class="side"><div class="info">あなたの手札</div><div class="hand" id="pHand"></div></div>
   <div class="side"><div class="info" id="pInfo"></div><div class="cap" id="pCap"></div></div>
@@ -417,6 +423,49 @@ function render(){
   $('deckMsg').textContent='山札 '+(deck?deck.length:0)+'枚';
   const yl=ykList(captured[me]);
   $('yk').innerHTML=yl.length?('あなたの役: '+yl.map(([n,p])=>'<b>'+n+' '+p+'</b>').join(' / ')):'';
+  renderEval();
+}
+function evalAdvantage(){
+  /* Evaluate position: captured value + yaku proximity + score */
+  function evalPlayer(p){
+    const cap=captured[p];let v=0;
+    // captured card values
+    for(const c of cap)v+=cardVal(c);
+    // yaku score (heavily weighted)
+    v+=ykTotal(p)*8;
+    // yaku proximity bonuses
+    const br=cap.filter(c=>c.type==='bright').length;
+    const an=cap.filter(c=>c.type==='animal').length;
+    const ri=cap.filter(c=>c.type==='ribbon').length;
+    const ka=cap.filter(c=>c.type==='plain').length;
+    const reds=cap.filter(c=>c.ribbon==='red'&&[0,1,2].includes(c.m)).length;
+    const blues=cap.filter(c=>c.ribbon==='blue'&&[5,8,9].includes(c.m)).length;
+    // proximity: closer to completing a yaku = more value
+    if(br>=2)v+=br*4;
+    if(an>=3)v+=an*2;
+    if(ri>=3)v+=ri*2;
+    if(ka>=7)v+=ka;
+    if(reds>=2)v+=10;
+    if(blues>=2)v+=10;
+    // hand size as tempo
+    v+=hands[p].length*0.5;
+    // cumulative score
+    v+=total[p]*2;
+    return v;
+  }
+  return {p:evalPlayer(0),o:evalPlayer(1)};
+}
+function renderEval(){
+  const bar=$('evalBar');
+  if(mode!=='cpu'||ONLINE){bar.classList.remove('show');return;}
+  bar.classList.add('show');
+  const e=evalAdvantage();
+  const sum=e.p+e.o||1;
+  const pct=Math.max(8,Math.min(92,(e.p/sum)*100));
+  $('evalFill').style.width=pct+'%';
+  const diff=e.p-e.o;
+  const lbl=diff>10?'優勢':diff>3?'やや優勢':diff<-10?'劣勢':diff<-3?'やや劣勢':'互角';
+  $('evMid').textContent=lbl;
 }
 function msg(s){$('msg').textContent=s;}
 

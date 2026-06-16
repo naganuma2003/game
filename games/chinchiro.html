@@ -73,6 +73,10 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;
 }
 </style>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"チンチロリン","description":"チンチロリン","url":"https://and-and.github.io/games/chinchiro.html","genre":["Dice Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":"MultiPlayer","numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":4},"offers":{"@type":"Offer","price":0,"priceCurrency":"JPY"},"inLanguage":"ja"}</script>
+
+    <link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/chinchiro.html">
+    <link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/chinchiro.html">
+    <link rel="alternate" hreflang="x-default" href="https://naganuma2003.github.io/game/games/chinchiro.html">
 </head>
 <body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
@@ -90,16 +94,27 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;
   <button data-np="4">4人</button>
 </div>
 
+<!-- ROUND SELECT (CPU mode) -->
+<div id="round-select" class="hidden" style="text-align:center;margin:12px 0">
+  <div class="lab" style="font-size:13px;margin-bottom:8px">親の交代周回数（何周で終了？）</div>
+  <div class="row">
+    <button data-rnd="1">1周</button>
+    <button data-rnd="2" class="on">2周</button>
+    <button data-rnd="3">3周</button>
+  </div>
+  <button id="start-cpu-game" style="margin-top:10px;background:var(--gold);border:none;color:#13402A;font-weight:700;padding:11px 26px;border-radius:8px;cursor:pointer;font-size:15px;font-family:inherit">ゲーム開始</button>
+</div>
+
 <!-- SOLO -->
-<div id="solo-area">
+<div id="solo-area" class="hidden">
   <div class="chips"><span class="b">チップ <b id="chips">1000</b></span><span class="b">賭け <b id="betv2">100</b></span></div>
   <div class="eval-bar-wrap" id="eval-wrap">
     <div class="eval-label"><span id="ev-cpu-lab">CPU: 1000</span><span id="ev-me-lab">あなた: 1000</span></div>
     <div class="eval-bar-outer"><div class="ev-cpu" id="ev-cpu" style="width:50%"></div><div class="ev-me" id="ev-me" style="width:50%"></div></div>
     <div class="eval-center"><span id="ev-diff">±0</span></div>
   </div>
-  <div class="area"><div class="lab">親（CPU）</div><div class="bowl" id="cpu-bowl"></div><div class="role" id="cpu-role"></div></div>
-  <div class="area"><div class="lab">あなた（子）</div><div class="bowl" id="me-bowl"></div><div class="role" id="me-role"></div></div>
+  <div class="area"><div class="lab" id="cpu-lab">CPU</div><div class="bowl" id="cpu-bowl"></div><div class="role" id="cpu-role"></div></div>
+  <div class="area"><div class="lab" id="me-lab">あなた</div><div class="bowl" id="me-bowl"></div><div class="role" id="me-role"></div></div>
   <div class="bet" id="betrow">
     <button data-b="-50">−50</button>
     <span class="betv" id="betv">100</span>
@@ -156,6 +171,7 @@ let ONLINE=false,MYSEAT=0,roomSend=null;
 function myTurn(){return !ONLINE||curPlayer===MYSEAT;}
 
 /* ============ SOLO (vs CPU) ============ */
+let soloRounds=2, soloMaxHands=0, soloHandNo=0, soloDealer=0; // 0=CPU is parent, 1=player is parent
 let cpuChips=1000; // track CPU's virtual chips for eval bar
 function updateEval(){
   const total=chips+cpuChips||1;
@@ -171,21 +187,37 @@ function updateEval(){
 let chips=+(localStorage.getItem('chinchip')||1000),bet=100,busy=false;
 function saveChips(){localStorage.setItem('chinchip',chips);}
 function setBet(){document.getElementById('betv').textContent=bet;document.getElementById('betv2').textContent=bet;}
-let soloPhase='bet',meThrows=0,meRes=null;
-function startSoloHand(){soloPhase='me';meThrows=0;meRes=null;
+function updateSoloLabels(){
+  const cpuIsParent=soloDealer===0;
+  document.getElementById('cpu-lab').textContent=cpuIsParent?'CPU（親）':'CPU（子）';
+  document.getElementById('me-lab').textContent=cpuIsParent?'あなた（子）':'あなた（親）';
+}
+let soloPhase='bet',meThrows=0,meRes=null,cpuRes=null;
+function startSoloHand(){meThrows=0;meRes=null;cpuRes=null;
   document.getElementById('cpu-role').textContent='';document.getElementById('cpu-role').className='role';
   document.getElementById('me-role').textContent='';document.getElementById('me-role').className='role';
-  showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);}
+  showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);updateSoloLabels();
+  // Children roll first, then parent
+  if(soloDealer===0){/* CPU is parent → player(child) rolls first */
+    soloPhase='me';
+  } else {/* Player is parent → CPU(child) rolls first */
+    soloPhase='cpu';busy=true;document.getElementById('roll').disabled=true;setTimeout(cpuRollSolo,650);
+  }
+}
 function playSolo(){ // 1回の「振る」＝1投
   if(busy)return;
-  if(soloPhase==='over')return;
-  if(soloPhase==='bet'){if(bet<=0){msg('賭けを決めて「振る」');return;}startSoloHand();}
+  if(soloPhase==='over'||soloPhase==='done')return;
+  if(soloPhase==='bet'){if(bet<=0){msg('賭けを決めて「振る」');return;}startSoloHand();if(soloPhase!=='me')return;}
   if(soloPhase!=='me')return;
   meThrows++;
   const {dice,res}=oneThrow();
   showDice('me-bowl',dice,true);
-  const me=document.getElementById('me-role');me.textContent='あなた '+meThrows+'投目: '+res.name;me.className='role'+(res.bad?' bad':'');
-  if(isFinalRole(res)||meThrows>=3){meRes=res;soloPhase='cpu';busy=true;document.getElementById('roll').disabled=true;setTimeout(cpuRollSolo,650);}
+  const roleLabel=soloDealer===1?'あなた(親)':'あなた(子)';
+  const me=document.getElementById('me-role');me.textContent=roleLabel+' '+meThrows+'投目: '+res.name;me.className='role'+(res.bad?' bad':'');
+  if(isFinalRole(res)||meThrows>=3){meRes=res;
+    if(soloDealer===0){/* CPU is parent, CPU rolls last */soloPhase='cpu';busy=true;document.getElementById('roll').disabled=true;setTimeout(cpuRollSolo,650);}
+    else{/* Player is parent, player rolled last → settle */soloPhase='over';settleSolo(meRes,cpuRes);}
+  }
   else{msg('役なし。もう一度「振る」（'+meThrows+'/3）');}
 }
 function cpuShouldReroll(res,throwNum){
@@ -209,29 +241,57 @@ function cpuShouldRerollSmart(res,throwNum,meR){
   return true;
 }
 async function cpuRollSolo(){
-  msg('親（CPU）が振っています…');
-  let r;
+  const cpuIsParent=soloDealer===0;
+  const roleLabel=cpuIsParent?'CPU(親)':'CPU(子)';
+  msg(roleLabel+'が振っています…');
+  let r;const opponent=cpuIsParent?meRes:null;
   for(let i=1;i<=3;i++){r=oneThrow();showDice('cpu-bowl',r.dice,true);
-    const cr=document.getElementById('cpu-role');cr.textContent='親 '+i+'投目: '+r.res.name;cr.className='role'+(r.res.bad?' bad':'');
+    const cr=document.getElementById('cpu-role');cr.textContent=roleLabel+' '+i+'投目: '+r.res.name;cr.className='role'+(r.res.bad?' bad':'');
     await wait(650);
     if(cpuLevel<=1){if(isFinalRole(r.res)||i>=3)break;}
-    else{if(!cpuShouldRerollSmart(r.res,i,meRes))break;}
+    else{if(!cpuShouldRerollSmart(r.res,i,opponent))break;}
   }
   document.getElementById('cpu-role').textContent=r.res.name;
   await wait(350);
-  settleSolo(r.res,meRes);busy=false;
+  cpuRes=r.res;
+  if(cpuIsParent){/* CPU was parent (rolled last) → settle */
+    settleSolo(r.res,meRes);
+  } else {/* CPU was child (rolled first) → player rolls next */
+    soloPhase='me';meThrows=0;
+    document.getElementById('roll').disabled=false;
+    msg('あなた（親）の番です。「振る」をタップ');
+  }
+  busy=false;
 }
-function settleSolo(cpuR,meR){
+function settleSolo(parentR,childR){
   soloPhase='over';
   let delta=0,text;
-  if(meR.rank>cpuR.rank){const m=meR.mult||1;delta=bet*m;text='あなたの勝ち！ +'+delta+(m>1?'（'+m+'倍）':'');}
-  else if(meR.rank<cpuR.rank){const m=cpuR.mult||1;delta=-bet*m;text='親の勝ち… '+delta+(m>1?'（'+m+'倍）':'');}
-  else{text='引き分け（賭け返却）';}
+  // delta is from player's perspective
+  if(soloDealer===0){/* CPU is parent: childR=meRes */
+    if(childR.rank>parentR.rank){const m=childR.mult||1;delta=bet*m;text='あなたの勝ち！ +'+delta+(m>1?'（'+m+'倍）':'');}
+    else if(childR.rank<parentR.rank){const m=parentR.mult||1;delta=-bet*m;text='親(CPU)の勝ち… '+delta+(m>1?'（'+m+'倍）':'');}
+    else{text='引き分け（賭け返却）';}
+  } else {/* Player is parent: parentR=meRes, childR=cpuRes */
+    if(childR.rank>parentR.rank){const m=childR.mult||1;delta=-bet*m;text='子(CPU)の勝ち… '+(- bet*m)+(m>1?'（'+m+'倍）':'');}
+    else if(childR.rank<parentR.rank){const m=parentR.mult||1;delta=bet*m;text='あなた(親)の勝ち！ +'+delta+(m>1?'（'+m+'倍）':'');}
+    else{text='引き分け（賭け返却）';}
+  }
   chips+=delta;cpuChips-=delta;saveChips();document.getElementById('chips').textContent=chips;msg(text);updateEval();
-  setTimeout(()=>{document.getElementById('roll').disabled=false;soloPhase='bet';
-    if(chips<=0){chips=1000;cpuChips=1000;saveChips();document.getElementById('chips').textContent=chips;updateEval();msg('チップが尽きたので1000補充。賭けて「振る」');}
-    else msg('次の勝負へ。賭けを決めて「振る」');
-    bet=Math.min(bet,chips);setBet();},1300);
+  soloHandNo++;
+  setTimeout(()=>{document.getElementById('roll').disabled=false;
+    if(chips<=0){chips=1000;cpuChips=1000;saveChips();document.getElementById('chips').textContent=chips;updateEval();}
+    if(soloMaxHands>0&&soloHandNo>=soloMaxHands){
+      soloPhase='done';
+      const result=chips>cpuChips?'あなたの総合勝利！':chips<cpuChips?'CPUの総合勝利…':'引き分け！';
+      msg('全'+soloMaxHands+'戦終了！ '+result+' (あなた:'+chips+' / CPU:'+cpuChips+')');
+      document.getElementById('roll').disabled=true;
+      document.getElementById('mreset').classList.remove('hidden');
+      return;
+    }
+    soloDealer=1-soloDealer;updateSoloLabels();soloPhase='bet';
+    bet=Math.min(bet,chips);setBet();
+    msg('第'+(soloHandNo+1)+'戦（'+(soloDealer===0?'CPU':'あなた')+'が親）。賭けて「振る」');
+  },1300);
 }
 
 /* ============ MULTI: 親（交代）vs 子・チップ制 ============ */
@@ -263,10 +323,10 @@ function _placeBet(amt){
 }
 function startRollPhase(){
   mPhase='roll';
-  rollSeq=[dealer];for(let k=1;k<np;k++)rollSeq.push((dealer+k)%np);
-  rollIdx=0;curPlayer=dealer;throws=0;
+  rollSeq=[];for(let k=1;k<np;k++)rollSeq.push((dealer+k)%np);rollSeq.push(dealer);
+  rollIdx=0;curPlayer=rollSeq[0];throws=0;
   renderMulti();updateMultiControls();
-  msg('親 P'+(dealer+1)+' が振ります。「振る」をタップ');autoKick();
+  msg('子 '+turnName(curPlayer)+' が振ります。「振る」をタップ');autoKick();
 }
 function _roll(){ // 1回の「振る」＝1投
   if(mPhase!=='roll'||players[curPlayer].roll)return;
@@ -345,8 +405,8 @@ function doAction(a){if(a.k==='bet')_placeBet(a.amt);else if(a.k==='roll')_roll(
 
 /* ============ shared controls ============ */
 function rollClick(){if(mode==='solo'){playSolo();return;}if(mPhase==='roll')emit({k:'roll'});}
-const RULE_SOLO='親(CPU)と勝負。3個振って<b>役（目を含む）が出たらそこで止め</b>、出なければ最大3回まで振り直し。出目の強さで賭けを清算。倍率: ピンゾロ=5 / ゾロ目=3 / シゴロ=2 / 目=1 / ヒフミ=負け2倍。';
-const RULE_MULTI='<b>親（順番に交代）vs 子</b>。子がチップを賭け→親→子の順に振る（役が出たら止め・最大3投）。ターン後に出目の強さで清算（子が勝てば賭け×倍率を獲得、負ければ親に没収）。倍率: ピンゾロ=5 / ゾロ目=3 / シゴロ=2 / 目=1 / ヒフミ=負け2倍。';
+const RULE_SOLO='CPUと勝負。<b>親は毎戦交代</b>し、子→親の順に振る。3個振って<b>役（目を含む）が出たらそこで止め</b>、出なければ最大3回まで振り直し。出目の強さで賭けを清算。倍率: ピンゾロ=5 / ゾロ目=3 / シゴロ=2 / 目=1 / ヒフミ=負け2倍。';
+const RULE_MULTI='<b>親（順番に交代）vs 子</b>。子がチップを賭け→<b>子→親の順に振る</b>（役が出たら止め・最大3投）。ターン後に出目の強さで清算（子が勝てば賭け×倍率を獲得、負ければ親に没収）。倍率: ピンゾロ=5 / ゾロ目=3 / シゴロ=2 / 目=1 / ヒフミ=負け2倍。';
 function setMode(m){
   const isSolo=m.startsWith('cpu');
   mode=isSolo?'solo':'multi';
@@ -359,7 +419,8 @@ function setMode(m){
   document.getElementById('mreset').classList.toggle('hidden',mode!=='multi');
   document.getElementById('rule').innerHTML=mode==='solo'?RULE_SOLO:RULE_MULTI;
   document.getElementById('eval-wrap').classList.toggle('hidden',mode!=='solo');
-  if(mode==='solo'){cpuChips=1000;document.getElementById('roll').classList.remove('hidden');document.getElementById('m-next').classList.add('hidden');document.getElementById('m-betrow').style.display='none';document.getElementById('roll').disabled=false;showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);setBet();updateEval();msg('賭けを決めて「振る」');}
+  document.getElementById('round-select').classList.toggle('hidden',mode!=='solo');
+  if(mode==='solo'){document.getElementById('solo-area').classList.add('hidden');document.getElementById('roll').classList.add('hidden');document.getElementById('m-next').classList.add('hidden');document.getElementById('m-betrow').style.display='none';msg('周回数を選んでゲーム開始');}
   else initMulti();
 }
 document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;const m=b.dataset.m;setMode(m);});
@@ -369,12 +430,27 @@ document.getElementById('m-betrow').addEventListener('click',e=>{const b=e.targe
 document.getElementById('m-betok').addEventListener('click',()=>{if(mode!=='multi'||mPhase!=='bet'||!myAct())return;emit({k:'bet',amt:pendBet});});
 document.getElementById('m-next').addEventListener('click',()=>{if(mode!=='multi')return;if(ONLINE&&MYSEAT!==0)return;emit({k:'next'});});
 document.getElementById('roll').addEventListener('click',rollClick);
-document.getElementById('mreset').addEventListener('click',()=>{if(ONLINE)return;initMulti();});
-// init solo view
-showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);setBet();
-document.getElementById('chips').textContent=chips;
+document.getElementById('mreset').addEventListener('click',()=>{if(ONLINE)return;if(mode==='solo'){setMode('cpu'+cpuLevel);return;}initMulti();});
+document.getElementById('round-select').addEventListener('click',e=>{const b=e.target.closest('button[data-rnd]');if(!b)return;soloRounds=+b.dataset.rnd;document.querySelectorAll('#round-select button[data-rnd]').forEach(x=>x.classList.toggle('on',x===b));});
+document.getElementById('start-cpu-game').addEventListener('click',()=>{
+  soloMaxHands=soloRounds*2;soloHandNo=0;soloDealer=Math.random()<0.5?0:1;
+  chips=1000;cpuChips=1000;saveChips();
+  document.getElementById('chips').textContent=chips;
+  document.getElementById('round-select').classList.add('hidden');
+  document.getElementById('solo-area').classList.remove('hidden');
+  document.getElementById('roll').classList.remove('hidden');
+  document.getElementById('roll').disabled=false;
+  document.getElementById('mreset').classList.remove('hidden');
+  showDice('cpu-bowl',[1,1,1]);showDice('me-bowl',[1,1,1]);
+  updateSoloLabels();setBet();updateEval();soloPhase='bet';
+  msg('第1戦（'+(soloDealer===0?'CPU':'あなた')+'が親）。賭けて「振る」');
+});
+// init: show round-select for solo mode by default
+document.getElementById('solo-area').classList.add('hidden');
+document.getElementById('round-select').classList.remove('hidden');
+document.getElementById('roll').classList.add('hidden');
 document.getElementById('rule').innerHTML=RULE_SOLO;
-updateEval();
+msg('周回数を選んでゲーム開始');
 
 function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
   document.getElementById('mode').classList.add('hidden');

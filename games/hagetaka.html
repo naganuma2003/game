@@ -106,6 +106,10 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
   .modes button,.row button,.foot button{min-height:44px}
 }
 </style>
+
+    <link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/hagetaka.html">
+    <link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/hagetaka.html">
+    <link rel="alternate" hreflang="x-default" href="https://naganuma2003.github.io/game/games/hagetaka.html">
 </head>
 <body>
 <a href="../index.html" class="back">← 一覧に戻る</a>
@@ -216,7 +220,12 @@ function initGame(numP, diff, online, mySeat) {
   G = {
     numP, diff, online, mySeat,
     names: online
-      ? (mySeat===0?['あなた','相手']:['相手','あなた'])
+      ? (function(){
+          const n=Array(numP).fill('');
+          n[mySeat]='あなた'; n[mySeat===0?1:0]='相手';
+          for(let i=2;i<numP;i++) n[i]=`CPU ${i-1}`;
+          return n;
+        })()
       : ['あなた',...Array.from({length:numP-1},(_,i)=>`CPU ${i+1}`)],
     deck: shuffle(PRIZES),
     hands: Array.from({length:numP},()=>new Set([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15])),
@@ -232,6 +241,8 @@ function initGame(numP, diff, online, mySeat) {
 function startRound(){
   if(G.round>=15){showGameOver();return;}
   G.prize=G.deck[G.round];G.myChoice=null;G.opChoice=null;G.cpuChoices=[];G.phase='picking';
+  // In online mode, pre-generate CPU bids so both peers use the seeded PRNG at the same point
+  if(G.online){for(let i=2;i<G.numP;i++)G.cpuChoices.push(cpuChoose([...G.hands[i]],G.prize,G.diff));}
   document.getElementById('reveal-area').style.display='none';
   document.getElementById('round-info').textContent=`ラウンド ${G.round+1} / 15`;
   renderPrize();renderHand();renderScores();renderStatus();updateBtn();
@@ -270,6 +281,8 @@ function doReveal(){
     bids=G.mySeat===0
       ?[{player:0,card:G.myChoice},{player:1,card:G.opChoice}]
       :[{player:0,card:G.opChoice},{player:1,card:G.myChoice}];
+    // Append CPU bids (generated identically on both peers via seeded PRNG)
+    for(let i=0;i<G.cpuChoices.length;i++) bids.push({player:i+2,card:G.cpuChoices[i]});
   } else {
     bids=[{player:0,card:G.myChoice},...G.cpuChoices.map((c,i)=>({player:i+1,card:c}))];
   }
@@ -364,7 +377,7 @@ function renderScores(){
 
 function renderEval(){
   const area=document.getElementById('eval-area'),bars=document.getElementById('eval-bars');
-  if(G.online){area.style.display='none';return;}
+  if(G.online&&G.numP<=2){area.style.display='none';return;}
   area.style.display='flex';bars.innerHTML='';
   const mn=Math.min(...G.scores), mx=Math.max(...G.scores);
   const range=Math.max(1,mx-mn);
@@ -392,6 +405,65 @@ document.getElementById('again-btn').addEventListener('click',()=>{
 <script src="../shared/lobby.js?v=8"></script>
 <script src="../shared/online-core.js?v=8"></script>
 <script>
+/* --- Online CPU selector (host picks CPU count before match starts) --- */
+(function(){
+  const wrap=document.createElement('div');
+  wrap.id='online-cpu-wrap';
+  wrap.innerHTML=`
+<style>
+#online-cpu-wrap{display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:16px}
+#online-cpu-wrap.show{display:flex}
+.occ{background:#1d2330;border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:22px 20px;max-width:320px;width:100%;text-align:center;color:#edf1f8;font-family:'Segoe UI','Hiragino Sans',sans-serif}
+.occ h3{margin:0 0 10px;font-size:16px;color:#ffd34d}
+.occ p{font-size:12px;opacity:.8;margin:0 0 14px;line-height:1.6}
+.occ select{background:#141420;border:1px solid #444;color:#edf1f8;padding:8px 12px;border-radius:8px;font-size:14px;width:100%;margin-bottom:14px}
+.occ button{background:#e0a13a;border:none;color:#1d2330;font-weight:700;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px}
+</style>
+<div class="occ">
+  <h3>CPU追加設定</h3>
+  <p>人間2人＋CPUで3〜4人プレイが可能です</p>
+  <select id="online-cpu-sel">
+    <option value="0">CPUなし（2人対戦）</option>
+    <option value="1">CPU 1体追加（3人）</option>
+    <option value="2" selected>CPU 2体追加（4人）</option>
+  </select>
+  <div style="margin-bottom:10px">
+    <select id="online-cpu-diff">
+      <option value="easy">CPU：弱い</option>
+      <option value="normal" selected>CPU：ふつう</option>
+      <option value="hard">CPU：強い</option>
+    </select>
+  </div>
+  <button id="online-cpu-ok">ゲーム開始</button>
+</div>`;
+  document.body.appendChild(wrap);
+
+  let pendingSeat=0, pendingSend=null;
+
+  window._onlineCpuPrompt=function(seat,send){
+    pendingSeat=seat; pendingSend=send;
+    wrap.classList.add('show');
+  };
+  document.getElementById('online-cpu-ok').addEventListener('click',function(){
+    wrap.classList.remove('show');
+    const cpuCount=+document.getElementById('online-cpu-sel').value;
+    const cpuDiff=document.getElementById('online-cpu-diff').value;
+    const totalPlayers=2+cpuCount;
+    // Host sends config to guest
+    pendingSend({t:'cpucfg',cpu:cpuCount,diff:cpuDiff});
+    const b=document.getElementById('oc-badge');if(b)b.style.display='none';
+    document.getElementById('setup').style.display='none';
+    initGame(totalPlayers,cpuDiff,true,pendingSeat);
+  });
+
+  window._onlineCpuApply=function(msg,seat){
+    const totalPlayers=2+msg.cpu;
+    const b=document.getElementById('oc-badge');if(b)b.style.display='none';
+    document.getElementById('setup').style.display='none';
+    initGame(totalPlayers,msg.diff,true,seat);
+  };
+})();
+
 OnlineCore.init({
   gameId:'hagetaka',
   statusSel:'#status',
@@ -399,11 +471,20 @@ OnlineCore.init({
   blockRelay:()=>true,
   pvpSel:null,hideSel:null,
   afterStart:(seat)=>{
-    const b=document.getElementById('oc-badge');if(b)b.style.display='none';
-    document.getElementById('setup').style.display='none';
-    initGame(2,'normal',true,seat);
+    window._onlineSeat=seat;
+    if(seat===0){
+      window._onlineCpuPrompt(seat, OnlineCore.send);
+    } else {
+      const b=document.getElementById('oc-badge');if(b){b.style.display='block';b.textContent='🌐 ホストの設定を待っています…';}
+    }
   },
-  customMsg:handleOnlineMsg,
+  customMsg:(msg)=>{
+    if(msg.t==='cpucfg'){
+      window._onlineCpuApply(msg, window._onlineSeat);
+    } else {
+      handleOnlineMsg(msg);
+    }
+  },
 });
 </script>
 <script src="../shared/firebase-counter.js"></script>

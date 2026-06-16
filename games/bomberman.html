@@ -109,6 +109,10 @@
 }
 </style>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"ボンバーマン（Bomberman）","description":"ボンバーマン（Bomberman）を無料で遊べるブラウザゲーム。爆弾を置いて敵を倒すアクションゲーム、オンライン対戦対応。スマホ・PC対応。","url":"https://naganuma2003.github.io/game/games/bomberman.html","genre":["Action Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":["SinglePlayer","MultiPlayer"],"numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":2},"offers":{"@type":"Offer","price":0,"priceCurrency":"JPY"},"inLanguage":"ja"}</script>
+
+    <link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/bomberman.html">
+    <link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/bomberman.html">
+    <link rel="alternate" hreflang="x-default" href="https://naganuma2003.github.io/game/games/bomberman.html">
 </head>
 <body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
@@ -204,6 +208,14 @@ let cpuMode = false;
 let cpuNextTx = 0, cpuNextTy = 0;
 let cpuBombCD = 0;
 let cpuBombEnabled = true;
+
+// オンラインCPU/退出判定
+function isAutoSeat(s) {
+  return onlineMode && window.OnlineRoom &&
+    ((OnlineRoom.isCpu && OnlineRoom.isCpu(s)) ||
+     (OnlineRoom.isGone && OnlineRoom.isGone(s)));
+}
+function p2IsAuto() { return isAutoSeat(1); }
 
 // ─── 入力 ────────────────────────────────────────────────────────────────────
 const K = {};
@@ -434,7 +446,7 @@ function update(dt) {
     return;
   }
   if (pl.alive) updPlayer(dt);
-  if (cpuMode && p2) updCPU(dt);
+  if ((cpuMode || (onlineMode && isHost && p2IsAuto())) && p2) updCPU(dt);
   else if (onlineMode && isHost && p2) updP2(dt);
   updEnemies(dt);
   updBombs(dt);
@@ -961,7 +973,7 @@ function render() {
   if (state===ST.TITLE)  { drawTitle(); return; }
   drawMap(); drawPups(); drawExps(); drawBombs(); drawEns(); drawPl();
   if ((onlineMode||cpuMode) && p2) drawPl2();
-  if (cpuMode && state===ST.PLAY) drawAIEval();
+  if ((cpuMode || (onlineMode && isHost && p2IsAuto())) && state===ST.PLAY) drawAIEval();
   if (state===ST.CLEAR)      drawResult(true);
   else if (state===ST.OVER)  drawResult(false);
   if (paused && state===ST.PLAY) drawPause();
@@ -1443,13 +1455,19 @@ OnlineRoom.init({
   maxPlayers: 2,
   note: '2人対戦',
   basePrefix: '../',
-  onStart(seat, n, send) {
+  onStart(seat, n, send, nCpus) {
     mySeat = seat;
     isHost = (seat === 0);
     onlineMode = true;
     cpuMode = false;
     _onlineSend = send;
     go();
+    // CPU席があればCPU AI状態を初期化
+    if (isHost && nCpus > 0 && p2IsAuto()) {
+      cpuNextTx = Math.round(p2.px / T);
+      cpuNextTy = Math.round(p2.py / T);
+      cpuBombCD = 2;
+    }
   },
   onMessage(fromSeat, msg) {
     if (!msg || !msg.type) return;
@@ -1463,7 +1481,14 @@ OnlineRoom.init({
       syncUI();
     }
   },
-  onLeft() {
+  onLeft(leftSeat) {
+    // 相手が切断 → ホストならCPU AIに切り替えて続行
+    if (isHost && state === ST.PLAY && p2 && p2.alive && p2IsAuto()) {
+      cpuNextTx = Math.round(p2.px / T);
+      cpuNextTy = Math.round(p2.py / T);
+      cpuBombCD = 2;
+      return; // ゲーム続行
+    }
     if (state === ST.PLAY) { clearInterval(tickId); state = ST.OVER; }
     onlineMode = false; _onlineSend = null;
     syncUI();

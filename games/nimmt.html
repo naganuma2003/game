@@ -116,7 +116,11 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
   .hcard{width:36px;height:50px;font-size:12px}
 }
 </style>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"ニムト（6 nimmt!）","description":"ニムト（6 nimmt!）","url":"https://and-and.github.io/games/nimmt.html","genre":["Card Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":"MultiPlayer","numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":4},"offers":{"@type":"Offer","price":0,"priceCurrency":"JPY"},"inLanguage":"ja"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"ニムト（6 nimmt!）","description":"ニムト（6 nimmt!）","url":"https://and-and.github.io/games/nimmt.html","genre":["Card Game"],"gamePlatform":"Web Browser","applicationCategory":"Game","playMode":"MultiPlayer","numberOfPlayers":{"@type":"QuantitativeValue","minValue":1,"maxValue":10},"offers":{"@type":"Offer","price":0,"priceCurrency":"JPY"},"inLanguage":"ja"}</script>
+
+    <link rel="alternate" hreflang="ja" href="https://naganuma2003.github.io/game/games/nimmt.html">
+    <link rel="alternate" hreflang="en" href="https://naganuma2003.github.io/game/en/games/nimmt.html">
+    <link rel="alternate" hreflang="x-default" href="https://naganuma2003.github.io/game/games/nimmt.html">
 </head>
 <body>
 <a href="../index.html" class="back">← 一覧に戻る</a>
@@ -213,28 +217,45 @@ function bullHeads(n){return n===55?7:n%10===0?3:n%5===0?2:1;}
 function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=0|Math.random()*(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
 
 let G={};
-let opPlay=null;
 let pendingRowCb=null;
+let ONLINE=false, MYSEAT=0, roomSend=null;
+let onlinePlays={}; // seat -> card (host collects)
+let pendingBids=null, pendingBidIdx=0;
+
+function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&OnlineRoom.isAuto(s);}
+
+function makeNames(n){
+  if(!ONLINE)return['あなた',...Array.from({length:n-1},(_,i)=>`CPU ${i+1}`)];
+  const names=[];
+  for(let i=0;i<n;i++){
+    if(i===MYSEAT)names.push('あなた');
+    else if(OnlineRoom.isCpu(i))names.push(`CPU ${i+1}`);
+    else names.push(`P${i+1}`);
+  }
+  return names;
+}
 
 function initGame(numP,diff,online,mySeat){
   const deck=shuffle(Array.from({length:104},(_,i)=>i+1));
   const hands=Array.from({length:numP},(_,i)=>deck.slice(i*10,i*10+10).sort((a,b)=>a-b));
   const tableCards=deck.slice(numP*10,numP*10+4).sort((a,b)=>a-b);
   const myIdx=online?mySeat:0;
+  ONLINE=online; MYSEAT=mySeat;
   G={
     numP,diff,online,myIdx,
-    names:online?(mySeat===0?['あなた','相手']:['相手','あなた']):['あなた',...Array.from({length:numP-1},(_,i)=>`CPU ${i+1}`)],
+    names:makeNames(numP),
     hands,rows:tableCards.map(c=>[c]),
     penalties:Array(numP).fill(0),
     round:1,phase:'picking',myChoice:null,cpuChoices:[],
   };
-  opPlay=null;pendingRowCb=null;
+  onlinePlays={};pendingRowCb=null;pendingBids=null;pendingBidIdx=0;
   document.getElementById('setup').style.display='none';
   document.getElementById('game').style.display='flex';
   if(online){
-    const area=document.getElementById('opp-hand-area');area.style.display='block';
-    const opIdx=1-mySeat;
-    document.getElementById('opp-hand-label').textContent=`${G.names[opIdx]}の手札`;
+    document.getElementById('opp-hand-area').style.display='block';
+    document.getElementById('opp-hand-label').textContent='他プレイヤーの手札';
+    // Host auto-plays for CPU seats immediately
+    if(OnlineRoom.isHost())autoPlayCpus();
   }
   renderAll();
 }
@@ -269,11 +290,10 @@ function selectCard(c){
 function confirmChoice(){
   if(!G.myChoice||G.phase!=='picking')return;
   G.phase='waiting';updateBtn();
-  document.getElementById('status').textContent=G.online?'相手の選択を待っています…':'集計中…';
+  document.getElementById('status').textContent=G.online?'他プレイヤーの選択を待っています…':'集計中…';
 
   if(G.online){
-    OnlineCore.send({t:'play',card:G.myChoice});
-    if(opPlay!==null)startOnlineReveal();
+    roomSend({k:'play',card:G.myChoice});
   } else {
     G.cpuChoices=[];
     for(let i=1;i<G.numP;i++)G.cpuChoices.push(cpuChoose([...G.hands[i]],G.rows,G.diff));
@@ -285,25 +305,45 @@ function confirmChoice(){
   }
 }
 
-function handleOnlineMsg(msg){
-  if(msg.t==='play'){
-    opPlay=msg.card;
-    if(G.phase==='waiting')startOnlineReveal();
-  } else if(msg.t==='pick-row'){
-    if(pendingRowCb){const cb=pendingRowCb;pendingRowCb=null;cb(msg.row);}
+// Host auto-plays CPU/gone seats
+function autoPlayCpus(){
+  if(!ONLINE||!OnlineRoom.isHost())return;
+  for(let i=0;i<G.numP;i++){
+    if(isAutoSeat(i)&&G.hands[i].length>0&&!onlinePlays.hasOwnProperty(i)){
+      const card=cpuChoose([...G.hands[i]],G.rows,G.diff);
+      roomSend({k:'play',card,seat:i});
+    }
   }
 }
 
-function startOnlineReveal(){
-  const myCard=G.myChoice,opCard=opPlay;opPlay=null;
-  const bids=G.myIdx===0
-    ?[{player:0,card:myCard},{player:1,card:opCard}]
-    :[{player:0,card:opCard},{player:1,card:myCard}];
-  G.hands[0]=G.hands[0].filter(c=>c!==bids[0].card);
-  G.hands[1]=G.hands[1].filter(c=>c!==bids[1].card);
-  showReveal(bids);
-  bids.sort((a,b)=>a.card-b.card);
-  setTimeout(()=>processBidsSeq(bids,0,roundDone),500);
+function handleOnlineMsg(from,msg){
+  if(msg.k==='play'){
+    const seat=(typeof msg.seat==='number')?msg.seat:from;
+    onlinePlays[seat]=msg.card;
+    // Check if all players have played
+    const allIn=Object.keys(onlinePlays).length>=G.numP;
+    if(allIn){
+      // Host broadcasts the reveal
+      if(OnlineRoom.isHost()){
+        const bids=[];
+        for(let i=0;i<G.numP;i++)bids.push({player:i,card:onlinePlays[i]});
+        roomSend({k:'reveal',bids});
+      }
+    } else {
+      const ct=Object.keys(onlinePlays).length;
+      document.getElementById('status').textContent=`${ct}/${G.numP}人が選択済み…`;
+    }
+  } else if(msg.k==='reveal'){
+    onlinePlays={};
+    const bids=msg.bids;
+    for(const b of bids)G.hands[b.player]=G.hands[b.player].filter(c=>c!==b.card);
+    showReveal(bids);
+    const sorted=[...bids].sort((a,b)=>a.card-b.card);
+    setTimeout(()=>processBidsSeq(sorted,0,roundDone),500);
+  } else if(msg.k==='pick-row'){
+    const seat=(typeof msg.seat==='number')?msg.seat:from;
+    if(pendingRowCb){const cb=pendingRowCb;pendingRowCb=null;cb(msg.row,seat);}
+  }
 }
 
 function processBidsSeq(bids,idx,done){
@@ -311,18 +351,28 @@ function processBidsSeq(bids,idx,done){
   const b=bids[idx];
   const row=targetRow(b.card);
   const next=()=>setTimeout(()=>processBidsSeq(bids,idx+1,done),450);
-  const isHuman=G.online?(b.player===G.myIdx):(b.player===0);
+  const isMe=G.online?(b.player===G.myIdx):(b.player===0);
 
   if(row===-1){
-    if(isHuman){
+    if(isMe){
+      // This player is me — show row pick UI
       showRowPick(b.card,r=>{
-        if(G.online)OnlineCore.send({t:'pick-row',row:r});
+        if(G.online)roomSend({k:'pick-row',row:r,seat:b.player});
         takeRow(r,b.player);G.rows[r].push(b.card);renderBoard();next();
       });
+    } else if(G.online&&isAutoSeat(b.player)&&OnlineRoom.isHost()){
+      // Host auto-picks for CPU/gone seats
+      const r=cpuPickRow(G.rows);
+      setTimeout(()=>{
+        roomSend({k:'pick-row',row:r,seat:b.player});
+        takeRow(r,b.player);G.rows[r].push(b.card);renderBoard();next();
+      },300);
     } else if(G.online){
-      pendingRowCb=r=>{takeRow(r,b.player);G.rows[r].push(b.card);renderBoard();next();};
-      document.getElementById('status').textContent='相手が列を選んでいます…';
+      // Wait for remote player to pick
+      pendingRowCb=(r,seat)=>{takeRow(r,b.player);G.rows[r].push(b.card);renderBoard();next();};
+      document.getElementById('status').textContent=G.names[b.player]+'が列を選んでいます…';
     } else {
+      // Offline CPU
       const r=cpuPickRow(G.rows);
       setTimeout(()=>{takeRow(r,b.player);G.rows[r].push(b.card);renderBoard();next();},300);
     }
@@ -337,9 +387,11 @@ function processBidsSeq(bids,idx,done){
 
 function roundDone(){
   G.round++;G.myChoice=null;G.cpuChoices=[];G.phase='picking';
+  onlinePlays={};
   document.getElementById('reveal-area').style.display='none';
   if(G.round>TOTAL_ROUNDS||G.hands[G.myIdx].length===0){showGameOver();return;}
   renderAll();
+  if(ONLINE&&OnlineRoom.isHost())autoPlayCpus();
 }
 
 function showRowPick(card,cb){
@@ -404,17 +456,23 @@ function renderHand(){
   });
 }
 function renderOppHand(){
-  if(!G.online)return;
-  const opIdx=1-G.myIdx;
-  const hand=[...G.hands[opIdx]].sort((a,b)=>a-b);
+  if(!G.online){document.getElementById('opp-hand-area').style.display='none';return;}
   const area=document.getElementById('opp-hand-cards');area.innerHTML='';
-  const allOrig=[...Array(10).keys()].map(i=>i*10+opIdx*10+1); // not quite right but close
-  // Just show remaining cards (same structure as my hand display)
-  hand.forEach(c=>{
-    const d=document.createElement('div');d.className='opp-card';
-    d.innerHTML=`<div>${c}</div><div style="font-size:7px;color:var(--red)">${'🐂'.repeat(Math.min(bullHeads(c),7))}</div>`;
-    area.appendChild(d);
-  });
+  for(let i=0;i<G.numP;i++){
+    if(i===G.myIdx)continue;
+    const cnt=G.hands[i].length;
+    const label=document.createElement('div');
+    label.style.cssText='font-size:10px;color:'+PCOLS[i]+';font-weight:700;margin-right:6px;min-width:36px';
+    label.textContent=G.names[i];
+    area.appendChild(label);
+    for(let j=0;j<cnt;j++){
+      const d=document.createElement('div');d.className='opp-card';
+      d.innerHTML='<div style="font-size:14px;opacity:.4">?</div>';
+      area.appendChild(d);
+    }
+    // small gap between players
+    if(i<G.numP-1){const sp=document.createElement('div');sp.style.width='8px';area.appendChild(sp);}
+  }
 }
 function renderScores(){
   const el=document.getElementById('scores');el.innerHTML='';
@@ -473,21 +531,40 @@ document.getElementById('again-btn').addEventListener('click',()=>{
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=8"></script>
-<script src="../shared/online-core.js?v=8"></script>
+<script src="../shared/online-room.js?v=8"></script>
 <script>
-OnlineCore.init({
-  gameId:'nimmt',
-  statusSel:'#status',
-  hostMark:'\x00',guestMark:'\x00',
-  blockRelay:()=>true,pvpSel:null,hideSel:null,
-  afterStart:(seat)=>{
-    const b=document.getElementById('oc-badge');if(b)b.style.display='none';
-    document.getElementById('setup').style.display='none';
-    document.getElementById('opp-hand-area').style.display='block';
-    initGame(2,'normal',true,seat);
-  },
-  customMsg:handleOnlineMsg,
-});
+function startOnline(seat,n,send){
+  ONLINE=true;MYSEAT=seat;roomSend=send;
+  document.getElementById('setup').style.display='none';
+  const diff=document.getElementById('sel-diff').value||'normal';
+  initGame(n,diff,true,seat);
+}
+function getState(){
+  return {hands:G.hands,rows:G.rows,penalties:G.penalties,round:G.round,phase:G.phase,diff:G.diff,onlinePlays};
+}
+function applyState(o){
+  ONLINE=true;MYSEAT=o.seat;roomSend=o.send;
+  document.getElementById('setup').style.display='none';
+  const s=o.state;
+  const n=o.n;
+  G={numP:n,diff:s.diff||'normal',online:true,myIdx:o.seat,
+    names:makeNames(n),hands:s.hands,rows:s.rows,
+    penalties:s.penalties,round:s.round,phase:s.phase||'picking',
+    myChoice:null,cpuChoices:[]};
+  onlinePlays=s.onlinePlays||{};
+  pendingRowCb=null;pendingBids=null;pendingBidIdx=0;
+  document.getElementById('game').style.display='flex';
+  document.getElementById('opp-hand-area').style.display='block';
+  document.getElementById('opp-hand-label').textContent='他プレイヤーの手札';
+  renderAll();
+  if(OnlineRoom.isHost())autoPlayCpus();
+}
+OnlineRoom.init({gameId:'nimmt',minPlayers:2,maxPlayers:10,
+  note:'ニムト（6 nimmt!）をオンライン対戦。最大10人まで。',
+  onStart:(seat,n,send)=>startOnline(seat,n,send),
+  onMessage:(from,msg)=>handleOnlineMsg(from,msg),
+  onLeft:(seat)=>{if(OnlineRoom.isHost())autoPlayCpus();},
+  getState,applyState});
 </script>
 <script src="../shared/firebase-counter.js"></script>
 </body>

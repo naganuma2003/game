@@ -71,7 +71,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 .num-btn{padding:8px 4px;border-radius:6px;border:2px solid #2e2e44;background:#1e1e30;color:var(--txt);font:700 14px 'Segoe UI',sans-serif;cursor:pointer;transition:all .1s}
 .num-btn:hover{border-color:var(--gold);background:#252535}
 .num-btn.sel{border-color:var(--gold2);background:#302808;color:var(--gold2)}
-.num-btn.imp{opacity:.2}
+.num-btn.imp{opacity:.4;border-style:dashed}
 /* My cards */
 .my-area{width:100%}
 .my-lbl{font-size:11px;color:var(--dim);margin-bottom:7px;text-align:center}
@@ -391,16 +391,19 @@ function buildKnown(viewerIdx){
 function leftRev(cards,pos){for(let i=pos-1;i>=0;i--)if(cards[i].revealed)return cards[i];return null;}
 function rightRev(cards,pos){for(let i=pos+1;i<cards.length;i++)if(cards[i].revealed)return cards[i];return null;}
 
-function possVals(cards,pos,known){
-  const col=cards[pos].color;
+function possVals(cards,pos,known,hideColor){
+  const realCol=cards[pos].color;
+  const cols=hideColor?['B','W']:[realCol];
   const L=leftRev(cards,pos),R=rightRev(cards,pos);
-  const p=[];
-  for(let v=0;v<=11;v++){
-    if(L&&cardSort({value:v,color:col},L)<=0)continue;
-    if(R&&cardSort({value:v,color:col},R)>=0)continue;
-    if(!known[col+v])p.push(v);
+  const p=new Set();
+  for(const col of cols){
+    for(let v=0;v<=11;v++){
+      if(L&&cardSort({value:v,color:col},L)<=0)continue;
+      if(R&&cardSort({value:v,color:col},R)>=0)continue;
+      if(!known[col+v])p.add(v);
+    }
   }
-  return p;
+  return [...p].sort((a,b)=>a-b);
 }
 
 function cpuPickTarget(cpuIdx,known){
@@ -532,7 +535,8 @@ function renderNumPick(){
   if(G.phase!=='attack'||!G.target||!isMyTurn()){pick.style.display='none';return;}
   pick.style.display='block';
   const known=buildKnown(G.myIdx);
-  const poss=new Set(possVals(G.players[G.target.player].cards,G.target.pos,known));
+  const hideCol=ONLINE&&!G.players[G.target.player].cards[G.target.pos].revealed;
+  const poss=new Set(possVals(G.players[G.target.player].cards,G.target.pos,known,hideCol));
   document.querySelectorAll('.num-btn').forEach(btn=>{
     const v=+btn.dataset.v;
     btn.classList.toggle('imp',!poss.has(v));

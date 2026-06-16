@@ -172,6 +172,7 @@ function startMatch(){
   running=true;gameOver=false;oppOver=false;
   document.getElementById('over').classList.remove('show');
   B[0].goEl.classList.remove('show');B[1].goEl.classList.remove('show');
+  B[0].best=0;B[1].best=0;
   newGrid(me());render(me());
   if(!ONLINE){ // CPU対戦
     startCpu();

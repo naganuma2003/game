@@ -27,6 +27,11 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:28px;letter-spacing:.25em;
 .foot{display:flex;gap:10px;margin-top:14px}
 .foot button{background:transparent;border:1px solid var(--line);color:var(--txt);padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit}
 .foot button:hover{border-color:var(--gold)}
+.prog-wrap{width:min(94vw,430px);margin-bottom:10px}
+.prog-label{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-bottom:4px}
+.prog-label span.val{color:var(--gold);font-weight:700}
+.prog-bar{height:6px;background:#2A251C;border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .3s}
 
 @media(max-width:480px){
   h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
@@ -45,6 +50,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:28px;letter-spacing:.25em;
   <span>⏱ <span id="time" style="color:var(--gold);font-weight:700">0</span>秒</span>
   <span>🏆 ベスト <span id="best" style="color:var(--gold);font-weight:700">—</span></span>
 </div>
+<div class="prog-wrap"><div class="prog-label"><span>進捗</span><span class="val" id="prog-pct">0%</span></div><div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div></div>
 <div class="msg" id="msg"></div>
 <div id="bd"></div>
 <div class="pad" id="pad"></div>
@@ -69,7 +75,8 @@ function newGame(){makePuzzle(blanks);sel=-1;document.getElementById('msg').text
   render();}
 function select(i){if(given[i])return;sel=i;render();}
 function render(){for(let i=0;i<81;i++){const v=puzzle[i];const el=cells[i];el.textContent=v||'';el.classList.toggle('given',given[i]);el.classList.remove('sel','peer','same','bad');}
-if(sel>=0){const r=Math.floor(sel/9),c=sel%9,br=Math.floor(r/3),bc=Math.floor(c/3);const sv=puzzle[sel];for(let i=0;i<81;i++){const rr=Math.floor(i/9),cc=i%9;if(rr===r||cc===c||(Math.floor(rr/3)===br&&Math.floor(cc/3)===bc))cells[i].classList.add('peer');if(sv&&puzzle[i]===sv)cells[i].classList.add('same');}cells[sel].classList.add('sel');}}
+if(sel>=0){const r=Math.floor(sel/9),c=sel%9,br=Math.floor(r/3),bc=Math.floor(c/3);const sv=puzzle[sel];for(let i=0;i<81;i++){const rr=Math.floor(i/9),cc=i%9;if(rr===r||cc===c||(Math.floor(rr/3)===br&&Math.floor(cc/3)===bc))cells[i].classList.add('peer');if(sv&&puzzle[i]===sv)cells[i].classList.add('same');}cells[sel].classList.add('sel');}updateProgress();}
+function updateProgress(){let correct=0,total=0;for(let i=0;i<81;i++){if(!given[i]){total++;if(puzzle[i]&&puzzle[i]===solution[i])correct++;}}const pct=total?Math.round(correct/total*100):0;document.getElementById('prog-pct').textContent=pct+'%';document.getElementById('prog-fill').style.width=pct+'%';}
 function place(v){if(sel<0||given[sel]||solved)return;sHist.push({i:sel,prev:puzzle[sel]});puzzle[sel]=v;render();
   if(puzzle.every((x,i)=>x===solution[i])){
     solved=true;if(timer)clearInterval(timer);

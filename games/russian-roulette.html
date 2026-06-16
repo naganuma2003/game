@@ -42,6 +42,10 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.15em;
 .ch.fired-bang{background:var(--red);border-color:#aa1111}
 .ch.current{border-color:var(--red)}
 .bullet-info{font-size:11px;color:var(--sub);letter-spacing:.1em;text-align:center}
+.ai-eval{text-align:center;margin:2px 0;font-size:11px;color:var(--sub);letter-spacing:.06em;display:none}
+.ai-eval .ae-bar{display:inline-block;width:120px;height:6px;border-radius:3px;background:#1a1010;vertical-align:middle;margin:0 6px;overflow:hidden}
+.ai-eval .ae-fill{height:100%;border-radius:3px;transition:width .4s,background .4s}
+.ai-eval.show{display:block}
 .players{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;width:100%}
 .player-chip{background:var(--panel);border:1px solid #2a1818;border-radius:20px;padding:6px 14px;font-size:13px;transition:all .2s}
 .player-chip.active{border-color:var(--gold);color:var(--gold);font-weight:700;box-shadow:0 0 0 2px rgba(201,160,32,.2)}
@@ -211,6 +215,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.15em;
     </svg>
   </div>
   <div class="bullet-info" id="bullet-info"></div>
+  <div class="ai-eval" id="ai-eval">🤖 生存率 <span class="ae-bar"><span class="ae-fill" id="ae-fill"></span></span> <span id="ae-pct">—</span></div>
   <div class="chambers" id="chambers-ui"></div>
   <div class="result-msg" id="result-msg"></div>
   <div class="players" id="players-ui"></div>
@@ -370,7 +375,22 @@ function updateChambersUI() {
 }
 function updateBulletInfo() {
   document.getElementById('bullet-info').textContent='弾 '+numBullets+'発 ／ 6穴　残り '+(6-firedCount)+' 穴';
+  updateAiEval();
 }
+function updateAiEval() {
+  const el=document.getElementById('ai-eval');
+  if(onlineActiveCheck()){el.classList.remove('show');return;}
+  el.classList.add('show');
+  const remaining=6-firedCount;
+  const bulletsLeft=numBullets-bangCount;
+  const survival=remaining>0?Math.round(((remaining-bulletsLeft)/remaining)*100):0;
+  const clamped=Math.max(0,Math.min(100,survival));
+  const fill=document.getElementById('ae-fill');
+  fill.style.width=clamped+'%';
+  fill.style.background=clamped>=70?'var(--safe)':clamped>=40?'var(--gold)':'var(--red)';
+  document.getElementById('ae-pct').textContent=clamped+'%';
+}
+function onlineActiveCheck(){return typeof window._rrOnlineActive==='function'&&window._rrOnlineActive();}
 
 function buildPlayersUI() {
   const div=document.getElementById('players-ui'); div.innerHTML='';
@@ -633,7 +653,7 @@ document.getElementById('bomb-back').addEventListener('click',()=>{
 (function(){
   let onlineSend = null;
   let onlineSeat = -1;
-  let onlineActive = false;
+  let onlineActive = false; window._rrOnlineActive = () => onlineActive;
   let onlinePlayerCount = 0;
   // Gun mode online state
   let onlineBulletPositions = null; // array, host-determined

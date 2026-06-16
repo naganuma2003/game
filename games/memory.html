@@ -25,6 +25,12 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.2em;t
 .foot{margin-top:16px}
 .foot button{background:var(--gold);border:none;color:#15120E;font-weight:700;padding:9px 22px;border-radius:8px;cursor:pointer;font-size:14px;font-family:inherit}
 .hidden{display:none!important}
+#evalWrap{display:none;margin:10px 0 6px;width:min(94vw,440px)}
+#evalWrap .lbl{font-size:11px;color:var(--sub);margin-bottom:4px;display:flex;justify-content:space-between}
+#evalBar{height:18px;border-radius:9px;overflow:hidden;display:flex;background:#1a1a1a;border:1px solid var(--line)}
+#evalBar .seg{height:100%;transition:width .4s}
+#evalBar .seg.p1{background:var(--gold)}
+#evalBar .seg.p2{background:#3e87d6}
 
 @media(max-width:480px){
   h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
@@ -34,15 +40,16 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.2em;t
 </style></head><body>
 <a href="../index.html" style="position:fixed;top:10px;left:10px;z-index:99999;background:rgba(0,0,0,0.55);color:#fff;text-decoration:none;font:600 13px/1 'Segoe UI',sans-serif;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,0.25)">← 一覧に戻る</a>
 <h1>神経衰弱</h1><div class="sub">MEMORY</div>
-<div class="row" id="mode"><button data-m="solo" class="on">ひとり</button><button data-m="pvp">対戦</button></div>
+<div class="row" id="mode"><button data-m="solo" class="on">ひとり</button><button data-m="cpu">CPU対戦</button><button data-m="pvp">対戦</button></div>
 <div class="row" id="np" style="display:none"><button data-np="2" class="on">2人</button><button data-np="3">3人</button><button data-np="4">4人</button></div>
 <div class="row" id="size"><button data-n="12" class="on">12枚</button><button data-n="16">16枚</button><button data-n="20">20枚</button><button data-n="52">トランプ52枚</button></div>
 <div class="status" id="status"></div>
+<div id="evalWrap"><div class="lbl"><span>あなた: <b id="evP1">0</b></span><span>CPU: <b id="evP2">0</b></span></div><div id="evalBar"><div class="seg p1" style="width:50%"></div><div class="seg p2" style="width:50%"></div></div></div>
 <div id="bd"></div>
 <div class="foot"><button id="reset">配り直し</button></div>
 <script>
 const EMO=['🍎','🍌','🍇','🍓','🍑','🍊','🍉','🥝','🍒','🦁','🐰','🐼','🐸','🐧','🦊','🐶','⭐','🌙','🌸','🍀'];
-let N=12,deck,flipped,matched,busy,mode='solo',moves,turn,score,np=2;
+let N=12,deck,flipped,matched,busy,mode='solo',moves,turn,score,np=2,cpuMemory={};
 let ONLINE=false,MYSEAT=0,roomSend=null;
 const PCOL=['#e0473a','#3e87d6','#4ec05e','#e0c34a']; // P1赤 P2青 P3緑 P4黄
 const bd=document.getElementById('bd');
@@ -55,19 +62,39 @@ if(N===52){
   const pool=EMO.slice(0,N/2);pool.forEach((e,i)=>{deck.push({e,k:i},{e,k:i});});
 }
 for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
-flipped=[];matched=new Set();busy=false;moves=0;turn=mode==='pvp'?Math.floor(Math.random()*np):0;score=new Array(np).fill(0);
+flipped=[];matched=new Set();busy=false;moves=0;cpuMemory={};
+if(mode==='cpu'){np=2;turn=0;score=[0,0];}else{turn=mode==='pvp'?Math.floor(Math.random()*np):0;score=new Array(np).fill(0);}
+document.getElementById('evalWrap').style.display=mode==='cpu'?'block':'none';
 const cols=N<=16?4:N<=20?5:8;bd.style.gridTemplateColumns='repeat('+cols+',1fr)';
 bd.classList.toggle('trump',N===52);
 bd.innerHTML='';deck.forEach((c,i)=>{const el=document.createElement('div');el.className='card';const face=N===52?'<span class="'+(c.red?'red':'blk')+'">'+c.e+'</span>':c.e;el.innerHTML='<div class="back">?</div><div class="face">'+face+'</div>';el.addEventListener('click',()=>tap(i));bd.appendChild(el);});
 setStatus();}
-function setStatus(){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='めくった回数: <b>'+moves+'</b>　そろえた: <b>'+matched.size/2+'/'+(N/2)+'</b>';else{let sc=score.map((v,i)=>'<span style="color:'+PCOL[i]+';font-weight:700">P'+(i+1)+': '+v+'</span>').join(' / ');const who=ONLINE?(turn===MYSEAT?'★あなた(P'+(turn+1)+')':'相手(P'+(turn+1)+')'):'プレイヤー'+(turn+1);s.innerHTML='<b style="color:'+PCOL[turn]+'">'+who+'</b>の番　（'+sc+'）';}
+function updateEval(){if(mode!=='cpu')return;const total=N/2,p=score[0],c=score[1];document.getElementById('evP1').textContent=p;document.getElementById('evP2').textContent=c;const sum=p+c||1;document.querySelector('#evalBar .p1').style.width=(p/sum*100)+'%';document.querySelector('#evalBar .p2').style.width=(c/sum*100)+'%';}
+function setStatus(){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='めくった回数: <b>'+moves+'</b>　そろえた: <b>'+matched.size/2+'/'+(N/2)+'</b>';else if(mode==='cpu'){const who=turn===0?'あなた':'CPU';s.innerHTML='<b style="color:'+PCOL[turn]+'">'+who+'</b>の番　（あなた: '+score[0]+' / CPU: '+score[1]+'）';updateEval();}else{let sc=score.map((v,i)=>'<span style="color:'+PCOL[i]+';font-weight:700">P'+(i+1)+': '+v+'</span>').join(' / ');const who=ONLINE?(turn===MYSEAT?'★あなた(P'+(turn+1)+')':'相手(P'+(turn+1)+')'):'プレイヤー'+(turn+1);s.innerHTML='<b style="color:'+PCOL[turn]+'">'+who+'</b>の番　（'+sc+'）';}
   if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(turn===MYSEAT&&matched.size<N);}
 function cardEl(i){return bd.children[i];}
 function tap(i){if(busy||matched.has(i)||flipped.includes(i))return;
+  if(mode==='cpu'&&turn===1)return;
   if(ONLINE){if(turn!==MYSEAT)return;roomSend({k:'tap',i});return;}
   _tap(i);}
 function doAction(a){if(a.k==='tap')_tap(a.i);else if(a.k==='setup')applySetup(a);else if(a.k==='skip'){if(mode==='pvp')turn=(turn+1)%np;setStatus();autoKick();}}
-function _tap(i){if(busy||matched.has(i)||flipped.includes(i))return;cardEl(i).classList.add('flip');flipped.push(i);if(flipped.length===2){busy=true;moves++;const[a,b]=flipped;if(deck[a].k===deck[b].k){matched.add(a);matched.add(b);if(mode==='pvp')score[turn]++;setTimeout(()=>{cardEl(a).classList.add('done');cardEl(b).classList.add('done');flipped=[];busy=false;setStatus();checkEnd();autoKick();},420);}else{setTimeout(()=>{cardEl(a).classList.remove('flip');cardEl(b).classList.remove('flip');flipped=[];busy=false;if(mode==='pvp'){turn=(turn+1)%np;}setStatus();autoKick();},820);}}else{setStatus();autoKick();}}
+function _tap(i){if(busy||matched.has(i)||flipped.includes(i))return;cardEl(i).classList.add('flip');flipped.push(i);
+// CPU remembers every revealed card
+if(mode==='cpu')cpuMemory[i]=deck[i].k;
+if(flipped.length===2){busy=true;moves++;const[a,b]=flipped;if(deck[a].k===deck[b].k){matched.add(a);matched.add(b);if(mode==='pvp'||mode==='cpu')score[turn]++;setTimeout(()=>{cardEl(a).classList.add('done');cardEl(b).classList.add('done');flipped=[];busy=false;setStatus();checkEnd();if(mode==='cpu'&&turn===1&&matched.size<N)cpuTurn();autoKick();},420);}else{setTimeout(()=>{cardEl(a).classList.remove('flip');cardEl(b).classList.remove('flip');flipped=[];busy=false;if(mode==='pvp'||mode==='cpu'){turn=(turn+1)%np;}setStatus();if(mode==='cpu'&&turn===1)cpuTurn();autoKick();},820);}}else{setStatus();if(mode==='cpu'&&turn===1)cpuTurn();autoKick();}}
+function cpuTurn(){if(busy||matched.size>=N||turn!==1)return;
+const avail=[];for(let i=0;i<N;i++)if(!matched.has(i))avail.push(i);
+if(avail.length<2)return;
+// Find a known pair
+let pick1=-1,pick2=-1;
+for(let i=0;i<avail.length;i++){for(let j=i+1;j<avail.length;j++){
+  if(cpuMemory[avail[i]]!==undefined&&cpuMemory[avail[j]]!==undefined&&cpuMemory[avail[i]]===cpuMemory[avail[j]]){pick1=avail[i];pick2=avail[j];break;}
+}if(pick1>=0)break;}
+if(pick1<0){// pick randomly
+  const sh=[...avail];for(let i=sh.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[sh[i],sh[j]]=[sh[j],sh[i]];}
+  pick1=sh[0];pick2=sh[1];}
+setTimeout(()=>_tap(pick1),600);
+setTimeout(()=>_tap(pick2),1200);}
 // CPU席・退出席の代理（ホストが送信）: CPUは2枚めくる, 退出席はスキップ
 function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&((OnlineRoom.isCpu&&OnlineRoom.isCpu(s))||(OnlineRoom.isGone&&OnlineRoom.isGone(s)));}
 function cpuPickCard(){const avail=[];for(let i=0;i<N;i++)if(!matched.has(i)&&!flipped.includes(i))avail.push(i);return avail.length?avail[Math.floor(Math.random()*avail.length)]:-1;}
@@ -77,9 +104,10 @@ function autoKick(){if(!ONLINE||!OnlineRoom.isHost()||mode!=='pvp'||matched.size
   }else{
     setTimeout(()=>{if(ONLINE&&OnlineRoom.isHost()&&matched.size<N&&turn===a&&isAutoSeat(a)&&!busy)OnlineRoom.send({k:'skip'});},800);
   }}
-function checkEnd(){if(matched.size===N){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='クリア！ <b>'+moves+'回</b>でそろえました 🎉';else{const max=Math.max(...score);const winners=score.map((v,i)=>v===max?i+1:null).filter(x=>x);const r=winners.length>1?'引き分け（P'+winners.join(', P')+'）':'プレイヤー'+winners[0]+'の勝ち！';const sc=score.map((v,i)=>'P'+(i+1)+': '+v).join(' / ');s.innerHTML='<b>'+r+'</b>（'+sc+'）';try{if(ONLINE&&window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}}}
+function checkEnd(){if(matched.size===N){const s=document.getElementById('status');if(mode==='solo')s.innerHTML='クリア！ <b>'+moves+'回</b>でそろえました 🎉';else if(mode==='cpu'){const r=score[0]>score[1]?'あなたの勝ち！🎉':score[0]<score[1]?'CPUの勝ち…':'引き分け！';s.innerHTML='<b>'+r+'</b>（あなた: '+score[0]+' / CPU: '+score[1]+'）';updateEval();}else{const max=Math.max(...score);const winners=score.map((v,i)=>v===max?i+1:null).filter(x=>x);const r=winners.length>1?'引き分け（P'+winners.join(', P')+'）':'プレイヤー'+winners[0]+'の勝ち！';const sc=score.map((v,i)=>'P'+(i+1)+': '+v).join(' / ');s.innerHTML='<b>'+r+'</b>（'+sc+'）';try{if(ONLINE&&window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}}}}
 document.getElementById('reset').addEventListener('click',init);
 document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.getElementById('np').style.display=mode==='pvp'?'flex':'none';init();});
+
 document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 document.getElementById('size').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||ONLINE)return;N=+b.dataset.n;document.querySelectorAll('#size button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 init();

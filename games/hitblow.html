@@ -49,6 +49,13 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:24px;letter-spacing:.12em;
 .rule b{color:var(--txt)}
 .h-row .h-pl{font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;border:1px solid var(--line)}
 .hidden{display:none!important}
+.ai-eval{width:min(94vw,380px);margin:8px 0 2px;display:none;flex-direction:column;gap:5px}
+.ai-eval.show{display:flex}
+.ai-eval .ev-lbl{font-size:11px;color:var(--sub);display:flex;align-items:center;gap:6px}
+.ai-eval .ev-pl{font-weight:700;min-width:28px}
+.ai-eval .ev-bar-bg{flex:1;height:10px;background:var(--panel);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.ai-eval .ev-bar{height:100%;border-radius:4px;transition:width .4s ease}
+.ai-eval .ev-pct{font-size:10px;color:var(--sub);min-width:32px;text-align:right}
 
 @media(max-width:480px){
   h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
@@ -88,6 +95,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:24px;letter-spacing:.12em;
 <div class="disp" id="disp"></div>
 <div class="pad num" id="pad"></div>
 <div class="msg" id="msg"></div>
+<div class="ai-eval" id="ai-eval"></div>
 <div class="history" id="history"></div>
 <div class="foot"><button id="new">この設定で開始</button></div>
 <div class="rule" id="rule"></div>
@@ -139,7 +147,7 @@ function init(){
     secret=genSecret();
     curPlayer=(pmode==='race')?Math.floor(Math.random()*np):0;
   }
-  buildPad();renderDisp();renderRule();updatePad();updateTurnMsg();
+  buildPad();renderDisp();renderRule();updatePad();updateTurnMsg();renderEval();
 }
 function turnLabel(){return ONLINE?(curPlayer===MYSEAT?'★あなた(P'+(curPlayer+1)+')':'相手(P'+(curPlayer+1)+')'):'プレイヤー'+(curPlayer+1);}
 // いま自分が操作してよいか（パッドの有効/無効・ターンバッジ用）
@@ -231,12 +239,12 @@ function applySetSecret(seat,s){
 }
 function startDuelPlay(){
   tries=0;mHist=[];hist.innerHTML='';guess=[];
-  buildPad();renderDisp();updatePad();updateTurnMsg();autoKick();
+  buildPad();renderDisp();updatePad();updateTurnMsg();renderEval();autoKick();
 }
 function applyGuessRace(player,g){
   const{hit,blow}=evaluate(g,secret);tries++;
   mHist.push({player,g:g.slice(),hit,blow});
-  addHistoryMulti(player,g,hit,blow);
+  addHistoryMulti(player,g,hit,blow);renderEval();
   if(hit===N){finishMulti(player);return;}
   curPlayer=(curPlayer+1)%np;guess=[];renderDisp();updateTurnMsg();updatePad();autoKick();}
 function applyGuessDuel(attacker,g){
@@ -244,7 +252,7 @@ function applyGuessDuel(attacker,g){
   if(!secrets[target]){return;}
   const{hit,blow}=evaluate(g,secrets[target]);tries++;
   mHist.push({player:attacker,g:g.slice(),hit,blow});
-  addHistoryMulti(attacker,g,hit,blow);
+  addHistoryMulti(attacker,g,hit,blow);renderEval();
   if(hit===N){finishDuel(attacker);return;}
   curPlayer=1-attacker;guess=[];renderDisp();updateTurnMsg();updatePad();autoKick();}
 function applySkip(){if(over)return;curPlayer=(curPlayer+1)%effNp();guess=[];renderDisp();updateTurnMsg();updatePad();autoKick();}
@@ -356,6 +364,44 @@ document.getElementById('len').addEventListener('click',e=>{const b=e.target.clo
 document.getElementById('dup').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!canEditSetup())return;DUP=b.dataset.d==='1';
   document.querySelectorAll('#dup button').forEach(x=>x.classList.remove('on'));b.classList.add('on');if(!ONLINE)init();});
 init();
+
+// AI Evaluation: estimate each player's progress (CPU mode only)
+function hasCpu(){return ONLINE&&window.OnlineRoom&&OnlineRoom.isCpu&&Array.from({length:effNp()},(_,i)=>i).some(s=>OnlineRoom.isCpu(s));}
+function calcEval(player){
+  // Gather this player's history
+  const ph=mHist.filter(h=>h.player===player);
+  if(!ph.length)return 0;
+  const last=ph[ph.length-1];
+  // Base score: hits are worth much more than blows
+  const hitScore=last.hit/N;        // 0..1
+  const blowScore=last.blow/(N*2);  // 0..0.5
+  // Trend bonus: improvement over attempts
+  let trend=0;
+  if(ph.length>=2){const prev=ph[ph.length-2];trend=((last.hit-prev.hit)*0.15)+((last.blow-prev.blow)*0.05);}
+  // Time pressure: how many guesses used
+  const used=ph.length;
+  const remaining=(MAX-used)/MAX; // 1=fresh, 0=last guess
+  // Combine: progress (70%) + remaining time advantage (30%)
+  const raw=(hitScore+blowScore+trend)*0.7 + remaining*0.3;
+  return Math.max(0,Math.min(1,raw));
+}
+function renderEval(){
+  const el=document.getElementById('ai-eval');
+  if(!hasCpu()||phase==='set'||over){el.classList.remove('show');return;}
+  el.classList.add('show');
+  const np2=effNp();
+  let html='';
+  for(let p=0;p<np2;p++){
+    const v=calcEval(p);
+    const pct=Math.round(v*100);
+    const col=PCOL[p];
+    const lbl=(ONLINE&&p===MYSEAT)?'あなた':'P'+(p+1);
+    html+=`<div class="ev-lbl"><span class="ev-pl" style="color:${col}">${lbl}</span>`+
+      `<div class="ev-bar-bg"><div class="ev-bar" style="width:${pct}%;background:${col}"></div></div>`+
+      `<span class="ev-pct">${pct}%</span></div>`;
+  }
+  el.innerHTML=html;
+}
 
 function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
   document.getElementById('nprow').classList.add('hidden'); // 人数は部屋で確定

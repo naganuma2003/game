@@ -68,6 +68,15 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 .score-chip{padding:6px 12px;border-radius:8px;font-size:12px;background:var(--surf);display:flex;gap:6px;align-items:center}
 .sc-val{font-size:15px;font-weight:800}
 
+/* AI Eval */
+.eval-area{width:100%;max-width:420px;background:var(--surf);border-radius:10px;padding:10px 14px;display:none;flex-direction:column;gap:6px}
+.eval-title{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+.eval-row{display:flex;align-items:center;gap:8px}
+.eval-name{font-size:11px;width:52px;text-align:right;flex-shrink:0;font-weight:600}
+.eval-track{flex:1;height:14px;background:rgba(255,255,255,.06);border-radius:4px;position:relative;overflow:hidden}
+.eval-bar{height:100%;border-radius:4px;transition:width .4s ease;min-width:2px}
+.eval-val{font-size:11px;width:36px;font-weight:700;text-align:right;flex-shrink:0}
+
 /* Gameover */
 #gameover{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.82);align-items:center;justify-content:center;padding:16px}
 .go-card{background:var(--surf);border-radius:16px;padding:24px 20px;max-width:360px;width:100%;text-align:center}
@@ -148,6 +157,10 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 
   <div class="reveal-area" id="reveal-area"></div>
   <div class="scores" id="scores"></div>
+  <div class="eval-area" id="eval-area">
+    <div class="eval-title">AI 形勢判断</div>
+    <div id="eval-bars"></div>
+  </div>
 </div>
 
 <!-- GAMEOVER -->
@@ -337,6 +350,23 @@ function renderScores(){
     const c=document.createElement('div');c.className='score-chip';
     c.innerHTML=`<span style="color:${PCOLS[i]};font-weight:700">${G.names[i]}</span><span class="sc-val">${G.scores[i]>0?'+':''}${G.scores[i]}</span>`;
     el.appendChild(c);
+  }
+  renderEval();
+}
+
+function renderEval(){
+  const area=document.getElementById('eval-area'),bars=document.getElementById('eval-bars');
+  if(G.online){area.style.display='none';return;}
+  area.style.display='flex';bars.innerHTML='';
+  const mn=Math.min(...G.scores), mx=Math.max(...G.scores);
+  const range=Math.max(1,mx-mn);
+  for(let i=0;i<G.numP;i++){
+    const pct=((G.scores[i]-mn)/range*100);
+    const col=PCOLS[i];
+    const v=G.scores[i];
+    const row=document.createElement('div');row.className='eval-row';
+    row.innerHTML=`<span class="eval-name" style="color:${col}">${G.names[i]}</span><div class="eval-track"><div class="eval-bar" style="width:${pct}%;background:${col};opacity:.7"></div></div><span class="eval-val" style="color:${v>=0?'var(--grn)':'var(--red)'}">${v>0?'+':''}${v}</span>`;
+    bars.appendChild(row);
   }
 }
 

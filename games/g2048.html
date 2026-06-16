@@ -20,6 +20,14 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:30px;letter-spacing:.1em;m
 .tile.pop{animation:pop .14s ease}
 @keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
 .hint{font-size:12px;color:var(--sub);margin-top:16px;text-align:center;line-height:1.7}
+#eval{width:min(92vw,420px);margin-top:14px;background:var(--board);border-radius:10px;padding:12px 14px}
+#eval .label{font-size:10px;color:var(--sub);letter-spacing:.15em;margin-bottom:8px}
+.gauge-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.gauge-row:last-child{margin-bottom:0}
+.gauge-row .gl{font-size:10px;color:var(--sub);width:62px;text-align:right;flex-shrink:0}
+.gauge-bar{flex:1;height:8px;background:var(--cell);border-radius:4px;overflow:hidden}
+.gauge-fill{height:100%;border-radius:4px;transition:width .25s ease}
+.gauge-row .gv{font-size:11px;font-weight:700;width:32px;text-align:right;flex-shrink:0}
 .over{position:absolute;inset:0;background:rgba(20,17,14,.82);border-radius:12px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
 .over.show{display:flex}
 .over .t{font-size:30px;font-weight:800;font-family:"Hiragino Mincho ProN",serif;letter-spacing:.1em}
@@ -48,6 +56,12 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:30px;letter-spacing:.1em;m
   <div class="over" id="over"><div class="t" id="ovt">GAME OVER</div><button id="again">もう一度</button></div>
 </div>
 <div class="hint">スワイプ（スマホ）／矢印キー（PC）で動かす<br>同じ数字がぶつかると合体します</div>
+<div id="eval">
+  <div class="label">AI EVALUATION</div>
+  <div class="gauge-row"><span class="gl">Merges</span><div class="gauge-bar"><div class="gauge-fill" id="gMerge" style="width:0;background:#D45F38"></div></div><span class="gv" id="vMerge">0</span></div>
+  <div class="gauge-row"><span class="gl">Openness</span><div class="gauge-bar"><div class="gauge-fill" id="gOpen" style="width:0;background:#C9A227"></div></div><span class="gv" id="vOpen">0</span></div>
+  <div class="gauge-row"><span class="gl">Progress</span><div class="gauge-bar"><div class="gauge-fill" id="gProg" style="width:0;background:#3ABF7A"></div></div><span class="gv" id="vProg">0%</span></div>
+</div>
 <script>
 const N=4;let board,score,best=+(localStorage.getItem('p2048best')||0),won=false,over=false,hist=[];
 const COLORS={2:'#3A3225,#EDE6D6',4:'#4A3E2A,#EDE6D6',8:'#B07A3A,#fff',16:'#C9762A,#fff',32:'#D45F38,#fff',64:'#E04A2E,#fff',128:'#C9A227,#fff',256:'#D4A91E,#fff',512:'#E0B81A,#fff',1024:'#E6C418,#fff',2048:'#F0CE10,#15120E'};
@@ -58,7 +72,7 @@ document.getElementById('best').textContent=best;
 function init(){board=[];for(let r=0;r<N;r++)board.push([0,0,0,0]);score=0;won=false;over=false;hist=[];document.getElementById('over').classList.remove('show');addRandom();addRandom();render(true);updateScore();}
 function addRandom(){const e=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!board[r][c])e.push([r,c]);if(!e.length)return;const[r,c]=e[Math.floor(Math.random()*e.length)];board[r][c]=Math.random()<.9?2:4;}
 function cellSize(){const w=tilesEl.clientWidth;return (w-30)/4;}
-function render(fresh){tilesEl.innerHTML='';const s=cellSize();for(let r=0;r<N;r++)for(let c=0;c<N;c++){const v=board[r][c];if(!v)continue;const t=document.createElement('div');t.className='tile'+(fresh?' pop':'');const col=(COLORS[v]||'#F0CE10,#15120E').split(',');t.style.background=col[0];t.style.color=col[1];t.style.width=s+'px';t.style.height=s+'px';t.style.left=(c*(s+10))+'px';t.style.top=(r*(s+10))+'px';t.style.fontSize=(v<100?s*.42:v<1000?s*.34:s*.27)+'px';t.textContent=v;tilesEl.appendChild(t);}}
+function render(fresh){tilesEl.innerHTML='';const s=cellSize();for(let r=0;r<N;r++)for(let c=0;c<N;c++){const v=board[r][c];if(!v)continue;const t=document.createElement('div');t.className='tile'+(fresh?' pop':'');const col=(COLORS[v]||'#F0CE10,#15120E').split(',');t.style.background=col[0];t.style.color=col[1];t.style.width=s+'px';t.style.height=s+'px';t.style.left=(c*(s+10))+'px';t.style.top=(r*(s+10))+'px';t.style.fontSize=(v<100?s*.42:v<1000?s*.34:s*.27)+'px';t.textContent=v;tilesEl.appendChild(t);}if(typeof updateEval==='function')updateEval();}
 function updateScore(){document.getElementById('score').textContent=score;if(score>best){best=score;localStorage.setItem('p2048best',best);document.getElementById('best').textContent=best;}}
 function slide(row){let a=row.filter(x=>x);for(let i=0;i<a.length-1;i++){if(a[i]===a[i+1]){a[i]*=2;score+=a[i];if(a[i]===2048)won=true;a.splice(i+1,1);}}while(a.length<N)a.push(0);return a;}
 function rotate(b){const n=[];for(let c=0;c<N;c++){n.push([]);for(let r=N-1;r>=0;r--)n[c].push(b[r][c]);}return n;}
@@ -72,6 +86,25 @@ w.addEventListener('touchend',e=>{if(sx==null)return;const dx=e.changedTouches[0
 document.getElementById('newbtn').addEventListener('click',init);
 document.getElementById('again').addEventListener('click',init);
 document.getElementById('undobtn').addEventListener('click',()=>{if(!hist.length)return;const p=hist.pop();board=p.board;score=p.score;won=p.won;over=false;document.getElementById('over').classList.remove('show');render();updateScore();});
+function updateEval(){
+  let merges=0,empty=0,maxT=0;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const v=board[r][c];
+    if(!v){empty++;continue;}
+    if(v>maxT)maxT=v;
+    if(c<N-1&&v===board[r][c+1])merges++;
+    if(r<N-1&&v===board[r+1][c])merges++;
+  }
+  const mPct=Math.min(merges/6,1)*100;
+  const oPct=(empty/15)*100;
+  const pPct=Math.min(Math.log2(maxT||1)/11,1)*100;
+  document.getElementById('gMerge').style.width=mPct+'%';
+  document.getElementById('vMerge').textContent=merges;
+  document.getElementById('gOpen').style.width=oPct+'%';
+  document.getElementById('vOpen').textContent=empty;
+  document.getElementById('gProg').style.width=pPct+'%';
+  document.getElementById('vProg').textContent=Math.round(pPct)+'%';
+}
 window.addEventListener('resize',()=>render());
 init();
 </script><script src="../shared/firebase-counter.js"></script></body></html>

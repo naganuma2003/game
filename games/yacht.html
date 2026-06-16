@@ -35,6 +35,14 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;
 .srow.total{background:rgba(201,162,39,.1);font-weight:700}
 .srow.total .pt{color:var(--gold);font-size:16px}
 .bonus{font-size:11px;color:var(--sub)}
+.ai-eval{width:min(94vw,400px);margin-top:10px;padding:10px 13px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.ai-eval .ae-title{font-size:10px;color:var(--sub);letter-spacing:.1em;margin-bottom:6px}
+.ai-eval .ae-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px}
+.ai-eval .ae-row:last-child{margin-bottom:0}
+.ai-eval .ae-lbl{width:60px;text-align:right;font-weight:700;flex-shrink:0}
+.ai-eval .ae-bar-bg{flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden}
+.ai-eval .ae-bar{height:100%;border-radius:5px;transition:width .4s}
+.ai-eval .ae-val{width:36px;font-variant-numeric:tabular-nums;color:var(--sub);font-size:11px}
 .over{position:fixed;inset:0;background:rgba(10,8,5,.85);display:none;align-items:center;justify-content:center;z-index:30}
 .over.show{display:flex}
 .over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:26px 38px;text-align:center}
@@ -67,6 +75,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:25px;letter-spacing:.18em;
 <div class="rollbar"><button id="roll">サイコロを振る</button><span class="left" id="left">残り3回</span></div>
 <div class="hint">振った後、残したいサイコロをタップで「キープ」。最大3回振って、下の表の空き枠をタップで記入。</div>
 <div class="sheet" id="sheet"></div>
+<div class="ai-eval" id="ai-eval" style="display:none"></div>
 <div class="over" id="over"><div class="c"><div class="t">ゲーム終了！</div><div class="s" id="ov-s"></div><button id="again">もう一度</button></div></div>
 <script>
 const PIPS={1:[[50,50]],2:[[28,28],[72,72]],3:[[26,26],[50,50],[74,74]],4:[[28,28],[72,28],[28,72],[72,72]],5:[[28,28],[72,28],[50,50],[28,72],[72,72]],6:[[28,26],[72,26],[28,50],[72,50],[28,74],[72,74]]};
@@ -138,7 +147,7 @@ function init(){dice=[1,1,1,1,1];keep=[false,false,false,false,false];rolls=0;
   allScores=Array.from({length:np},()=>({}));turn=0;curPlayer=ONLINE?0:Math.floor(Math.random()*np);over=false;cpuBusy=false;
   document.getElementById('over').classList.remove('show');
   document.getElementById('curp').style.display=np>1?'block':'none';
-  updateCurP();renderDice();renderSheet();updateRollBtn();scheduleCpuTurn();}
+  updateCurP();renderDice();renderSheet();updateRollBtn();renderAiEval();scheduleCpuTurn();}
 function scores(){return allScores[curPlayer];}
 function updateCurP(){
   if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(curPlayer===MYSEAT&&!over);
@@ -333,6 +342,23 @@ function cpuRecordStrong(open){
   _record(best.id);
 }
 
+function hasCpu(){return !ONLINE&&np>=2&&seatCpu.slice(0,np).some(v=>v>0);}
+function renderAiEval(){
+  const el=document.getElementById('ai-eval');
+  if(!hasCpu()){el.style.display='none';return;}
+  el.style.display='block';
+  // max possible ~300 for scaling
+  const totals=allScores.map((_,p)=>grandTotal(p));
+  const mx=Math.max(300,...totals);
+  let h='<div class="ae-title">AI 評価</div>';
+  for(let i=0;i<np;i++){
+    const t=totals[i];const pct=Math.round(t/mx*100);
+    const col=PCOL[i];
+    const lbl=isCpuSeat(i)?CPU_NAMES[seatCpu[i]]:'あなた';
+    h+=`<div class="ae-row"><span class="ae-lbl" style="color:${col}">P${i+1}</span><div class="ae-bar-bg"><div class="ae-bar" style="width:${pct}%;background:${col}"></div></div><span class="ae-val">${t}</span></div>`;
+  }
+  el.innerHTML=h;
+}
 function _record(id){const c=CATS.find(x=>x.id===id);if(!c||scores()[c.id]!==undefined||rolls===0||over)return;
   scores()[c.id]=c.fn(dice);
   keep=[false,false,false,false,false];rolls=0;
@@ -344,7 +370,7 @@ function _record(id){const c=CATS.find(x=>x.id===id);if(!c||scores()[c.id]!==und
     turn++;
     if(turn>=13){finish();return;}
   }
-  updateCurP();renderDice();renderSheet();updateRollBtn();
+  updateCurP();renderDice();renderSheet();updateRollBtn();renderAiEval();
   if(ONLINE)autoKick();
   else scheduleCpuTurn();}
 function finish(){over=true;updateRollBtn();

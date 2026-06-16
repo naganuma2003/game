@@ -42,6 +42,12 @@ canvas.bd{background:#0E0C09;border:2px solid var(--line);border-radius:5px;disp
 .over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:24px 34px;text-align:center}
 .over .t{font-size:24px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:14px}
 .over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.eval-bar{display:none;flex-direction:column;align-items:center;gap:4px;min-width:36px;align-self:center}
+.eval-bar.show{display:flex}
+.eval-bar .el{font-size:8px;color:var(--sub);letter-spacing:.05em;text-align:center;white-space:nowrap}
+.eval-bar .track{width:10px;height:180px;background:#0E0C09;border:1px solid var(--line);border-radius:5px;position:relative;overflow:hidden}
+.eval-bar .ind{position:absolute;left:0;right:0;height:6px;background:var(--gold);border-radius:3px;transition:top .3s;top:50%}
+.eval-bar .pct{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
 
 @media(max-width:480px){
   h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
@@ -72,6 +78,14 @@ canvas.bd{background:#0E0C09;border:2px solid var(--line);border-radius:5px;disp
       <button data-a="left">◀</button><button data-a="soft">▼</button><button data-a="right">▶</button>
       <button data-a="drop" style="grid-column:1/4">⤓ 落下</button>
     </div>
+  </div>
+
+  <!-- Eval Bar (CPU mode only) -->
+  <div class="eval-bar" id="evalBar">
+    <div class="el">AI評価</div>
+    <div class="pct" id="evalPct" style="color:var(--p1)">50%</div>
+    <div class="track"><div class="ind" id="evalInd"></div></div>
+    <div class="el" id="evalDetail">―</div>
   </div>
 
   <!-- Player 2 -->
@@ -204,6 +218,7 @@ function lock(p){
   }
   spawn(p);
   updateStats(p);draw(p);
+  if(!ONLINE)evalAdvantage();
   if(ONLINE)sendBoard(true);
   if(p.dead){if(ONLINE){roomSend&&roomSend({k:'dead'});endOnline(false);}else endGame(p);return;}
 }
@@ -264,6 +279,27 @@ function stepCPU(p){
   p.plan=null;hard(p); // 位置確定 → 落下
 }
 
+/* ===== AI Evaluation Bar ===== */
+function boardHeight(p){for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(p.grid[y][x])return ROWS-y;return 0;}
+function evalAdvantage(){
+  if(ONLINE)return;
+  const a=P[0],b=P[1];
+  const hA=boardHeight(a),hB=boardHeight(b);
+  // score components: lines sent, board height (lower=better), lines cleared
+  const sA=(a.attack*3)+(a.lines*1)+((20-hA)*0.5);
+  const sB=(b.attack*3)+(b.lines*1)+((20-hB)*0.5);
+  const total=sA+sB||1;
+  const pct=Math.round(sA/total*100);
+  const clamped=Math.max(5,Math.min(95,pct));
+  document.getElementById('evalPct').textContent=clamped+'%';
+  document.getElementById('evalPct').style.color=clamped>=50?'var(--p1)':'var(--p2)';
+  // indicator: 0%=bottom(P2 winning), 100%=top(P1 winning). top offset = 100-clamped
+  document.getElementById('evalInd').style.top=(100-clamped)+'%';
+  const diff=sA-sB;
+  const lbl=diff>3?'P1優勢':diff<-3?'CPU優勢':'互角';
+  document.getElementById('evalDetail').textContent=lbl;
+}
+
 function draw(p){
   const cx=p.cv.getContext('2d');cx.clearRect(0,0,p.cv.width,p.cv.height);
   cx.strokeStyle='#1c1812';
@@ -292,6 +328,7 @@ function startMatch(){
   P=[makePlayer(0),makePlayer(1)];
   if(ONLINE){
     // 自分の盤面だけ初期化。相手はスナップショットで描画
+    document.getElementById('evalBar').classList.remove('show');
     const me=P[MYSEAT];me.next=bagNext(me);spawn(me);updateStats(me);updateGauge(me);draw(me);
     draw(P[1-MYSEAT]);
   }else{
@@ -299,7 +336,9 @@ function startMatch(){
     document.getElementById('t0').textContent='あなた';
     document.getElementById('t1').textContent='CPU('+(['','弱','普通','強'][cpuLevel])+')';
     document.getElementById('pads1').style.display='none';
+    document.getElementById('evalBar').classList.add('show');
     for(const p of P){p.next=bagNext(p);spawn(p);updateStats(p);updateGauge(p);draw(p);}
+    evalAdvantage();
   }
   running=true;paused=false;gameOver=false;lastT=performance.now();
   document.getElementById('over').classList.remove('show');
@@ -355,7 +394,7 @@ function loop(t){raf=requestAnimationFrame(loop);if(!running||paused||gameOver)r
   for(const p of P){if(p.dead)continue;
     if(ONLINE&&p.idx!==MYSEAT)continue; // 相手盤面はスナップショットで描画するだけ
     // CPUの思考ステップ
-    if(isCPU(p)){p.aiAcc+=dt;if(p.aiAcc>=aiInterval()){p.aiAcc=0;stepCPU(p);}}
+    if(isCPU(p)){p.aiAcc+=dt;if(p.aiAcc>=aiInterval()){p.aiAcc=0;stepCPU(p);evalAdvantage();}}
     const speed=Math.max(120,700-(p.level-1)*55);
     p.dropT+=dt;if(p.dropT>speed){p.dropT=0;soft(p);if(ONLINE)sendBoard(false);}
   }

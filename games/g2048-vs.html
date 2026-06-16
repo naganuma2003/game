@@ -41,6 +41,13 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:22px;letter-spacing:.18em;
 .over .t{font-size:24px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:8px}
 .over .s{font-size:14px;color:var(--txt);margin-bottom:16px;line-height:1.8}
 .over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
+.eval{display:none;width:90%;max-width:340px;margin-top:6px}
+.eval.show{display:block}
+.eval .lbl{font-size:9px;color:var(--sub);letter-spacing:.1em;text-align:center;margin-bottom:3px}
+.eval .bar{height:22px;border-radius:4px;overflow:hidden;display:flex;background:var(--panel);border:1px solid var(--line)}
+.eval .bar .seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;transition:width .3s}
+.eval .seg.s0{background:var(--you);color:#fff}
+.eval .seg.s1{background:var(--opp);color:#fff}
 
 @media(max-width:480px){
   h1{font-size:20px;letter-spacing:.2em;text-indent:.2em}
@@ -73,6 +80,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:22px;letter-spacing:.18em;
 </div>
 
 <div class="center">
+  <div class="eval" id="eval"><div class="lbl">AI EVALUATION</div><div class="bar"><div class="seg s0" id="ev0" style="width:50%">0</div><div class="seg s1" id="ev1" style="width:50%">0</div></div></div>
   <div class="msg" id="msg">モードを選んで「スタート」。オンラインで相手と対戦できます。</div>
   <div class="foot"><button id="start">スタート</button><button id="retry" class="alt" disabled>リトライ</button></div>
   <div class="hint">スワイプ（スマホ）／矢印キー（PC）で操作。①は時間内に何度でもやり直して最高点を狙う。②は1ゲームのスコアで勝負。</div>
@@ -153,9 +161,8 @@ function startMatch(){
   document.getElementById('over').classList.remove('show');
   B[0].goEl.classList.remove('show');B[1].goEl.classList.remove('show');
   newGrid(me());render(me());
-  if(!ONLINE){ // 練習(相手なし)
-    B[1].grid=[];B[1].score=0;B[1].best=0;B[1].over=false;render(B[1]);
-    document.getElementById('t1').textContent='（オンラインで対戦）';
+  if(!ONLINE){ // CPU対戦
+    startCpu();
   }
   document.getElementById('retry').disabled=(MODE!=='time');
   document.getElementById('start').disabled=true;
@@ -167,12 +174,13 @@ function retry(){ // ①のみ: 盤面リセット(bestは保持), 時間は継�
   if(MODE!=='time'||!running)return;
   const b=me();b.goEl.classList.remove('show');
   newGrid(b);render(b);
+  if(!ONLINE){B[1].goEl.classList.remove('show');B[1].over=false;newGrid(B[1]);render(B[1]);}
   if(ONLINE)sendState(false);
 }
 
 function finishMatch(){
   if(gameOver)return;gameOver=true;running=false;
-  if(timerId)clearInterval(timerId);
+  stopCpu();if(timerId)clearInterval(timerId);
   const myC=compScore(me());
   let oppC=null;
   if(ONLINE)oppC=MODE==='time'?B[1-MYSEAT].best:B[1-MYSEAT].score;
@@ -183,7 +191,9 @@ function finishMatch(){
     ovs.innerHTML='あなた: <b>'+myC+'</b><br>あいて: <b>'+oppC+'</b>';
     if(MYSEAT===0)roomSend&&roomSend({k:'finish'}); // 念のため終了通知
   }else{
-    ovt.textContent='終了';ovs.innerHTML='スコア: <b>'+myC+'</b>';
+    const cpuC=compScore(B[1]);
+    let r;if(myC>cpuC)r='あなたの勝ち！🎉';else if(myC<cpuC)r='CPUの勝ち';else r='引き分け';
+    ovt.textContent=r;ovs.innerHTML='あなた: <b>'+myC+'</b><br>CPU: <b>'+cpuC+'</b>';
   }
   document.getElementById('over').classList.add('show');
   try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
@@ -226,7 +236,7 @@ function onNet(from,msg){
   else if(msg.k==='finish'){if(!gameOver)finishMatch();}
 }
 function startOnline(seat,n){
-  ONLINE=true;MYSEAT=seat;
+  ONLINE=true;MYSEAT=seat;stopCpu();document.getElementById('eval').classList.remove('show');
   document.getElementById('t'+MYSEAT).textContent='あなた';
   document.getElementById('t'+(1-MYSEAT)).textContent='あいて';
   // モード選択はホストのみ
@@ -250,6 +260,51 @@ document.getElementById('again').addEventListener('click',()=>{
   document.getElementById('timer').textContent=fmt(MODEDUR[MODE]);
   if(ONLINE&&MYSEAT===0){roomSend&&roomSend({k:'start',mode:MODE});startMatch();}
 });
+/* ===== CPU opponent & eval bar ===== */
+let cpuTimer=null;
+function cpuMove(){
+  const b=B[1];if(b.over||!running||gameOver)return;
+  // simple greedy: try all dirs, pick one that gains most
+  let bestDir=-1,bestGain=-1;
+  for(let d=0;d<4;d++){
+    let g=b.grid.map(r=>r.slice());for(let i=0;i<d;i++)g=rotate(g);
+    let gain=0,moved=false;
+    for(let r=0;r<N;r++){
+      let a=g[r].filter(x=>x);
+      for(let i=0;i<a.length-1;i++){if(a[i]===a[i+1]){gain+=a[i]*2;a[i]*=2;a.splice(i+1,1);}}
+      while(a.length<N)a.push(0);
+      if(a.join()!==g[r].join())moved=true;
+    }
+    if(moved&&gain>=bestGain){bestGain=gain;bestDir=d;}
+  }
+  if(bestDir===-1){// no gain move, just pick any valid
+    for(let d=0;d<4;d++){let g=b.grid.map(r=>r.slice());for(let i=0;i<d;i++)g=rotate(g);let mv=false;for(let r=0;r<N;r++){let a=g[r].filter(x=>x);while(a.length<N)a.push(0);if(a.join()!==g[r].join())mv=true;}if(mv){bestDir=d;break;}}
+  }
+  if(bestDir>=0)move(b,bestDir);
+  updateEval();
+}
+function startCpu(){
+  if(ONLINE)return;
+  newGrid(B[1]);render(B[1]);B[1].over=false;B[1].goEl.classList.remove('show');
+  document.getElementById('t1').textContent='CPU';
+  document.getElementById('eval').classList.add('show');
+  if(cpuTimer)clearInterval(cpuTimer);
+  cpuTimer=setInterval(cpuMove,220);
+}
+function stopCpu(){if(cpuTimer){clearInterval(cpuTimer);cpuTimer=null;}}
+function updateEval(){
+  if(ONLINE)return;
+  const s0=compScore(B[0]),s1=compScore(B[1]),total=s0+s1||1;
+  const p0=Math.max(5,Math.round(s0/total*100)),p1=100-p0;
+  document.getElementById('ev0').style.width=p0+'%';
+  document.getElementById('ev0').textContent=s0;
+  document.getElementById('ev1').style.width=p1+'%';
+  document.getElementById('ev1').textContent=s1;
+}
+
+// poll eval bar update
+setInterval(()=>{if(running&&!ONLINE)updateEval();},300);
+
 // 初期表示
 B.forEach(b=>{newGrid(b);render(b);});
 B[1].grid=[];render(B[1]);

@@ -27,6 +27,10 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:24px;letter-spacing:.2em;t
 .slot.hintdst{box-shadow:0 0 0 2.5px #6CD08A inset}
 @keyframes hintpulse{50%{outline-color:#fff}}
 .foundation .card{cursor:default}
+.prog-wrap{width:min(98vw,520px);margin-bottom:6px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--sub)}
+.prog-bar{flex:1;height:8px;background:rgba(0,0,0,.3);border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold),#e8d570);border-radius:4px;transition:width .3s}
+.prog-pct{min-width:32px;text-align:right;font-variant-numeric:tabular-nums}
 .msg{min-height:20px;font-size:14px;color:var(--gold);margin-top:14px;letter-spacing:.05em;text-align:center}
 .win{position:fixed;inset:0;background:rgba(8,20,14,.85);display:none;align-items:center;justify-content:center;z-index:30}
 .win.show{display:flex}
@@ -51,6 +55,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:24px;letter-spacing:.2em;t
   <button id="undo">戻す</button>
   <button id="new">配り直し</button>
 </div>
+<div class="prog-wrap"><span>進捗</span><div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div><span class="prog-pct" id="prog-pct">0/52</span></div>
 <div id="tableau-wrap">
   <div class="top">
     <div class="slot pile" id="stock"></div>
@@ -105,6 +110,9 @@ function render(){
     if(hint.dst&&hint.dst.t==='found')document.getElementById('f'+hint.dst.f).classList.add('hintdst');
     if(hint.src==='stock')document.getElementById('stock').classList.add('hintdst');
   }
+  const fdone=found.reduce((a,f)=>a+f.length,0);
+  document.getElementById('prog-fill').style.width=(fdone/52*100)+'%';
+  document.getElementById('prog-pct').textContent=fdone+'/52';
   document.getElementById('moves').textContent=moves;
   document.getElementById('score').textContent=score;
   document.getElementById('undo').disabled=!history.length;

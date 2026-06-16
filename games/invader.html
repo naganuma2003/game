@@ -27,6 +27,11 @@ canvas{display:block;width:100%;height:auto;background:#060906;border:1px solid 
 .pad button{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--txt);font-size:24px;padding:16px 0;border-radius:12px;cursor:pointer;touch-action:none}
 .pad button:active{border-color:var(--gold);background:#16210f}
 .pad .fire{flex:1.1;background:#1a2a10;border-color:#3a5a22;color:var(--gold);font-weight:800;font-size:18px}
+.ai-eval{width:min(94vw,360px);font-family:"Courier New",monospace;font-size:10px;color:var(--sub);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.ai-eval .lbl{white-space:nowrap;letter-spacing:.05em}
+.ai-eval .bar-bg{flex:1;height:7px;background:#0d120b;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.ai-eval .bar-fill{height:100%;background:var(--gold);transition:width .3s;border-radius:3px}
+.ai-eval .num{white-space:nowrap;min-width:46px;text-align:right;color:var(--txt);font-size:9.5px}
 .hint{font-size:10.5px;color:var(--sub);margin-top:10px;letter-spacing:.04em;text-align:center;line-height:1.6}
 
 @media(max-width:480px){
@@ -44,6 +49,11 @@ canvas{display:block;width:100%;height:auto;background:#060906;border:1px solid 
   <div>HI <span class="v hi" id="hi">0</span></div>
   <div>WAVE <span class="v" id="level">1</span></div>
   <div>残機 <span class="v lives" id="lives">▲▲▲</span></div>
+</div>
+<div class="ai-eval" id="ai-eval">
+  <span class="lbl">WAVE進行</span>
+  <div class="bar-bg"><div class="bar-fill" id="wave-bar" style="width:0%"></div></div>
+  <span class="num" id="wave-num">0/32</span>
 </div>
 <div class="stage">
   <canvas id="cv" width="360" height="480"></canvas>
@@ -275,6 +285,8 @@ function draw(){
 function updateHud(){
   if(score>best){best=score;try{localStorage.setItem('invaderBest',best);}catch(e){}} // 更新したら即保存
   $('score').textContent=score;$('hi').textContent=best;$('level').textContent=level;$('lives').textContent='▲'.repeat(Math.max(0,lives))||'—';
+  const total=COLS*ROWS,killed=total-aliveCount,pct=total?Math.round(killed/total*100):0;
+  $('wave-bar').style.width=pct+'%';$('wave-num').textContent=killed+'/'+total;
 }
 function overlay(t,d,btn){$('ovl-t').textContent=t;$('ovl-d').textContent=d;$('ovl-b').textContent=btn;$('ovl').classList.add('show');}
 function hideOverlay(){$('ovl').classList.remove('show');}

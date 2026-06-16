@@ -28,6 +28,12 @@ canvas{background:#0E0C09;border:2px solid var(--line);border-radius:6px;display
 .over.show{display:flex}
 .over .c{background:#241c10;border:1px solid var(--gold);border-radius:10px;padding:26px 38px;text-align:center}
 .over .t{font-size:24px;color:var(--gold);font-family:"Hiragino Mincho ProN",serif;margin-bottom:8px}
+.ai-eval{text-align:left}
+.gauge-row{display:flex;align-items:center;gap:5px;margin-top:5px}
+.gauge-lbl{font-size:9px;color:var(--sub);width:30px;flex-shrink:0}
+.gauge{flex:1;height:8px;background:#0E0C09;border-radius:4px;overflow:hidden}
+.gauge-fill{height:100%;border-radius:4px;transition:width .3s,background .3s;width:0%}
+.gauge-val{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
 .over .s{font-size:13px;color:var(--sub);margin-bottom:16px}
 .over button{background:var(--gold);border:none;color:#241c10;font-weight:700;padding:9px 22px;border-radius:7px;cursor:pointer;font-size:14px;font-family:inherit}
 
@@ -49,6 +55,12 @@ canvas{background:#0E0C09;border:2px solid var(--line);border-radius:6px;display
     <div class="box"><div class="l">LINES</div><div class="v" id="lines">0</div></div>
     <div class="box"><div class="l">LEVEL</div><div class="v" id="level">1</div></div>
     <div class="box"><div class="l">NEXT</div><canvas id="next" width="80" height="80"></canvas></div>
+    <div class="box ai-eval">
+      <div class="l">AI EVAL</div>
+      <div class="gauge-row"><span class="gauge-lbl">危険度</span><div class="gauge"><div class="gauge-fill" id="g-danger"></div></div></div>
+      <div class="gauge-row"><span class="gauge-lbl">穴数</span><div class="gauge-val" id="g-holes">0</div></div>
+      <div class="gauge-row"><span class="gauge-lbl">次Lv</span><div class="gauge-val" id="g-nextlv">10</div></div>
+    </div>
   </div>
 </div>
 <div class="msg" id="msg"></div>
@@ -100,8 +112,20 @@ function lock(){for(const[x,y]of cellsOf(cur)){if(y<0){gameOver();return;}grid[y
 function gameOver(){over=true;paused=true;if(score>best){best=score;localStorage.setItem('tetbest',best);}
   document.getElementById('ov-s').textContent='スコア '+score+' / '+lines+'ライン';
   document.getElementById('over').classList.add('show');update();}
+function evalBoard(){
+  if(!grid)return;
+  let maxH=0,holes=0;
+  for(let x=0;x<COLS;x++){let found=false;for(let y=0;y<ROWS;y++){if(grid[y][x])found=true;else if(found)holes++;}}
+  for(let y=0;y<ROWS;y++){if(grid[y].some(c=>c)){maxH=ROWS-y;break;}}
+  const danger=Math.min(100,Math.round(maxH/ROWS*100));
+  const gd=document.getElementById('g-danger');
+  gd.style.width=danger+'%';
+  gd.style.background=danger<40?'#6CC56C':danger<70?'#E8C84F':'#E0533E';
+  document.getElementById('g-holes').textContent=holes;
+  document.getElementById('g-nextlv').textContent=Math.max(0,level*10-lines);
+}
 function update(){document.getElementById('score').textContent=score;document.getElementById('lines').textContent=lines;
-  document.getElementById('level').textContent=level;document.getElementById('best').textContent=best;}
+  document.getElementById('level').textContent=level;document.getElementById('best').textContent=best;evalBoard();}
 function draw(){cx.clearRect(0,0,cv.width,cv.height);
   cx.strokeStyle='#1c1812';for(let x=0;x<=COLS;x++){cx.beginPath();cx.moveTo(x*CELL,0);cx.lineTo(x*CELL,ROWS*CELL);cx.stroke();}
   for(let y=0;y<=ROWS;y++){cx.beginPath();cx.moveTo(0,y*CELL);cx.lineTo(COLS*CELL,y*CELL);cx.stroke();}

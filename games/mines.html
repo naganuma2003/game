@@ -20,6 +20,9 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.2em;t
 .c.boom{background:#E04A2E}
 .c.flag{color:var(--gold)}
 .n1{color:#5b9bd5}.n2{color:#6aa84f}.n3{color:#e0533e}.n4{color:#9b7ad5}.n5{color:#d49a2a}.n6{color:#3ec0c0}.n7{color:#d6d6d6}.n8{color:#9A8F7B}
+.prog{margin-top:10px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);width:100%;max-width:460px}
+.prog-bar{flex:1;height:6px;background:#221E17;border-radius:3px;overflow:hidden}.prog-fill{height:100%;width:0%;background:var(--gold);border-radius:3px;transition:width .2s}
+.prog-txt{min-width:70px;text-align:right;font-variant-numeric:tabular-nums}
 .msg{min-height:22px;font-size:14px;color:var(--gold);margin-top:12px;letter-spacing:.05em}
 .foot{margin-top:6px}
 .foot button{background:transparent;border:1px solid var(--line);color:var(--txt);padding:8px 18px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit}
@@ -45,6 +48,7 @@ h1{font-family:"Hiragino Mincho ProN",serif;font-size:26px;letter-spacing:.2em;t
   <span class="b">🏆 <span id="best">—</span></span>
 </div>
 <div id="bd"></div>
+<div class="prog" id="prog"><span>進捗</span><div class="prog-bar"><div class="prog-fill" id="pfill"></div></div><span class="prog-txt" id="ptxt">0 / 0</span></div>
 <div class="msg" id="msg"></div>
 <div class="foot"><button id="new">新しいゲーム</button></div>
 <div style="font-size:11px;color:var(--sub);margin-top:10px;text-align:center;line-height:1.7">🚩旗の立て方: 「旗モード」をONにしてタップ／PCは右クリック／スマホは長押し</div>
@@ -71,7 +75,8 @@ function startTimer(){timer=setInterval(()=>{sec++;document.getElementById('time
 function onTap(i){if(over)return;if(flagMode){toggleFlag(i);return;}if(flags.has(i))return;if(!started){plant(i);started=true;startTimer();}reveal(i);check();}
 function reveal(i){if(revealed.has(i)||flags.has(i))return;if(board[i]===-1){lose(i);return;}const stack=[i];while(stack.length){const k=stack.pop();if(revealed.has(k)||flags.has(k))continue;revealed.add(k);if(board[k]===0)for(const n of neighbors(k))if(!revealed.has(n))stack.push(n);}render();}
 function toggleFlag(i){if(over||revealed.has(i))return;if(flags.has(i))flags.delete(i);else flags.add(i);document.getElementById('mleft').textContent=M-flags.size;render();}
-function render(){for(let i=0;i<W*H;i++){const el=cells[i];el.className='c';el.textContent='';if(flags.has(i)){el.classList.add('flag');el.textContent='🚩';continue;}if(revealed.has(i)){el.classList.add('open');const v=board?board[i]:0;if(v>0){el.classList.add('n'+v);el.textContent=v;}}}}
+function updateProg(){const safe=W*H-M;const r=revealed.size;const pct=safe?Math.round(r/safe*100):0;document.getElementById('pfill').style.width=pct+'%';document.getElementById('ptxt').textContent=r+' / '+safe+' ('+pct+'%)';}
+function render(){for(let i=0;i<W*H;i++){const el=cells[i];el.className='c';el.textContent='';if(flags.has(i)){el.classList.add('flag');el.textContent='🚩';continue;}if(revealed.has(i)){el.classList.add('open');const v=board?board[i]:0;if(v>0){el.classList.add('n'+v);el.textContent=v;}}}updateProg();}
 function lose(boom){over=true;clearInterval(timer);for(let i=0;i<W*H;i++){if(board[i]===-1){revealed.add(i);cells[i].classList.add('open','mine');cells[i].textContent='💣';}}cells[boom].classList.add('boom');render();document.getElementById('msg').textContent='ドカン！ 💥 ゲームオーバー';}
 function check(){if(over)return;let safe=0;for(let i=0;i<W*H;i++)if(board[i]!==-1)safe++;if(revealed.size===safe){over=true;clearInterval(timer);
   const prev=+(localStorage.getItem(bestKey())||0);

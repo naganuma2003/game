@@ -953,6 +953,7 @@ function render() {
   if (state===ST.TITLE)  { drawTitle(); return; }
   drawMap(); drawPups(); drawExps(); drawBombs(); drawEns(); drawPl();
   if ((onlineMode||cpuMode) && p2) drawPl2();
+  if (cpuMode && state===ST.PLAY) drawAIEval();
   if (state===ST.CLEAR)      drawResult(true);
   else if (state===ST.OVER)  drawResult(false);
   if (paused && state===ST.PLAY) drawPause();
@@ -970,6 +971,50 @@ function drawPause() {
   cx.fillStyle='rgba(180,210,255,.75)';
   cx.font=`${T*.4}px "Segoe UI",sans-serif`;
   cx.fillText('P キー / ボタンで再開', W/2, H/2+T*.5);
+}
+
+// ─── AI評価表示（CPUモード専用） ─────────────────────────────────────────────
+function drawAIEval() {
+  if (!p2) return;
+  const W = cv.width;
+  const pw = Math.min(W * 0.42, 170), ph = 38;
+  const px = W - pw - 6, py = 4, r = 8;
+
+  cx.save();
+  cx.globalAlpha = 0.82;
+  cx.fillStyle = '#0a0e14';
+  rrect(px, py, pw, ph, r); cx.fill();
+  cx.strokeStyle = 'rgba(100,160,255,0.4)'; cx.lineWidth = 1;
+  rrect(px, py, pw, ph, r); cx.stroke();
+  cx.globalAlpha = 1;
+
+  const mid = px + pw / 2;
+  const y1 = py + 13, y2 = py + 28;
+  cx.textBaseline = 'middle';
+  cx.font = `bold ${10}px "Segoe UI",sans-serif`;
+
+  // Player side
+  cx.textAlign = 'right';
+  cx.fillStyle = '#6ab4ff';
+  cx.fillText('P1', mid - 4, y1);
+  cx.fillStyle = '#dde8ff';
+  cx.fillText('❤️'.repeat(Math.max(0, pl.lives)), mid - 4, y2);
+
+  // VS
+  cx.textAlign = 'center';
+  cx.fillStyle = 'rgba(255,255,255,0.45)';
+  cx.font = `bold ${9}px "Segoe UI",sans-serif`;
+  cx.fillText('vs', mid, y1);
+
+  // CPU side
+  cx.textAlign = 'left';
+  cx.fillStyle = '#ff8a8a';
+  cx.font = `bold ${10}px "Segoe UI",sans-serif`;
+  cx.fillText('CPU', mid + 4, y1);
+  cx.fillStyle = '#ffdde0';
+  cx.fillText('❤️'.repeat(Math.max(0, p2.lives)), mid + 4, y2);
+
+  cx.restore();
 }
 
 // ─── タイトル画面 ────────────────────────────────────────────────────────────

@@ -93,6 +93,7 @@ let occ;           // id -> playerIdx or -1
 let adj;
 let svg=document.getElementById('bd');
 let sel=null,dests=[],turn=0,over=false,busy=false,winners=[],hist=[];
+let cpuTimer=null;
 let ONLINE=false,MYSEAT=0,roomSend=null;
 function myTurn(){return !ONLINE||turn===MYSEAT;}
 
@@ -129,13 +130,14 @@ function init(){
   turn=(!ONLINE&&mode==='cpu')?Math.floor(Math.random()*np):0;
   document.getElementById('over').classList.remove('show');
   render();updateTurn();updateEval();
-  if(!isHuman())setTimeout(cpuMove,520);
+  if(!isHuman())cpuTimer=setTimeout(cpuMove,520);
 }
 function myGoalZone(p){return SETUPS[np].goal[p];}
 function updateTurn(){
   const t=document.getElementById('turn');
   if(over){t.textContent='対局終了';return;}
   const nm=COLORS[turn].nm;
+  if(watchMode){t.textContent=nm+'の番';return;}
   if(ONLINE)t.textContent=(turn===MYSEAT?'★ あなた':'相手')+'('+nm+')の番';
   else if(mode==='pvp')t.textContent=nm+'の番';
   else t.textContent=turn===0?'あなた('+nm+')の番':'CPU('+nm+')の番';
@@ -215,7 +217,7 @@ function doAction(a){
     }
     nextTurn();
     render();updateTurn();updateEval();
-    if(shouldRunCpu()){busy=true;setTimeout(cpuMove,520);}
+    if(shouldRunCpu()){busy=true;cpuTimer=setTimeout(cpuMove,520);}
   }
 }
 function nextTurn(){let n=turn;for(let k=0;k<np;k++){n=(n+1)%np;if(!winners.includes(n)){turn=n;return;}}}
@@ -239,7 +241,7 @@ function cpuMove(){busy=false;if(over)return;
       cands.push([sc,c.id,to]);
       if(sc>bestScore){bestScore=sc;best=[c.id,to];}}}
   if(cpuLv===1&&cands.length){const r=cands[Math.floor(Math.random()*cands.length)];best=[r[1],r[2]];}
-  if(!best){nextTurn();render();updateTurn();if(shouldRunCpu())setTimeout(cpuMove,520);return;}
+  if(!best){nextTurn();render();updateTurn();if(shouldRunCpu())cpuTimer=setTimeout(cpuMove,520);return;}
   emit({k:'move',from:best[0],to:best[1]});
 }
 function finish(){
@@ -248,7 +250,8 @@ function finish(){
   const t=document.getElementById('ov-t');
   const top=winners[0];
   const nm=COLORS[top].nm;
-  if(mode==='pvp')t.textContent=nm+'の勝ち！';
+  if(watchMode)t.textContent=nm+'の勝ち！';
+  else if(mode==='pvp')t.textContent=nm+'の勝ち！';
   else t.textContent=top===0?'あなた('+nm+')の勝ち！🎉':'CPU('+nm+')の勝ち';
   document.getElementById('over').classList.add('show');
 }
@@ -271,9 +274,10 @@ function startWatch(){
   document.getElementById('over').classList.remove('show');
   document.getElementById('msg').textContent='最強AI同士の対局';
   render();updateTurn();updateEval();
-  if(!over)setTimeout(cpuMove,520);
+  if(!over)cpuTimer=setTimeout(cpuMove,520);
 }
 function stopWatch(){
+  if(cpuTimer){clearTimeout(cpuTimer);cpuTimer=null;}
   watchMode=false;over=true;busy=false;
   document.getElementById('np').style.display='';
   document.getElementById('mode').style.display='';
@@ -283,7 +287,7 @@ function stopWatch(){
   init();
 }
 document.getElementById('new').addEventListener('click',init);
-document.getElementById('undo').addEventListener('click',()=>{if(!hist.length||busy||ONLINE)return;let h=hist.pop();if(mode==='cpu'){while(hist.length&&h.turn!==0)h=hist.pop();}occ=h.occ;turn=h.turn;winners=h.winners;over=h.over;sel=null;dests=[];document.getElementById('over').classList.remove('show');render();updateTurn();});
+document.getElementById('undo').addEventListener('click',()=>{if(watchMode)return;if(!hist.length||busy||ONLINE)return;let h=hist.pop();if(mode==='cpu'){while(hist.length&&h.turn!==0)h=hist.pop();}occ=h.occ;turn=h.turn;winners=h.winners;over=h.over;sel=null;dests=[];document.getElementById('over').classList.remove('show');render();updateTurn();});
 document.getElementById('again').addEventListener('click',init);
 document.getElementById('mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
 document.getElementById('np').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;np=+b.dataset.np;document.querySelectorAll('#np button').forEach(x=>x.classList.remove('on'));b.classList.add('on');init();});
@@ -317,7 +321,7 @@ function updateEval(){
     bar.appendChild(seg);
     const sp=document.createElement('span');
     sp.style.color=COLORS[p].light;
-    sp.textContent=(p===0?'あなた':'CPU'+(np>2?' '+p:''))+' '+Math.round(pct)+'%';
+    sp.textContent=(watchMode?COLORS[p].nm:(p===0?'あなた':'CPU'+(np>2?' '+p:'')))+' '+Math.round(pct)+'%';
     lab.appendChild(sp);
   }
 }
@@ -327,7 +331,7 @@ function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
   document.getElementById('np').style.display='none';
   document.getElementById('mode').style.display='none';
   init();
-  if(shouldRunCpu())setTimeout(cpuMove,520);}
+  if(shouldRunCpu())cpuTimer=setTimeout(cpuMove,520);}
 </script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=8"></script>

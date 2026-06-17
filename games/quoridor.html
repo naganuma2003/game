@@ -101,6 +101,7 @@ const SETUPS={
 };
 let np=2, mode='cpu';
 let watchMode=false;
+let cpuTimer=null;
 let pawns, walls, turn, over, winners, wallsLeft, action='move', hist=[];
 function snapQ(){return JSON.stringify({pawns,walls,turn,over,winners,wallsLeft,action});}
 function restoreQ(s){const o=JSON.parse(s);pawns=o.pawns;walls=o.walls;turn=o.turn;over=o.over;winners=o.winners;wallsLeft=o.wallsLeft;action=o.action;}
@@ -119,7 +120,7 @@ function init(){
   document.getElementById('msg').textContent='';
   setActionUI();
   render(); updateTurn(); updateStock();
-  if(!isHuman()) setTimeout(cpuMove, 600);
+  if(!isHuman()) cpuTimer=setTimeout(cpuMove, 600);
 }
 function isCpuSeat(){return ONLINE&&window.OnlineRoom&&OnlineRoom.isCpu(turn);}
 function isHuman(){if(watchMode)return false;if(ONLINE){if(isCpuSeat())return false;return turn===MYSEAT;}return mode==='pvp'||turn===0;}
@@ -134,7 +135,8 @@ function updateTurn(){
   if(over){t.textContent='対局終了';return;}
   const nm=COLORS[turn].nm;
   if(ONLINE)t.textContent=(turn===MYSEAT?'★ あなた':'相手')+'('+nm+')の番';
-  else t.textContent = mode==='pvp' ? (nm+'の番') : (turn===0 ? 'あなた('+nm+')の番' : 'CPU('+nm+')の番');
+  else if(watchMode||mode==='pvp') t.textContent=nm+'の番';
+  else t.textContent = turn===0 ? 'あなた('+nm+')の番' : 'CPU('+nm+')の番';
 }
 function updateStock(){
   const s=document.getElementById('stock'); s.innerHTML='';
@@ -300,8 +302,8 @@ function finishTurn(){
   action='move';
   setActionUI();
   render(); updateTurn(); updateStock();
-  if(shouldRunCpu()) setTimeout(cpuMove, 600);
-  else if(!ONLINE && !over && !isHuman()) setTimeout(cpuMove, 600);
+  if(shouldRunCpu()) cpuTimer=setTimeout(cpuMove, 600);
+  else if(!ONLINE && !over && !isHuman()) cpuTimer=setTimeout(cpuMove, 600);
 }
 function nextTurn(){let n=turn;for(let k=0;k<np;k++){n=(n+1)%np;if(!winners.includes(n)){turn=n;return;}}}
 
@@ -344,12 +346,12 @@ function cpuMove(){
   if(bestWall && bestWallScore>=3){emit({k:'wall',r:bestWall.r,c:bestWall.c,d:bestWall.d});return;}
   if(bestMove){emit({k:'move',r:bestMove[0],c:bestMove[1]});return;}
   if(myMoves.length){const[r,c]=myMoves[0];emit({k:'move',r,c});return;}
-  nextTurn(); render(); updateTurn(); if(shouldRunCpu())setTimeout(cpuMove,600); else if(!ONLINE&&!over&&!isHuman())setTimeout(cpuMove,600);
+  nextTurn(); render(); updateTurn(); if(shouldRunCpu())cpuTimer=setTimeout(cpuMove,600); else if(!ONLINE&&!over&&!isHuman())cpuTimer=setTimeout(cpuMove,600);
 }
 
 function finish(){
   const nm=COLORS[winners[0]].nm;
-  const t = mode==='pvp' ? (nm+'の勝ち！') : (winners[0]===0 ? 'あなた('+nm+')の勝ち！🎉' : 'CPU('+nm+')の勝ち');
+  const t = (watchMode||mode==='pvp') ? (nm+'の勝ち！') : (winners[0]===0 ? 'あなた('+nm+')の勝ち！🎉' : 'CPU('+nm+')の勝ち');
   document.getElementById('ovt').textContent=t;
   document.getElementById('over').classList.add('show');
 }
@@ -379,9 +381,10 @@ function startWatch(){
   document.getElementById('over').classList.remove('show');
   document.getElementById('msg').textContent='最強AI同士の対局';
   setActionUI(); render(); updateTurn(); updateStock();
-  if(!over)setTimeout(cpuMove,600);
+  if(!over)cpuTimer=setTimeout(cpuMove,600);
 }
 function stopWatch(){
+  if(cpuTimer){clearTimeout(cpuTimer);cpuTimer=null;}
   watchMode=false;over=true;
   document.getElementById('np').style.display='';
   document.getElementById('mode').style.display='';
@@ -392,7 +395,7 @@ function stopWatch(){
 }
 document.getElementById('again').addEventListener('click',init);
 document.getElementById('reset').addEventListener('click',init);
-document.getElementById('undo').addEventListener('click',()=>{if(!hist.length||ONLINE)return;let s=hist.pop();if(mode==='cpu'){while(hist.length&&JSON.parse(s).turn!==0)s=hist.pop();}restoreQ(s);setActionUI();document.getElementById('over').classList.remove('show');render();updateTurn();updateStock();});
+document.getElementById('undo').addEventListener('click',()=>{if(watchMode)return;if(!hist.length||ONLINE)return;let s=hist.pop();if(mode==='cpu'){while(hist.length&&JSON.parse(s).turn!==0)s=hist.pop();}restoreQ(s);setActionUI();document.getElementById('over').classList.remove('show');render();updateTurn();updateStock();});
 // ===== AIアシスタント =====
 const assistEl=document.getElementById('assist');
 if(assistEl) assistEl.addEventListener('change', render);
@@ -428,7 +431,9 @@ function toggleEval(){
 function updateEval(){
   if(!evalOn)return;
   const s=evalScore(),MAX=20;
-  const C1=COLORS[0].c,C2=COLORS[1].c,N1='先手',N2='後手';
+  const C1=COLORS[0].c,C2=COLORS[1].c;
+  const N1=(watchMode||mode==='pvp')?COLORS[0].nm:'あなた';
+  const N2=(watchMode||mode==='pvp')?COLORS[1].nm:'CPU';
   const pct=Math.min(Math.max((s+MAX)/(2*MAX),0),1);
   document.getElementById('eval-fill').style.cssText=`width:${pct*100}%;background:${s>0.3?C1:s<-0.3?C2:'#888'}`;
   document.getElementById('eval-lbl').textContent=Math.abs(s)<0.3?'互角':s>0?`${N1}+${Math.round(Math.abs(s))}`:`${N2}+${Math.round(Math.abs(s))}`;
@@ -448,7 +453,7 @@ function startOnline(seat,n,send){ONLINE=true;MYSEAT=seat;roomSend=send;np=n;
   document.getElementById('mode').classList.add('hidden');
   document.getElementById('eval-row').style.display='none';
   init();
-  if(shouldRunCpu())setTimeout(cpuMove,600);}
+  if(shouldRunCpu())cpuTimer=setTimeout(cpuMove,600);}
 </script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=8"></script>

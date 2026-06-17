@@ -160,7 +160,7 @@ svg{display:block;width:min(96vw,480px);height:auto}
 
 <script>
 /* index: 0-5 あなたの穴(左→右), 6 あなたのゴール(右端), 7-12 相手の穴, 13 相手のゴール(左端) */
-let pits,turn,mode='cpu1',history=[],over=false,busy=false,watchMode=false;
+let pits,turn,mode='cpu1',history=[],over=false,busy=false,watchMode=false,cpuTimer=null;
 
 const NS='http://www.w3.org/2000/svg';
 const svg=document.getElementById('bd');
@@ -303,9 +303,10 @@ function startWatch(){
   turn=0;history=[];over=false;busy=false;
   document.getElementById('gov').classList.remove('show');
   render();msg('最強AI観戦中 — CPU vs CPU');
-  busy=true;setTimeout(()=>{const m=cpuMoveFor(0);busy=false;history.push({p:pits.slice(),turn});playAnimated(m);},650);
+  busy=true;cpuTimer=setTimeout(()=>{cpuTimer=null;const m=cpuMoveFor(0);busy=false;history.push({p:pits.slice(),turn});playAnimated(m);},650);
 }
 function stopWatch(){
+  if(cpuTimer){clearTimeout(cpuTimer);cpuTimer=null;}
   watchMode=false;over=true;busy=false;
   document.getElementById('modes').style.display='';
   document.querySelector('.watch-btn:not(#stop-watch)').style.display='';
@@ -327,7 +328,7 @@ function init(){
   // pvp(オンライン含む)では「下側/上側」表記にする。online-core はこの語で
   // 手番を判定するため、開始時から正しく出さないとゲストが動かせない。
   msg(mode==='pvp'?'下側の番です':'あなたの番です');
-  if(mode!=='pvp'&&Math.random()<.5){turn=1;busy=true;render();msg('CPUの番です');setTimeout(()=>{const m=cpuMove();busy=false;history.push({p:pits.slice(),turn});playAnimated(m);},650);}
+  if(mode!=='pvp'&&Math.random()<.5){turn=1;busy=true;render();msg('CPUの番です');cpuTimer=setTimeout(()=>{cpuTimer=null;const m=cpuMove();busy=false;history.push({p:pits.slice(),turn});playAnimated(m);},650);}
 }
 function msg(s){document.getElementById('msg').textContent=s;}
 
@@ -380,13 +381,14 @@ function finish(lastPos){
   if(!extra)turn=1-turn;
   busy=false;render();
   if(extra){
-    msg((turn===0?(mode==='pvp'?'下側':'あなた'):(mode==='pvp'?'上側':'CPU'))+'はもう一度!');
+    msg((turn===0?(mode==='pvp'||watchMode?'下側':'あなた'):(mode==='pvp'||watchMode?'上側':'CPU'))+'はもう一度!');
   }else{
-    msg(turn===0?(mode==='pvp'?'下側の番です':'あなたの番です'):(mode==='pvp'?'上側の番です':'CPUの番です'));
+    msg(turn===0?(mode==='pvp'||watchMode?'下側の番です':'あなたの番です'):(mode==='pvp'||watchMode?'上側の番です':'CPUの番です'));
   }
   if((turn===1&&mode!=='pvp')||(watchMode&&turn===0)){
     busy=true;render();
-    setTimeout(()=>{
+    cpuTimer=setTimeout(()=>{
+      cpuTimer=null;
       const m=cpuMoveFor(turn);
       busy=false;
       history.push({p:pits.slice(),turn});
@@ -398,12 +400,16 @@ function finish(lastPos){
 function endGame(){
   const a=pits[6],b=pits[13];
   const t=document.getElementById('g-t');
-  if(mode==='pvp'){
+  if(mode==='pvp'||watchMode){
     t.textContent=a>b?'下側の勝ち':b>a?'上側の勝ち':'引き分け';
   }else{
     t.textContent=a>b?'勝利':b>a?'敗北':'引き分け';
   }
-  document.getElementById('g-s').textContent=`あなた ${a} − 相手 ${b}`;
+  if(mode==='pvp'||watchMode){
+    document.getElementById('g-s').textContent=`下側 ${a} − 上側 ${b}`;
+  }else{
+    document.getElementById('g-s').textContent=`あなた ${a} − 相手 ${b}`;
+  }
   msg('対局終了');
   setTimeout(()=>document.getElementById('gov').classList.add('show'),500);
 }
@@ -507,6 +513,7 @@ function cpuMove(){
 
 /* ---- controls ---- */
 document.getElementById('undo').addEventListener('click',()=>{
+  if(watchMode)return;
   if(!history.length||busy)return;
   let h=history.pop();
   if(mode!=='pvp'){while(history.length&&h.turn!==0)h=history.pop();}
@@ -531,6 +538,7 @@ var assistEl=document.getElementById('assist');
 if(assistEl)assistEl.addEventListener('change',render);
 
 function computeAssist(){
+  if(watchMode)return null;
   if(!assistEl||!assistEl.checked)return null;
   if(over||busy)return null;
   if(turn!==0)return null; // human is always turn===0 in CPU mode

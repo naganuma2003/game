@@ -222,6 +222,7 @@ function startWatch(){
 }
 function stopWatch(){
   _blokusWatchMode=false;
+  G.done=true;
   document.getElementById('stop-watch').style.display='none';
   document.getElementById('game').style.display='none';
   document.getElementById('setup').style.display='';

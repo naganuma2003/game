@@ -100,6 +100,7 @@ const LINES=(()=>{const L=[];
   return L;})();
 let np=2,mode='cpu';
 let watchMode=false;
+let cpuTimer=null;
 let board,stock,turn,over,winner,winInfo,hist=[];
 function snapOtrio(){return JSON.stringify({board,stock,turn,over,winner,winInfo});}
 function restoreOtrio(s){const o=JSON.parse(s);board=o.board;stock=o.stock;turn=o.turn;over=o.over;winner=o.winner;winInfo=o.winInfo;}
@@ -115,8 +116,8 @@ function init(){
   document.getElementById('over').classList.remove('show');
   document.getElementById('msg').textContent='';
   render();updateTurn();updateStock();evalPosition();
-  if(shouldRunCpu())setTimeout(cpuMove,600);
-  else if(!ONLINE&&!isHuman())setTimeout(cpuMove,600);
+  if(shouldRunCpu())cpuTimer=setTimeout(cpuMove,600);
+  else if(!ONLINE&&!isHuman())cpuTimer=setTimeout(cpuMove,600);
 }
 function isCpuSeat(){return ONLINE&&window.OnlineRoom&&OnlineRoom.isAuto(turn);} // CPU席＋退出席をホストが代理
 function isHuman(){if(watchMode)return false;if(ONLINE){if(isCpuSeat())return false;return turn===MYSEAT;}return mode==='pvp'||turn===0;}
@@ -126,6 +127,7 @@ function updateTurn(){
   if(over){t.textContent='対局終了';return;}
   const nm=COLORS[turn].nm;
   if(ONLINE)t.textContent=(turn===MYSEAT?'★ あなた':'相手')+'('+nm+')の番';
+  else if(watchMode)t.textContent=nm+'の番';
   else t.textContent=mode==='pvp'?(nm+'の番'):(turn===0?'あなた('+nm+')の番':'CPU('+nm+')の番');
   t.style.color=COLORS[turn].c;t.style.fontWeight='800';
   if(ONLINE&&window.OnlineRoom&&OnlineRoom.setTurn)OnlineRoom.setTurn(turn===MYSEAT&&!over);
@@ -233,8 +235,8 @@ function doAction(a){
     if([...Array(np).keys()].every(p=>noStock(p))){over=true;render();finishDraw();return;}
     turn=(turn+1)%np;
     render();updateTurn();updateStock();evalPosition();
-    if(shouldRunCpu())setTimeout(cpuMove,600);
-    else if(!ONLINE&&!isHuman()&&!over)setTimeout(cpuMove,600);
+    if(shouldRunCpu())cpuTimer=setTimeout(cpuMove,600);
+    else if(!ONLINE&&!isHuman()&&!over)cpuTimer=setTimeout(cpuMove,600);
   }
 }
 
@@ -286,7 +288,7 @@ function doCpuPlace(r,c,s){emit({k:'place',r,c,s});}
 function finish(){
   const nm=COLORS[winner].nm;
   const kindTxt=winInfo.kind==='size'?'同サイズ3つ':winInfo.kind==='progress'?'小中大の階段':'同心円';
-  const t=mode==='pvp'?(nm+'の勝ち！ ('+kindTxt+')'):(winner===0?'あなた('+nm+')の勝ち！🎉 ('+kindTxt+')':'CPU('+nm+')の勝ち ('+kindTxt+')');
+  const t=watchMode?(nm+'の勝ち！ ('+kindTxt+')'):mode==='pvp'?(nm+'の勝ち！ ('+kindTxt+')'):(winner===0?'あなた('+nm+')の勝ち！🎉 ('+kindTxt+')':'CPU('+nm+')の勝ち ('+kindTxt+')');
   document.getElementById('ovt').textContent=t;
   document.getElementById('over').classList.add('show');
   try{if(window.OnlineRoom)window.OnlineRoom.clearSession();}catch(_){}
@@ -319,9 +321,10 @@ function startWatch(){
   document.getElementById('over').classList.remove('show');
   document.getElementById('msg').textContent='最強AI同士の対局';
   render();updateTurn();updateStock();
-  if(!over)setTimeout(cpuMove,600);
+  if(!over)cpuTimer=setTimeout(cpuMove,600);
 }
 function stopWatch(){
+  if(cpuTimer){clearTimeout(cpuTimer);cpuTimer=null;}
   watchMode=false;over=true;
   document.getElementById('np').style.display='';
   document.getElementById('mode').style.display='';
@@ -332,7 +335,7 @@ function stopWatch(){
 }
 document.getElementById('again').addEventListener('click',init);
 document.getElementById('reset').addEventListener('click',init);
-document.getElementById('undo').addEventListener('click',()=>{if(!hist.length||ONLINE)return;let s=hist.pop();if(mode==='cpu'){while(hist.length&&JSON.parse(s).turn!==0)s=hist.pop();}restoreOtrio(s);document.getElementById('over').classList.remove('show');render();updateTurn();updateStock();});
+document.getElementById('undo').addEventListener('click',()=>{if(watchMode)return;if(!hist.length||ONLINE)return;let s=hist.pop();if(mode==='cpu'){while(hist.length&&JSON.parse(s).turn!==0)s=hist.pop();}restoreOtrio(s);document.getElementById('over').classList.remove('show');render();updateTurn();updateStock();});
 init();
 
 // --- AI Evaluation ---
@@ -387,7 +390,7 @@ function evalPosition(){
   // Text
   const best=scores.indexOf(Math.max(...scores));
   const txt=document.getElementById('evalTxt');
-  const names=scores.map((_,i)=>mode==='cpu'?(i===0?'あなた':'CPU'+(np>2?'('+ COLORS[i].nm+')':'')):COLORS[i].nm);
+  const names=scores.map((_,i)=>watchMode?COLORS[i].nm:mode==='cpu'?(i===0?'あなた':'CPU'+(np>2?'('+ COLORS[i].nm+')':'')):COLORS[i].nm);
   if(scores.every(s=>s===scores[0])){txt.textContent='互角';document.getElementById('evalBest').textContent='';}
   else{
     const adv=((scores[best]/total)*100).toFixed(0);
@@ -410,7 +413,7 @@ function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;
   const s=o.state;board=s.board;stock=s.stock;turn=s.turn;over=s.over;winner=s.winner;winInfo=s.winInfo;
   document.getElementById('over').classList.toggle('show',!!over);
   render();updateTurn();updateStock();
-  if(shouldRunCpu())setTimeout(cpuMove,600);}
+  if(shouldRunCpu())cpuTimer=setTimeout(cpuMove,600);}
 </script>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="../shared/lobby.js?v=8"></script>
@@ -419,7 +422,7 @@ function applyState(o){ONLINE=true;MYSEAT=o.seat;roomSend=o.send;np=o.n;
 OnlineRoom.init({gameId:'otrio',minPlayers:2,maxPlayers:4,note:'3サイズのリングで揃える3目並べ。',
   onStart:(seat,n,send)=>startOnline(seat,n,send),
   onMessage:(from,msg)=>doAction(msg),
-  onLeft:(seat)=>{updateTurn();if(shouldRunCpu())setTimeout(cpuMove,600);},
+  onLeft:(seat)=>{updateTurn();if(shouldRunCpu())cpuTimer=setTimeout(cpuMove,600);},
   getState,applyState});
 </script>
 <script src="../shared/firebase-counter.js"></script></body></html>

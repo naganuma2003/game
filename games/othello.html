@@ -785,6 +785,7 @@ select { background: #eef5f0; color: #14201a; }
   let online = null;
   let watchMode = false;
 
+  let cpuTimer = null;
   let board, current, busy, gameOver;
   let history = []; // snapshots { board, current } captured before each move
   const cells = [];
@@ -874,12 +875,18 @@ select { background: #eef5f0; color: #14201a; }
     document.getElementById("stop-watch").style.display = "";
     backBtn.style.display = "none";
     resetBtn.style.display = "none";
+    undoBtn.style.display = "none";
+    if (assistEl) assistEl.parentElement.style.display = "none";
   });
   function stopWatch() {
+    if (cpuTimer) { clearTimeout(cpuTimer); cpuTimer = null; }
+    busy = false;
     watchMode = false;
     document.getElementById("stop-watch").style.display = "none";
     backBtn.style.display = "";
     resetBtn.style.display = "";
+    undoBtn.style.display = "";
+    if (assistEl) assistEl.parentElement.style.display = "";
     backBtn.click();
   }
   document.getElementById("stop-watch").addEventListener("click", stopWatch);
@@ -1045,7 +1052,8 @@ select { background: #eef5f0; color: #14201a; }
     busy = true;
     render();
     // Small delay so the move is visible, not instant.
-    setTimeout(() => {
+    cpuTimer = setTimeout(() => {
+      cpuTimer = null;
       const move = AI.chooseMove(board, current, players[current].level);
       busy = false;
       if (!move) { advanceTurn(); return; }
@@ -1058,16 +1066,19 @@ select { background: #eef5f0; color: #14201a; }
     render();
     const { black, white } = AI.counts(board);
     let result;
-    if (black > white) result = "黒の勝ち！";
-    else if (white > black) result = "白の勝ち！";
+    if (black > white) result = "黒の勝ち";
+    else if (white > black) result = "白の勝ち";
     else result = "引き分け";
     if (online) {
       const won = (black > white && online.myColor === BLACK) ||
                   (white > black && online.myColor === WHITE);
       const tag = black === white ? "引き分け" : (won ? "あなたの勝ち！🎉" : "相手の勝ち…");
       messageEl.textContent = `ゲーム終了 — ${tag}（黒 ${black} : ${white} 白）`;
-    } else {
+    } else if (watchMode) {
       messageEl.textContent = `ゲーム終了 — ${result}（黒 ${black} : ${white} 白）`;
+    } else {
+      const personal = result === "引き分け" ? result : (result + "！");
+      messageEl.textContent = `ゲーム終了 — ${personal}（黒 ${black} : ${white} 白）`;
     }
   }
 

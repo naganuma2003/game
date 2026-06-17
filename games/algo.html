@@ -178,10 +178,14 @@ function cardLabel(c){return(c.color==='B'?'黒':'白')+c.value;}
 
 let G={};
 let watchMode=false;
+let cpuTimer=null;
 let ONLINE=false, MYSEAT=0, roomSend=null;
 function isAutoSeat(s){return ONLINE&&window.OnlineRoom&&OnlineRoom.isAuto(s);}
 function makeNames(n){
-  if(!ONLINE)return['あなた',...Array.from({length:n-1},(_,i)=>`CPU ${i+1}`)];
+  if(!ONLINE){
+    if(watchMode)return Array.from({length:n},(_,i)=>`CPU ${i+1}`);
+    return['あなた',...Array.from({length:n-1},(_,i)=>`CPU ${i+1}`)];
+  }
   const names=[];
   for(let i=0;i<n;i++){
     if(i===MYSEAT)names.push('あなた');
@@ -238,7 +242,7 @@ function beginTurn(pi){
     document.getElementById('status').textContent=G.players[pi].name+' の番…';
     renderDrawn(false);
     showActs([]);
-    if(!ONLINE || OnlineRoom.isHost()) setTimeout(cpuPlay,700);
+    if(!ONLINE || OnlineRoom.isHost()) cpuTimer=setTimeout(cpuPlay,700);
   }
 }
 
@@ -282,7 +286,7 @@ function applyAttack(targetPi,pos,guess){
     addLog(`✅ ${G.players[G.cur].name}: ${G.players[targetPi].name}の${cardLabel(card)} — 正解！`,'hit');
     setTimeout(()=>{card.justRev=false;},400);
     checkElim(targetPi);
-    if(activePlayers()<=1){renderAll();setTimeout(endGame,700);return;}
+    if(activePlayers()<=1){renderAll();cpuTimer=setTimeout(endGame,700);return;}
     G.phase='continue';
     renderAll();
     if(isMyTurn()){
@@ -294,7 +298,7 @@ function applyAttack(targetPi,pos,guess){
     } else if(isAutoSeat(G.cur)||!ONLINE){
       document.getElementById('status').textContent=G.players[G.cur].name+' が続けるか考え中…';
       showActs([]);
-      if(!ONLINE||OnlineRoom.isHost()) setTimeout(()=>{G.phase='cpu';cpuPlay();},900);
+      if(!ONLINE||OnlineRoom.isHost()) cpuTimer=setTimeout(()=>{G.phase='cpu';cpuPlay();},900);
     } else {
       document.getElementById('status').textContent=G.players[G.cur].name+' が続けるか考え中…';
       showActs([]);
@@ -306,7 +310,7 @@ function applyAttack(targetPi,pos,guess){
     G.drawn=null;
     checkElim(G.cur);
     renderAll();
-    setTimeout(()=>nextTurn(),700);
+    cpuTimer=setTimeout(()=>nextTurn(),700);
   }
 }
 
@@ -327,7 +331,7 @@ function doStop(){
   G.players[G.cur].cards=insertSorted(G.players[G.cur].cards,G.drawn);
   G.drawn=null;
   renderAll();
-  setTimeout(()=>nextTurn(),400);
+  cpuTimer=setTimeout(()=>nextTurn(),400);
 }
 
 function nextTurn(){
@@ -379,7 +383,7 @@ function cpuPlay(){
   if(ONLINE){
     setTimeout(()=>{roomSend({t:'attack',target:t.pi,pos:t.pos,guess:t.guess});},800);
   } else {
-    setTimeout(()=>{applyAttack(t.pi,t.pos,t.guess);},800);
+    cpuTimer=setTimeout(()=>{applyAttack(t.pi,t.pos,t.guess);},800);
   }
 }
 
@@ -473,7 +477,7 @@ function renderEval(){
 function renderOpponents(){
   const area=document.getElementById('opponents');area.innerHTML='';
   for(let pi=0;pi<G.numP;pi++){
-    if(pi===G.myIdx)continue;
+    if(pi===G.myIdx&&!watchMode)continue;
     const p=G.players[pi];
     const div=document.createElement('div');div.className='p-row';
     const isCur=pi===G.cur;
@@ -514,6 +518,9 @@ function renderDrawn(show){
 
 function renderMyCards(){
   const area=document.getElementById('my-cards');area.innerHTML='';
+  if(watchMode){document.querySelector('.my-lbl').style.display='none';return;}
+  document.querySelector('.my-lbl').style.display='';
+  document.querySelector('.my-lbl').textContent='あなたのカード';
   const p=G.players[G.myIdx];
   p.cards.forEach(c=>{
     const el=document.createElement('div');
@@ -535,6 +542,7 @@ function buildNumGrid(){
 
 function renderNumPick(){
   const pick=document.getElementById('num-pick');
+  if(watchMode){pick.style.display='none';return;}
   if(G.phase!=='attack'||!G.target||!isMyTurn()){pick.style.display='none';return;}
   pick.style.display='block';
   const known=buildKnown(G.myIdx);
@@ -581,18 +589,21 @@ function endGame(){
 
 document.getElementById('start-btn').addEventListener('click',()=>{
   watchMode=false;
-  initGame(+document.getElementById('sel-players').value,document.getElementById('sel-diff').value,false,-1);
+  initGame(+document.getElementById('sel-players').value,document.getElementById('sel-diff').value,false,0);
 });
 document.getElementById('watch-btn').addEventListener('click',()=>{
   watchMode=true;
   document.getElementById('sel-diff').value='hard';
-  initGame(+document.getElementById('sel-players').value,'hard',false,-1);
+  initGame(+document.getElementById('sel-players').value,'hard',false,0);
   document.getElementById('stop-watch').style.display='';
 });
 function stopWatch(){
   watchMode=false;
+  if(cpuTimer){clearTimeout(cpuTimer);cpuTimer=null;}
+  G.phase='gameover';
   document.getElementById('stop-watch').style.display='none';
   document.getElementById('game').style.display='none';
+  document.getElementById('num-pick').style.display='none';
   document.getElementById('setup').style.display='';
 }
 document.getElementById('stop-watch').addEventListener('click',stopWatch);
@@ -628,7 +639,7 @@ function applyState(o){
   buildNumGrid();
   renderAll();
   // If it's a CPU/gone seat's turn and we're host, drive it
-  if(OnlineRoom.isHost()&&isAutoSeat(G.cur)&&G.phase!=='gameover') setTimeout(cpuPlay,700);
+  if(OnlineRoom.isHost()&&isAutoSeat(G.cur)&&G.phase!=='gameover') cpuTimer=setTimeout(cpuPlay,700);
 }
 OnlineRoom.init({gameId:'algo',minPlayers:2,maxPlayers:4,
   note:'アルゴ（Algo）をオンライン対戦。最大4人まで。',
@@ -636,7 +647,7 @@ OnlineRoom.init({gameId:'algo',minPlayers:2,maxPlayers:4,
   onMessage:(from,msg)=>handleOnlineMsg(from,msg),
   onLeft:(seat)=>{
     if(OnlineRoom.isHost()&&isAutoSeat(G.cur)&&(G.phase==='watching'||G.phase==='cpu')){
-      G.phase='cpu';setTimeout(cpuPlay,700);
+      G.phase='cpu';cpuTimer=setTimeout(cpuPlay,700);
     }
   },
   getState,applyState});

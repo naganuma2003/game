@@ -843,6 +843,7 @@ select { background: #f3ead9; color: #20160c; }
   let online = null;
   let watchMode = false;
 
+  let cpuTimer = null;
   let state, busy, gameOver, lastMove;
   let history = [];
   let sel = null;        // { kind:'board', r, c } | { kind:'hand', type, owner }
@@ -911,12 +912,16 @@ select { background: #f3ead9; color: #20160c; }
     document.getElementById("stop-watch").style.display = "";
     backBtn.style.display = "none";
     resetBtn.style.display = "none";
+    undoBtn.style.display = "none";
   });
   function stopWatch() {
+    if (cpuTimer) { clearTimeout(cpuTimer); cpuTimer = null; }
+    busy = false;
     watchMode = false;
     document.getElementById("stop-watch").style.display = "none";
     backBtn.style.display = "";
     resetBtn.style.display = "";
+    undoBtn.style.display = "";
     backBtn.click();
   }
   document.getElementById("stop-watch").addEventListener("click", stopWatch);
@@ -1233,7 +1238,8 @@ select { background: #f3ead9; color: #20160c; }
     if (gameOver || !isCpu(state.turn)) return;
     busy = true;
     render();
-    setTimeout(() => {
+    cpuTimer = setTimeout(() => {
+      cpuTimer = null;
       const move = AI.chooseMove(state, Number(players[state.turn].level));
       busy = false;
       if (!move) { // no legal move

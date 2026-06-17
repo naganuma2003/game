@@ -184,7 +184,7 @@ let watchMode=false;
 let pieces;          // {id,r,c,o,col:'B'|'R',cap:false}
 let turn,phase;      // phase: 'setup'|'play'|'over'
 let setupPlayer;     // pvp用
-let sel=null,busy=false,history=[],lastMove=null;
+let sel=null,busy=false,history=[],lastMove=null,cpuTimer=null;
 let viewer=0;        // pvp: 今色が見えているプレイヤー
 let onet=false,oMy=0,oMyRdy=false,oOppCfg=null;
 const isRpl=()=>typeof OnlineCore!=='undefined'&&OnlineCore.isReplaying();
@@ -224,7 +224,7 @@ function startWatch(){
   msg('最強AI観戦中 — CPU vs CPU');
   render();
   // kick off first CPU turn (o=0 side, treated as CPU)
-  busy=true;setTimeout(watchCpuTurn,650);
+  busy=true;cpuTimer=setTimeout(watchCpuTurn,650);
 }
 
 function watchCpuTurn(){
@@ -285,7 +285,7 @@ function watchCpuTurn(){
   turn=1-turn;
   sel=null;render();
   msg('観戦中… ('+( turn===0?'下側':'上側')+')');
-  busy=true;setTimeout(watchCpuTurn,650);
+  busy=true;cpuTimer=setTimeout(watchCpuTurn,650);
 }
 
 function watchBlueProb(attacker){
@@ -297,6 +297,7 @@ function watchBlueProb(attacker){
 }
 
 function stopWatch(){
+  if(cpuTimer){clearTimeout(cpuTimer);cpuTimer=null;}
   watchMode=false;busy=false;
   document.getElementById('modes').style.display='';
   document.querySelector('.watch-btn:not(#stop-watch)').style.display='';
@@ -440,6 +441,7 @@ function ghostPath(cx,cy,s){
 
 function visibleColor(p){
   // 観戦者(viewer)に見える色
+  if(watchMode)return p.col;                  // 観戦モード: 全駒公開
   if(p.cap)return p.col;                      // 捕獲駒は公開
   if(mode==='pvp')return p.o===viewer?p.col:null;
   return p.o===0?p.col:null;                  // CPU戦: 自分の駒のみ
@@ -516,6 +518,8 @@ function render(){
     ghLayer.appendChild(g);
   }
   // トレー
+  document.querySelector('#tray0>span').textContent=watchMode?'下側が取った:':'あなたが取った:';
+  document.querySelector('#tray1>span').textContent=watchMode?'上側が取った:':'相手が取った:';
   for(const taker of[0,1]){
     const el=document.getElementById('tray'+taker);
     el.querySelectorAll('svg').forEach(x=>x.remove());
@@ -568,7 +572,10 @@ function updateTurnInd(){
   const isMine=mode==='pvp'
     ?(onet?turn===oMy:turn===viewer)
     :turn===0;
-  if(isMine){
+  if(watchMode){
+    el.textContent=(turn===0?'下側':'上側')+'のターン';
+    el.className='turn-ind theirs';
+  }else if(isMine){
     el.textContent='▶ あなたのターン';
     el.className='turn-ind mine';
   }else{
@@ -706,7 +713,7 @@ function handoff(title,sub,cb){
 function finish(winner,how){
   phase='over';busy=false;
   const t=document.getElementById('g-t');
-  if(mode==='pvp')t.textContent=winner===0?'下側の勝ち':'上側の勝ち';
+  if(mode==='pvp'||watchMode)t.textContent=winner===0?'下側の勝ち':'上側の勝ち';
   else t.textContent=winner===0?'勝利':'敗北';
   // 全駒公開
   viewer=-2;
@@ -819,6 +826,7 @@ function cpuTurn(){
 
 /* =============== controls =============== */
 document.getElementById('undo').addEventListener('click',()=>{
+  if(watchMode)return;
   if(!history.length||busy||phase!=='play'||onet)return;
   let h=history.pop();
   if(mode!=='pvp'){while(history.length&&h.turn!==0)h=history.pop();}
@@ -915,7 +923,7 @@ function toggleEval(){
 function updateEval(){
   if(!evalOn)return;
   const s=evalScore(),MAX=16;
-  const C1='#3e87d6',C2='#e04a3a',N1='あなた',N2='相手';
+  const C1='#3e87d6',C2='#e04a3a',N1=watchMode?'下側':'あなた',N2=watchMode?'上側':'相手';
   const pct=Math.min(Math.max((s+MAX)/(2*MAX),0),1);
   document.getElementById('eval-fill').style.cssText=`width:${pct*100}%;background:${s>0.3?C1:s<-0.3?C2:'#888'}`;
   document.getElementById('eval-lbl').textContent=Math.abs(s)<0.3?'互角':s>0?`${N1}+${Math.round(Math.abs(s))}`:`${N2}+${Math.round(Math.abs(s))}`;

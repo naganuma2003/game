@@ -548,6 +548,7 @@ select { background: #f3ead9; color: #1c1409; }
   let online = null;
   let watchMode = false;
 
+  let cpuTimer = null;
   let board, current, busy, gameOver, lastMove;
   let history = [];
   const cells = [];
@@ -622,12 +623,18 @@ select { background: #f3ead9; color: #1c1409; }
     document.getElementById("stop-watch").style.display = "";
     backBtn.style.display = "none";
     resetBtn.style.display = "none";
+    undoBtn.style.display = "none";
+    if (assistEl) assistEl.parentElement.style.display = "none";
   });
   function stopWatch() {
+    if (cpuTimer) { clearTimeout(cpuTimer); cpuTimer = null; }
+    busy = false;
     watchMode = false;
     document.getElementById("stop-watch").style.display = "none";
     backBtn.style.display = "";
     resetBtn.style.display = "";
+    undoBtn.style.display = "";
+    if (assistEl) assistEl.parentElement.style.display = "";
     backBtn.click();
   }
   document.getElementById("stop-watch").addEventListener("click", stopWatch);
@@ -763,6 +770,8 @@ select { background: #f3ead9; color: #1c1409; }
       if (online) {
         const won = current === online.myColor;
         messageEl.textContent = won ? "あなたの勝ち！🎉（五目完成）" : "相手の勝ち…（五目完成）";
+      } else if (watchMode) {
+        messageEl.textContent = `${colorName(current)}の勝ち（五目完成）`;
       } else {
         messageEl.textContent = `${colorName(current)}の勝ち！🎉（五目完成）`;
       }
@@ -783,7 +792,8 @@ select { background: #f3ead9; color: #1c1409; }
     if (!isCpuTurn()) return;
     busy = true;
     render();
-    setTimeout(() => {
+    cpuTimer = setTimeout(() => {
+      cpuTimer = null;
       const mv = AI.chooseMove(board, current, Number(players[current].level));
       busy = false;
       if (!mv) { gameOver = true; messageEl.textContent = "引き分け"; render(); return; }

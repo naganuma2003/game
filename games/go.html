@@ -162,6 +162,7 @@ svg{display:block;width:min(96vw,440px);height:auto}
 /* ============ state ============ */
 let N=9,mode='cpu1',watchMode=false;
 let board,turn,capt,history,posSet,passes,moveCount,lastIdx,over,busy,scoring,deadSet;
+let cpuTimer=null;
 const KOMI=7.5;
 
 const NS='http://www.w3.org/2000/svg';
@@ -278,6 +279,8 @@ function startWatch(){
   document.getElementById('modes').style.display='none';
   document.querySelector('.watch-btn:not(#stop-watch)').style.display='none';
   document.getElementById('stop-watch').style.display='';
+  document.getElementById('sizes').style.display='none';
+  document.querySelector('.sub').textContent='GO — CPU vs CPU 観戦モード・中国ルール コミ7目半';
   board=new Array(N*N).fill(0);
   turn=1;capt=[0,0];history=[];posSet=new Set([board.join('')]);
   passes=0;moveCount=0;lastIdx=-1;over=false;busy=false;scoring=false;deadSet=new Set();
@@ -290,7 +293,10 @@ function startWatch(){
 }
 function stopWatch(){
   watchMode=false;over=true;busy=false;
+  if(cpuTimer){clearTimeout(cpuTimer);cpuTimer=null;}
   document.getElementById('modes').style.display='';
+  document.getElementById('sizes').style.display='';
+  document.querySelector('.sub').textContent='GO — あなたは黒(先番)・中国ルール コミ7目半';
   document.querySelector('.watch-btn:not(#stop-watch)').style.display='';
   document.getElementById('stop-watch').style.display='none';
   mode='cpu1';
@@ -392,7 +398,8 @@ function commit(r,i){
   lastIdx=i;passes=0;moveCount++;
   turn=3-turn;
   render();
-  msg((turn===1?'黒':'白')+'の番です');
+  if(watchMode) msg('最強AI観戦中 — '+(turn===1?'黒':'白')+'の番');
+  else msg((turn===1?'黒':'白')+'の番です');
   maybeCpu();
 }
 
@@ -410,7 +417,7 @@ function doPass(){
 function maybeCpu(){
   if(over||scoring||isHumanTurn())return;
   busy=true;render();
-  setTimeout(()=>{
+  cpuTimer=setTimeout(()=>{
     const m=cpuMove();
     busy=false;
     if(m===-1){
@@ -505,6 +512,24 @@ function enterScoring(){
   document.getElementById('foot').style.display='none';
   document.getElementById('scorefoot').style.display='flex';
   render();updateScoreMsg();
+  if(watchMode){
+    setTimeout(()=>{
+      if(!scoring||!watchMode)return;
+      const s=computeScore();
+      over=true;scoring=false;
+      const diff=Math.abs(s.black-s.white);
+      const t=document.getElementById('g-t');
+      let who;
+      if(s.black>s.white){who='黒';t.textContent='黒の勝ち';}
+      else{who='白';t.textContent='白の勝ち';}
+      document.getElementById('g-s').innerHTML=
+        `黒 ${s.black} − 白 ${s.white}<br>${who} ${diff}目${diff%1?'半':''}勝ち`;
+      msg('終局');render();
+      document.getElementById('scorefoot').style.display='none';
+      document.getElementById('foot').style.display='flex';
+      setTimeout(()=>document.getElementById('gov').classList.add('show'),400);
+    },1000);
+  }
 }
 
 document.getElementById('sc-resume').addEventListener('click',()=>{
@@ -520,8 +545,8 @@ document.getElementById('sc-done').addEventListener('click',()=>{
   const diff=Math.abs(s.black-s.white);
   const t=document.getElementById('g-t');
   let who;
-  if(s.black>s.white){who='黒';t.textContent=mode==='pvp'?'黒の勝ち':'勝利';}
-  else{who='白';t.textContent=mode==='pvp'?'白の勝ち':'敗北';}
+  if(s.black>s.white){who='黒';t.textContent=(mode==='pvp'||watchMode)?'黒の勝ち':'勝利';}
+  else{who='白';t.textContent=(mode==='pvp'||watchMode)?'白の勝ち':'敗北';}
   document.getElementById('g-s').innerHTML=
     `黒 ${s.black} − 白 ${s.white}<br>${who} ${diff}目${diff%1?'半':''}勝ち`;
   msg('終局');render();
@@ -610,6 +635,7 @@ function cpuMove(){
 /* ============ controls ============ */
 document.getElementById('pass').addEventListener('click',doPass);
 document.getElementById('undo').addEventListener('click',()=>{
+  if(watchMode)return;
   if(!history.length||busy)return;
   let h=history.pop();
   if(mode!=='pvp'){while(history.length&&h.turn!==1)h=history.pop();}

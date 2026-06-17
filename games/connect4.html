@@ -148,7 +148,7 @@ svg{display:block;width:min(96vw,440px);height:auto}
 
 <script>
 const COLS=7,ROWS=6;
-let board,turn,mode='cpu1',history=[],over=false,busy=false,winCells=[],watchMode=false;
+let board,turn,mode='cpu1',history=[],over=false,busy=false,winCells=[],watchMode=false,cpuTimer=null;
 
 const NS='http://www.w3.org/2000/svg';
 const svg=document.getElementById('bd');
@@ -216,6 +216,7 @@ function startWatch(){
   document.getElementById('modes').style.display='none';
   document.querySelector('.watch-btn').style.display='none';
   document.getElementById('stop-watch').style.display='';
+  if(cpuTimer){clearTimeout(cpuTimer);cpuTimer=null;}
   board=new Array(ROWS*COLS).fill(0);
   turn=1;history=[];over=false;busy=false;winCells=[];watchMode=true;
   discLayer.innerHTML='';ringLayer.innerHTML='';
@@ -223,9 +224,10 @@ function startWatch(){
   document.getElementById('msg').textContent='最強AI同士の対局';
   updateStatus();
   busy=true;
-  setTimeout(()=>{const c=cpuMove();busy=false;const r=dropRow(board,c);history.push({bd:board.slice(),turn});play(c,r);},420);
+  cpuTimer=setTimeout(()=>{cpuTimer=null;const c=cpuMove();busy=false;const r=dropRow(board,c);history.push({bd:board.slice(),turn});play(c,r);},420);
 }
 function stopWatch(){
+  if(cpuTimer){clearTimeout(cpuTimer);cpuTimer=null;}
   watchMode=false;over=true;busy=false;
   document.getElementById('modes').style.display='';
   document.querySelector('.watch-btn').style.display='';
@@ -245,12 +247,14 @@ function init(){
   updateStatus();
   document.getElementById('msg').textContent='';
   document.getElementById('undo').disabled=true;
-  if(mode!=='pvp'&&Math.random()<.5){turn=2;updateStatus();busy=true;setTimeout(()=>{const c=cpuMove();busy=false;const r=dropRow(board,c);history.push({bd:board.slice(),turn});play(c,r);},420);}
+  if(mode!=='pvp'&&Math.random()<.5){turn=2;updateStatus();busy=true;cpuTimer=setTimeout(()=>{cpuTimer=null;const c=cpuMove();busy=false;const r=dropRow(board,c);history.push({bd:board.slice(),turn});play(c,r);},420);}
 }
 
 function updateStatus(){
   document.getElementById('tdot').className='dot '+(turn===1?'r':'y');
-  document.getElementById('tlabel').textContent=(turn===1?'赤':'黄')+'の番です';
+  if(watchMode) document.getElementById('tlabel').textContent=(turn===1?'赤':'黄')+'のAI思考中…';
+  else if(mode==='pvp') document.getElementById('tlabel').textContent=(turn===1?'赤':'黄')+'の番です';
+  else document.getElementById('tlabel').textContent=turn===1?'あなたの番です':'CPUの番です';
   updateEval();
   renderAssist();
 }
@@ -324,7 +328,7 @@ function afterDrop(p){
       ringLayer.appendChild(ring);
     }
     const t=document.getElementById('g-t');
-    if(mode==='pvp')t.textContent=p===1?'赤の勝ち':'黄の勝ち';
+    if(mode==='pvp'||watchMode)t.textContent=p===1?'赤の勝ち':'黄の勝ち';
     else t.textContent=p===1?'勝利':'敗北';
     document.getElementById('g-s').textContent=`${history.length+1}手で決着`;
     document.getElementById('msg').textContent='対局終了';
@@ -344,7 +348,8 @@ function afterDrop(p){
   document.getElementById('undo').disabled=!history.length;
   if(!isHuman()){
     busy=true;
-    setTimeout(()=>{
+    cpuTimer=setTimeout(()=>{
+      cpuTimer=null;
       const c=cpuMove();
       busy=false;
       const r=dropRow(board,c);
@@ -462,6 +467,7 @@ function redraw(){
 }
 
 document.getElementById('undo').addEventListener('click',()=>{
+  if(watchMode)return;
   if(!history.length||busy)return;
   let h=history.pop();
   if(mode!=='pvp'){while(history.length&&h.turn!==1)h=history.pop();}

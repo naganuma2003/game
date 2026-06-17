@@ -123,6 +123,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
   <div class="hdr">
     <div id="status">-</div>
     <div class="srow" id="srow"></div>
+    <button id="stop-watch" style="display:none;background:transparent;border:2px solid #e0473a;color:#e0473a;padding:5px 14px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px" onclick="stopWatch()">観戦終了</button>
   </div>
   <div id="eval-bar">
     <div class="eval-hdr"><span>形勢判断</span><span id="eval-leader"></span></div>
@@ -211,10 +212,19 @@ let G={};
 let HR=-1,HC=-1;
 let ONLINE=false, MYSEAT=-1, roomSend=null;
 
+let _blokusWatchMode=false;
 function startWatch(){
+  _blokusWatchMode=true;
   document.getElementById('sel-h').value='0';
   document.getElementById('sel-d').value='hard';
   init();
+  document.getElementById('stop-watch').style.display='';
+}
+function stopWatch(){
+  _blokusWatchMode=false;
+  document.getElementById('stop-watch').style.display='none';
+  document.getElementById('game').style.display='none';
+  document.getElementById('setup').style.display='';
 }
 function init(){
   const nh=+document.getElementById('sel-h').value;

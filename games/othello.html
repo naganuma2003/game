@@ -466,6 +466,7 @@ select { background: #eef5f0; color: #14201a; }
         <button id="pass" class="btn" disabled>パス</button>
         <button id="reset" class="btn">もう一度</button>
         <button id="back" class="btn">設定を変える</button>
+        <button id="stop-watch" class="btn" style="display:none;border-color:#D9B44A;color:#D9B44A">観戦終了</button>
       </div>
 
       <label class="assist-toggle">
@@ -782,6 +783,7 @@ select { background: #eef5f0; color: #14201a; }
 
   // Online session: null for local play, else { myColor, send(msg) }.
   let online = null;
+  let watchMode = false;
 
   let board, current, busy, gameOver;
   let history = []; // snapshots { board, current } captured before each move
@@ -865,10 +867,22 @@ select { background: #eef5f0; color: #14201a; }
 
   document.getElementById("watch-btn").addEventListener("click", () => {
     online = null;
+    watchMode = true;
     players[BLACK].type = "cpu"; players[BLACK].level = "5";
     players[WHITE].type = "cpu"; players[WHITE].level = "5";
     enterGameScreen();
+    document.getElementById("stop-watch").style.display = "";
+    backBtn.style.display = "none";
+    resetBtn.style.display = "none";
   });
+  function stopWatch() {
+    watchMode = false;
+    document.getElementById("stop-watch").style.display = "none";
+    backBtn.style.display = "";
+    resetBtn.style.display = "";
+    backBtn.click();
+  }
+  document.getElementById("stop-watch").addEventListener("click", stopWatch);
 
   /* ---------- Board ---------- */
 
@@ -1066,7 +1080,13 @@ select { background: #eef5f0; color: #14201a; }
   });
 
   resetBtn.addEventListener("click", newGame);
-  backBtn.addEventListener("click", showSetup);
+  backBtn.addEventListener("click", () => {
+    watchMode = false;
+    document.getElementById("stop-watch").style.display = "none";
+    backBtn.style.display = "";
+    resetBtn.style.display = "";
+    showSetup();
+  });
   undoBtn.addEventListener("click", undo);
   assistEl.addEventListener("change", render);
 

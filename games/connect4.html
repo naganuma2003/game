@@ -124,6 +124,7 @@ svg{display:block;width:min(96vw,440px);height:auto}
   <button data-m="pvp">2人対戦</button>
 </div>
 <button class="watch-btn" onclick="startWatch()">最強AI観戦</button>
+<button class="watch-btn" id="stop-watch" style="display:none;border-color:#e0473a;color:#e0473a" onclick="stopWatch()">観戦終了</button>
 
 <div class="status"><div class="dot r" id="tdot"></div><span id="tlabel">赤の番です</span></div>
 <div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
@@ -209,21 +210,34 @@ let discLayer,ringLayer,assistLayer;
 })();
 
 function startWatch(){
-  watchMode=true;
   mode='cpu3';
   document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('on'));
   document.querySelector('#modes button[data-m="cpu3"]').classList.add('on');
-  // init without watchMode so random-first logic doesn't run with CPU-vs-CPU confusion
-  watchMode=false;
-  init();
-  watchMode=true;
-  // kick off first CPU move
+  document.getElementById('modes').style.display='none';
+  document.querySelector('.watch-btn').style.display='none';
+  document.getElementById('stop-watch').style.display='';
+  board=new Array(ROWS*COLS).fill(0);
+  turn=1;history=[];over=false;busy=false;winCells=[];watchMode=true;
+  discLayer.innerHTML='';ringLayer.innerHTML='';
+  document.getElementById('gov').classList.remove('show');
+  document.getElementById('msg').textContent='最強AI同士の対局';
+  updateStatus();
   busy=true;
   setTimeout(()=>{const c=cpuMove();busy=false;const r=dropRow(board,c);history.push({bd:board.slice(),turn});play(c,r);},420);
 }
+function stopWatch(){
+  watchMode=false;over=true;busy=false;
+  document.getElementById('modes').style.display='';
+  document.querySelector('.watch-btn').style.display='';
+  document.getElementById('stop-watch').style.display='none';
+  mode='cpu1';
+  document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('on'));
+  document.querySelector('#modes button[data-m="cpu1"]').classList.add('on');
+  init();
+}
 
 function init(){
-  watchMode=false;
+  if(watchMode){stopWatch();return;}
   board=new Array(ROWS*COLS).fill(0);
   turn=1;history=[];over=false;busy=false;winCells=[];
   discLayer.innerHTML='';ringLayer.innerHTML='';
@@ -417,8 +431,8 @@ function cpuMove(){
     for(let k=0;k<pool.length;k++){t-=wts[k];if(t<=0)return pool[k];}
     return pool[0];
   }
-  // 普通=深さ4 / 強=深さ9 αβ
-  const depth=mode==='cpu2'?4:9;
+  // 普通=深さ4 / 強=深さ9 αβ（観戦時は深さ7で高速化）
+  const depth=mode==='cpu2'?4:watchMode?7:9;
   let best=legal[0],bs=-Infinity;
   for(const c of legal){
     const r=dropRow(board,c);

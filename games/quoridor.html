@@ -72,7 +72,8 @@ svg{display:block;width:min(95vw,440px);height:auto}
 <div class="row" id="np"><span class="lab">人数:</span><button data-np="2" class="on">2人</button><button data-np="4">4人</button></div>
 <div class="row" id="mode"><span class="lab">対戦:</span><button data-m="cpu" class="on">CPU対戦</button><button data-m="pvp">人対人</button></div>
 <div class="row" id="lv"><span class="lab">CPU強さ:</span><button data-lv="1">弱</button><button data-lv="2" class="on">普通</button><button data-lv="3">強</button></div>
-<div class="row" id="watch-row"><button id="watch-btn" style="background:transparent;border:2px solid var(--gold);color:var(--gold);padding:7px 20px;border-radius:16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">最強AI観戦</button></div>
+<div class="row" id="watch-row"><button id="watch-btn" style="background:transparent;border:2px solid var(--gold);color:var(--gold);padding:7px 20px;border-radius:16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">最強AI観戦</button>
+<button id="stop-watch" style="display:none;background:transparent;border:2px solid #e0473a;color:#e0473a;padding:7px 20px;border-radius:16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">観戦終了</button></div>
 <div class="turn" id="turn"></div>
 <div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
 <label class="assist-toggle"><input type="checkbox" id="assist"> AIアシスタント（最善手を表示）</label>
@@ -108,7 +109,7 @@ function myTurn(){return !ONLINE||turn===MYSEAT;}
 const svg=document.getElementById('bd');
 
 function init(){
-  watchMode=false;
+  if(watchMode){stopWatch();return;}
   const su=SETUPS[np];
   pawns=su.starts.map(p=>({r:p[0],c:p[1]}));
   walls=[]; turn=(mode==='cpu'&&!ONLINE&&Math.random()<0.5)?1:0; over=false; winners=[]; hist=[];
@@ -359,7 +360,36 @@ let cpuLv=2;
 document.getElementById('lv').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;cpuLv=+b.dataset.lv;document.querySelectorAll('#lv button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
 document.querySelector('.actbar').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;action=b.dataset.a;setActionUI();render();});
 document.getElementById('watch-btn').addEventListener('click',startWatch);
-function startWatch(){watchMode=false;cpuLv=3;mode='cpu';document.querySelectorAll('#lv button').forEach(x=>x.classList.remove('on'));document.querySelector('#lv button[data-lv="3"]').classList.add('on');init();watchMode=true;if(!over)setTimeout(cpuMove,600);}
+document.getElementById('stop-watch').addEventListener('click',stopWatch);
+function startWatch(){
+  cpuLv=3;mode='cpu';
+  document.querySelectorAll('#lv button').forEach(x=>x.classList.remove('on'));
+  document.querySelector('#lv button[data-lv="3"]').classList.add('on');
+  document.getElementById('np').style.display='none';
+  document.getElementById('mode').style.display='none';
+  document.getElementById('lv').style.display='none';
+  document.getElementById('watch-btn').style.display='none';
+  document.getElementById('stop-watch').style.display='';
+  const su=SETUPS[np];
+  pawns=su.starts.map(p=>({r:p[0],c:p[1]}));
+  walls=[]; turn=0; over=false; winners=[]; hist=[];
+  wallsLeft=new Array(np).fill(su.walls);
+  action='move';
+  watchMode=true;
+  document.getElementById('over').classList.remove('show');
+  document.getElementById('msg').textContent='最強AI同士の対局';
+  setActionUI(); render(); updateTurn(); updateStock();
+  if(!over)setTimeout(cpuMove,600);
+}
+function stopWatch(){
+  watchMode=false;over=true;
+  document.getElementById('np').style.display='';
+  document.getElementById('mode').style.display='';
+  document.getElementById('lv').style.display='';
+  document.getElementById('watch-btn').style.display='';
+  document.getElementById('stop-watch').style.display='none';
+  init();
+}
 document.getElementById('again').addEventListener('click',init);
 document.getElementById('reset').addEventListener('click',init);
 document.getElementById('undo').addEventListener('click',()=>{if(!hist.length||ONLINE)return;let s=hist.pop();if(mode==='cpu'){while(hist.length&&JSON.parse(s).turn!==0)s=hist.pop();}restoreQ(s);setActionUI();document.getElementById('over').classList.remove('show');render();updateTurn();updateStock();});

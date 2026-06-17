@@ -133,6 +133,7 @@ svg{display:block;width:min(96vw,480px);height:auto}
   <button data-m="pvp">2人対戦</button>
 </div>
 <button class="watch-btn" onclick="startWatch()">最強AI観戦</button>
+<button class="watch-btn" id="stop-watch" style="display:none;border-color:#e0473a;color:#e0473a" onclick="stopWatch()">観戦終了</button>
 
 <div class="msg" id="msg">あなたの番です</div>
 <div class="eval-row" id="eval-row"><button class="eval-btn" id="eval-btn" onclick="toggleEval()">形勢</button><div class="eval-bar" id="eval-bar" style="display:none"><div class="eval-fill" id="eval-fill"></div></div><span class="eval-lbl" id="eval-lbl" style="display:none"></span></div>
@@ -295,14 +296,28 @@ function startWatch(){
   mode='cpu3';
   document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('on'));
   document.querySelector('#modes button[data-m="cpu3"]').classList.add('on');
+  document.getElementById('modes').style.display='none';
+  document.querySelector('.watch-btn:not(#stop-watch)').style.display='none';
+  document.getElementById('stop-watch').style.display='';
   pits=new Array(14).fill(4);pits[6]=0;pits[13]=0;
   turn=0;history=[];over=false;busy=false;
   document.getElementById('gov').classList.remove('show');
   render();msg('最強AI観戦中 — CPU vs CPU');
   busy=true;setTimeout(()=>{const m=cpuMoveFor(0);busy=false;history.push({p:pits.slice(),turn});playAnimated(m);},650);
 }
+function stopWatch(){
+  watchMode=false;over=true;busy=false;
+  document.getElementById('modes').style.display='';
+  document.querySelector('.watch-btn:not(#stop-watch)').style.display='';
+  document.getElementById('stop-watch').style.display='none';
+  mode='cpu1';
+  document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('on'));
+  document.querySelector('#modes button[data-m="cpu1"]').classList.add('on');
+  init();
+}
 
 function init(){
+  if(watchMode){stopWatch();return;}
   watchMode=false;
   pits=new Array(14).fill(4);
   pits[6]=0;pits[13]=0;

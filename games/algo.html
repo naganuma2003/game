@@ -134,6 +134,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Segoe UI','Hiragino Sans
 </section>
 
 <div id="game">
+  <button id="stop-watch" style="display:none;background:transparent;border:2px solid #e0473a;color:#e0473a;padding:6px 16px;border-radius:16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:6px">観戦終了</button>
   <div class="opponents" id="opponents"></div>
   <div class="drawn-box" id="drawn-box">
     <span class="drawn-lbl">引いたカード</span>
@@ -586,10 +587,19 @@ document.getElementById('watch-btn').addEventListener('click',()=>{
   watchMode=true;
   document.getElementById('sel-diff').value='hard';
   initGame(+document.getElementById('sel-players').value,'hard',false,-1);
+  document.getElementById('stop-watch').style.display='';
 });
+function stopWatch(){
+  watchMode=false;
+  document.getElementById('stop-watch').style.display='none';
+  document.getElementById('game').style.display='none';
+  document.getElementById('setup').style.display='';
+}
+document.getElementById('stop-watch').addEventListener('click',stopWatch);
 document.getElementById('again-btn').addEventListener('click',()=>{
   document.getElementById('gameover').style.display='none';
   watchMode=false;
+  document.getElementById('stop-watch').style.display='none';
   if(ONLINE){if(window.OnlineRoom)OnlineRoom.clearSession();location.reload();}else{document.getElementById('game').style.display='none';document.getElementById('setup').style.display='';}
 });
 </script>

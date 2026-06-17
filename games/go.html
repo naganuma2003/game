@@ -122,6 +122,7 @@ svg{display:block;width:min(96vw,440px);height:auto}
   <button data-m="pvp">2人対戦</button>
 </div>
 <button class="watch-btn" onclick="startWatch()">最強AI観戦</button>
+<button class="watch-btn" id="stop-watch" style="display:none;border-color:#e0473a;color:#e0473a" onclick="stopWatch()">観戦終了</button>
 <div class="row" id="sizes">
   <button data-s="9" class="on">9路</button>
   <button data-s="13">13路</button>
@@ -274,6 +275,9 @@ function startWatch(){
   mode='cpu3';
   document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('on'));
   document.querySelector('#modes button[data-m="cpu3"]').classList.add('on');
+  document.getElementById('modes').style.display='none';
+  document.querySelector('.watch-btn:not(#stop-watch)').style.display='none';
+  document.getElementById('stop-watch').style.display='';
   board=new Array(N*N).fill(0);
   turn=1;capt=[0,0];history=[];posSet=new Set([board.join('')]);
   passes=0;moveCount=0;lastIdx=-1;over=false;busy=false;scoring=false;deadSet=new Set();
@@ -284,8 +288,19 @@ function startWatch(){
   msg('最強AI観戦中 — CPU vs CPU (黒番)');
   maybeCpu();
 }
+function stopWatch(){
+  watchMode=false;over=true;busy=false;
+  document.getElementById('modes').style.display='';
+  document.querySelector('.watch-btn:not(#stop-watch)').style.display='';
+  document.getElementById('stop-watch').style.display='none';
+  mode='cpu1';
+  document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('on'));
+  document.querySelector('#modes button[data-m="cpu1"]').classList.add('on');
+  init();
+}
 
 function init(){
+  if(watchMode){stopWatch();return;}
   watchMode=false;
   board=new Array(N*N).fill(0);
   turn=1;capt=[0,0];history=[];posSet=new Set([board.join('')]);

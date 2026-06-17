@@ -139,6 +139,7 @@ svg{display:block;width:min(96vw,420px);height:auto}
   <button data-m="pvp">2人対戦</button>
 </div>
 <button class="watch-btn" onclick="startWatch()">最強AI観戦</button>
+<button class="watch-btn" id="stop-watch" style="display:none;border-color:#e0473a;color:#e0473a" onclick="stopWatch()">観戦終了</button>
 
 <div class="trays">
   <div class="t" id="tray0"><span>あなたが取った:</span></div>
@@ -200,6 +201,9 @@ function startWatch(){
   mode='cpu3';
   document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('on'));
   document.querySelector('#modes button[data-m="cpu3"]').classList.add('on');
+  document.getElementById('modes').style.display='none';
+  document.querySelector('.watch-btn:not(#stop-watch)').style.display='none';
+  document.getElementById('stop-watch').style.display='';
   // init pieces
   pieces=[];let id=0;
   for(const o of[1,0]){
@@ -292,8 +296,18 @@ function watchBlueProb(attacker){
   return unknown.length?bluesLeft/unknown.length:0;
 }
 
+function stopWatch(){
+  watchMode=false;busy=false;
+  document.getElementById('modes').style.display='';
+  document.querySelector('.watch-btn:not(#stop-watch)').style.display='';
+  document.getElementById('stop-watch').style.display='none';
+  mode='cpu1';
+  document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('on'));
+  document.querySelector('#modes button[data-m="cpu1"]').classList.add('on');
+  init();
+}
 function init(){
-  watchMode=false;
+  if(watchMode){stopWatch();return;}
   pieces=[];
   let id=0;
   // 上側(o=1): rows0-1 cols1-4 / 下側(o=0): rows4-5 cols1-4

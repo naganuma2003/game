@@ -123,7 +123,7 @@
   <div class="oc-card">
     <button id="lobby-close">×</button>
     <h2>🌐 オンライン対戦（最大${MAX}人）</h2>
-    <p class="oc-note">同じ部屋番号を共有して対戦します。${cfg.note || ''}</p>
+    <p class="oc-note">同じ部屋番号を共有して対戦します。${cfg.note || ''}<br>※ 対戦するには必ず部屋番号の入力が必要です。部屋を作成して相手に番号を伝えるか、相手の番号を入力して参加してください。</p>
     <div class="oc-sec"><h3>部屋を作る</h3>
       <button id="create-room" class="oc-btn">部屋を作成</button>
       <div id="room-code-box" hidden><span style="font-size:11px;opacity:.7">部屋番号</span><span id="room-code">----</span><button id="copy-code">コピー</button></div>

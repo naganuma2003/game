@@ -97,8 +97,9 @@
 #room-code-box[hidden]{display:none}
 #room-code{font-size:30px;font-weight:800;letter-spacing:.22em;color:#ffd34d;font-family:Consolas,monospace;display:block;margin:4px 0}
 #copy-code{background:#3a4358;border:none;color:#fff;padding:5px 12px;border-radius:7px;cursor:pointer;font-size:12px}
-.oc-join{display:flex;gap:8px;justify-content:center}
-#join-code{width:120px;font-size:18px;font-weight:700;letter-spacing:.18em;text-align:center;padding:7px;border-radius:8px;border:none}
+.oc-join{display:flex;gap:8px;justify-content:center;max-width:100%}
+#join-code{width:120px;min-width:0;font-size:18px;font-weight:700;letter-spacing:.18em;text-align:center;padding:7px;border-radius:8px;border:none}
+.oc-join .oc-btn{flex-shrink:0}
 #oc-roster{margin:10px 0 0;font-size:13px;color:#bcd}
 #oc-roster b{color:#ffd34d}
 #cpu-row{margin:10px 0 0;font-size:12px;color:#bcd;display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap}
